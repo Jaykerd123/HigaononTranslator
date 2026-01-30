@@ -25,4 +25,15 @@ class Word {
       exampleEnglish: json['example_english'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'higaonon': higaonon,
+      'tagalog': tagalog,
+      'part_of_speech': partOfSpeech,
+      'english': english,
+      'example_higaonon': exampleHigaonon,
+      'example_english': exampleEnglish,
+    };
+  }
 }

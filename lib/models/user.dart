@@ -12,6 +12,7 @@ class UserData {
   final String? avatarUrl;
   final bool? isDarkMode;
   final bool onboardingCompleted;
+  final List<String>? dictionaryHistory;
 
   UserData({
     required this.uid,
@@ -21,5 +22,6 @@ class UserData {
     this.avatarUrl,
     this.isDarkMode,
     this.onboardingCompleted = false,
+    this.dictionaryHistory,
   });
 }

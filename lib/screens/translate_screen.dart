@@ -4,9 +4,10 @@ import 'package:fireb/screens/services/history_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
@@ -20,17 +21,57 @@ class _TranslateScreenState extends State<TranslateScreen> {
   List<Word> _filteredWords = [];
   final TextEditingController _searchController = TextEditingController();
   late FlutterTts _flutterTts;
-  late final RecorderController _recorderController;
   bool _isSearching = false;
+
+  final SpeechToText _speechToText = SpeechToText();
+  bool _speechEnabled = false;
+  String _lastWords = '';
+  String _translationResult = '';
 
   @override
   void initState() {
     super.initState();
     _initializeTts();
     _loadDictionary();
-    _recorderController = RecorderController();
     _requestMicPermission();
     _searchController.addListener(_onSearchChanged);
+    _initSpeech();
+  }
+
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    setState(() {});
+  }
+
+  void _startListening() async {
+    await _speechToText.listen(onResult: _onSpeechResult, localeId: 'ceb_PH');
+    setState(() {
+      _translationResult = '';
+    });
+  }
+
+  void _stopListening() async {
+    await _speechToText.stop();
+    setState(() {});
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      _lastWords = result.recognizedWords;
+    });
+    _translateVoiceInput();
+  }
+
+  void _translateVoiceInput() {
+    if (_lastWords.isNotEmpty) {
+      final foundWord = _words.firstWhere(
+        (word) => word.higaonon.toLowerCase() == _lastWords.toLowerCase(),
+        orElse: () => Word(higaonon: '', english: 'No translation found', tagalog: '', partOfSpeech: '', exampleHigaonon: '', exampleEnglish: ''),
+      );
+      setState(() {
+        _translationResult = foundWord.english;
+      });
+    }
   }
 
   void _initializeTts() {
@@ -73,19 +114,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
     await Permission.microphone.request();
   }
 
-  void _toggleRecording() async {
-    if (_recorderController.isRecording) {
-      await _recorderController.stop();
-    } else {
-      await _recorderController.record();
-    }
-    setState(() {});
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
-    _recorderController.dispose();
     _flutterTts.stop();
     super.dispose();
   }
@@ -125,36 +156,45 @@ class _TranslateScreenState extends State<TranslateScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AudioWaveforms(
-            size: const Size(double.infinity, 200.0),
-            recorderController: _recorderController,
-            waveStyle: const WaveStyle(
-              waveColor: Colors.blue,
-              showDurationLabel: true,
-              spacing: 8.0,
-              showBottom: false,
-              extendWaveform: true,
-              showMiddleLine: false,
-            ),
-          ),
           const SizedBox(height: 20),
           GestureDetector(
-            onTap: _toggleRecording,
+            onTap: _speechToText.isNotListening ? _startListening : _stopListening,
             child: CircleAvatar(
               radius: 40,
               backgroundColor: Colors.red,
               child: Icon(
-                _recorderController.isRecording ? Icons.stop : Icons.mic,
+                _speechToText.isNotListening ? Icons.mic : Icons.stop,
                 color: Colors.white,
                 size: 40,
               ),
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Tap the microphone to start speaking',
-            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+          Text(
+            _speechToText.isListening
+                ? 'Listening...'
+                : _speechEnabled
+                    ? 'Tap the microphone to start listening...'
+                    : 'Speech not available',
+            style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
           ),
+          const SizedBox(height: 20),
+          if (_lastWords.isNotEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Recognized (Bisaya):', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(_lastWords),
+                    const SizedBox(height: 10),
+                    const Text('Translation (English):', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(_translationResult),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

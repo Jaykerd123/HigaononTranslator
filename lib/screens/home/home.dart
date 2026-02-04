@@ -24,6 +24,18 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    print('Home initState called');
+  }
+
+  @override
+  void dispose() {
+    print('Home dispose called');
+    super.dispose();
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -33,7 +45,7 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      const _HomeScreen(),
+      _HomeScreen(key: ValueKey(widget.key), initialShowAllHistory: false), // Pass the key and initialShowAllHistory
       const TranslateScreen(),
       const MenuScreen(),
     ];
@@ -66,7 +78,9 @@ class _HomeState extends State<Home> {
 }
 
 class _HomeScreen extends StatefulWidget {
-  const _HomeScreen();
+  final bool initialShowAllHistory; // New parameter
+
+  const _HomeScreen({super.key, this.initialShowAllHistory = false});
 
   @override
   State<_HomeScreen> createState() => _HomeScreenState();
@@ -75,14 +89,23 @@ class _HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<_HomeScreen> {
   Word? _wordOfTheDay;
   late FlutterTts _flutterTts;
-  bool _showAllHistory = false; // New state variable
-  final int _historyDisplayLimit = 4; // New variable for the initial limit
+  late bool _showAllHistory; // Initialize with widget parameter
+  final int _historyDisplayLimit = 4;
 
   @override
   void initState() {
     super.initState();
+    print('_HomeScreen initState called');
+    _showAllHistory = widget.initialShowAllHistory; // Set initial state
     _initializeTts();
     _loadWordOfTheDay();
+  }
+
+  @override
+  void dispose() {
+    print('_HomeScreen dispose called');
+    _flutterTts.stop();
+    super.dispose();
   }
 
   void _initializeTts() {
@@ -118,12 +141,6 @@ class _HomeScreenState extends State<_HomeScreen> {
     } else {
       return FileImage(File(avatarUrl));
     }
-  }
-
-  @override
-  void dispose() {
-    _flutterTts.stop();
-    super.dispose();
   }
 
   @override

@@ -57,7 +57,7 @@ class MyApp extends StatelessWidget {
                   themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
                   home: const SplashScreen(),
                   routes: {
-                    '/home': (context) => const Home(),
+                    '/home': (context) => Home(key: ValueKey(user?.uid)),
                   },
                 );
               },

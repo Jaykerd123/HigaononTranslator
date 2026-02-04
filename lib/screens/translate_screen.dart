@@ -33,18 +33,22 @@ class _TranslateScreenState extends State<TranslateScreen> {
     super.initState();
     _initializeTts();
     _loadDictionary();
-    _requestMicPermission();
     _searchController.addListener(_onSearchChanged);
     _initSpeech();
   }
 
   void _initSpeech() async {
-    _speechEnabled = await _speechToText.initialize();
+    final status = await Permission.microphone.request();
+    if (status.isGranted) {
+      _speechEnabled = await _speechToText.initialize();
+    } else {
+      _speechEnabled = false;
+    }
     setState(() {});
   }
 
   void _startListening() async {
-    await _speechToText.listen(onResult: _onSpeechResult, localeId: 'ceb_PH');
+    await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US'); // English input
     setState(() {
       _translationResult = '';
     });
@@ -65,11 +69,11 @@ class _TranslateScreenState extends State<TranslateScreen> {
   void _translateVoiceInput() {
     if (_lastWords.isNotEmpty) {
       final foundWord = _words.firstWhere(
-        (word) => word.higaonon.toLowerCase() == _lastWords.toLowerCase(),
+        (word) => word.english.toLowerCase() == _lastWords.toLowerCase(), // Search by English word
         orElse: () => Word(higaonon: '', english: 'No translation found', tagalog: '', partOfSpeech: '', exampleHigaonon: '', exampleEnglish: ''),
       );
       setState(() {
-        _translationResult = foundWord.english;
+        _translationResult = foundWord.tagalog; // Translate to Bisaya (Tagalog field)
       });
     }
   }
@@ -108,10 +112,6 @@ class _TranslateScreenState extends State<TranslateScreen> {
   void _speak(Word word) async {
     Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
     await _flutterTts.speak(word.higaonon);
-  }
-
-  Future<void> _requestMicPermission() async {
-    await Permission.microphone.request();
   }
 
   @override
@@ -186,10 +186,10 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Recognized (Bisaya):', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Recognized (English):', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(_lastWords),
                     const SizedBox(height: 10),
-                    const Text('Translation (English):', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('Translation (Bisaya):', style: TextStyle(fontWeight: FontWeight.bold)), // Changed label to Bisaya
                     Text(_translationResult),
                   ],
                 ),

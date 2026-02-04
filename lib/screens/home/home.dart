@@ -75,6 +75,8 @@ class _HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<_HomeScreen> {
   Word? _wordOfTheDay;
   late FlutterTts _flutterTts;
+  bool _showAllHistory = false; // New state variable
+  final int _historyDisplayLimit = 4; // New variable for the initial limit
 
   @override
   void initState() {
@@ -260,25 +262,62 @@ class _HomeScreenState extends State<_HomeScreen> {
                 ),
               );
             } else {
-              return SizedBox(
-                height: 150,
-                child: ListView.builder(
-                  itemCount: historyService.history.length,
-                  itemBuilder: (context, index) {
-                    final word = historyService.history[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      child: ListTile(
-                        title: Text(word.higaonon),
-                        subtitle: Text(word.english),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.volume_up, size: 22),
-                          onPressed: () => _speak(word),
+              final int effectiveItemCount = _showAllHistory
+                  ? historyService.history.length
+                  : min(_historyDisplayLimit, historyService.history.length);
+
+              return Column(
+                children: [
+                  _showAllHistory
+                      ? ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: effectiveItemCount,
+                          itemBuilder: (context, index) {
+                            final word = historyService.history[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              child: ListTile(
+                                title: Text(word.higaonon),
+                                subtitle: Text(word.english),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.volume_up, size: 22),
+                                  onPressed: () => _speak(word),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : SizedBox(
+                          height: 150, // Keep original fixed height for limited display
+                          child: ListView.builder(
+                            itemCount: effectiveItemCount,
+                            itemBuilder: (context, index) {
+                              final word = historyService.history[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                child: ListTile(
+                                  title: Text(word.higaonon),
+                                  subtitle: Text(word.english),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.volume_up, size: 22),
+                                    onPressed: () => _speak(word),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                  if (!_showAllHistory && historyService.history.length > _historyDisplayLimit)
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showAllHistory = true;
+                        });
+                      },
+                      child: const Text('Show All'),
+                    ),
+                ],
               );
             }
           },

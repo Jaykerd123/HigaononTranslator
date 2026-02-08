@@ -2,7 +2,7 @@
 import 'package:fireb/screens/services/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fireb/shared/constants.dart';
-import 'package:fireb/shared/loading.dart';
+import 'package:fireb/shared/simple_loading.dart'; // Import the new simple loading widget
 
 class LoginPage extends StatefulWidget {
   const LoginPage({
@@ -31,7 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return loading
-        ? const LoadingSpinner()
+        ? const SimpleLoading() // Use the new simple loading widget
         : Scaffold(
             backgroundColor: Colors.white,
             appBar: AppBar(

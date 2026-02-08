@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _startAnimation() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 1)); // Reduced from 2 seconds
     setState(() {
       _logoMoved = true;
     });
@@ -28,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() {
       _textVisible = true;
     });
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 1)); // Reduced from 3 seconds
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (BuildContext context) => const Wrapper(),

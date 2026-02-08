@@ -3,6 +3,7 @@ import 'package:fireb/screens/services/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fireb/shared/constants.dart';
 import 'package:fireb/shared/simple_loading.dart'; // Import the new simple loading widget
+import 'package:fireb/screens/authenticate/forgot_password_screen.dart'; // Import the new forgot password screen
 
 class LoginPage extends StatefulWidget {
   const LoginPage({
@@ -44,7 +45,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
             body: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -64,7 +66,8 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 40),
                       TextFormField(
-                        decoration: textInputDecoration.copyWith(labelText: 'Email'),
+                        decoration:
+                            textInputDecoration.copyWith(labelText: 'Email'),
                         validator: (val) =>
                             val!.isEmpty ? 'Enter an email' : null,
                         onChanged: (val) {
@@ -83,7 +86,27 @@ class _LoginPageState extends State<LoginPage> {
                           setState(() => password = val);
                         },
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 10), // Added spacing
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ForgotPasswordScreen(
+                                  onBackPressed: () => Navigator.pop(context),
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20), // Adjusted spacing
                       ElevatedButton(
                         onPressed: () async {
                           if (_formKey.currentState!.validate()) {
@@ -92,7 +115,8 @@ class _LoginPageState extends State<LoginPage> {
                                 .signInWithEmailAndPassword(email, password);
                             if (result == null) {
                               setState(() {
-                                error = 'Could not sign in with those credentials';
+                                error =
+                                    'Could not sign in with those credentials';
                                 loading = false;
                               });
                             }
@@ -131,7 +155,8 @@ class _LoginPageState extends State<LoginPage> {
                             });
                           }
                         },
-                        icon: Image.asset('assets/social_icons/google.png', height: 24),
+                        icon: Image.asset('assets/social_icons/google.png',
+                            height: 24),
                         label: const Text('Continue with Google'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.black,
@@ -154,7 +179,8 @@ class _LoginPageState extends State<LoginPage> {
                             });
                           }
                         },
-                        icon: Image.asset('assets/social_icons/facebook.png', height: 24),
+                        icon: Image.asset('assets/social_icons/facebook.png',
+                            height: 24),
                         label: const Text('Continue with Facebook'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.black,

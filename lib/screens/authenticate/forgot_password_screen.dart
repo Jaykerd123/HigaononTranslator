@@ -3,6 +3,7 @@ import 'package:fireb/screens/services/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fireb/shared/constants.dart';
 import 'package:fireb/shared/simple_loading.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuthException
 
 class ForgotPasswordScreen extends StatefulWidget {
   final Function onBackPressed;
@@ -18,7 +19,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   bool loading = false;
   String email = '';
-  String error = '';
+  String? _emailError; // To manage email input field specific error
+  String _generalError = ''; // For general errors like network issues
 
   @override
   Widget build(BuildContext context) {
@@ -56,34 +58,76 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: 40),
                       TextFormField(
-                        decoration: textInputDecoration.copyWith(labelText: 'Email'),
-                        validator: (val) => val!.isEmpty ? 'Enter an email' : null,
+                        decoration: textInputDecoration.copyWith(
+                          labelText: 'Email',
+                          errorText: _emailError, // Display specific email error
+                        ),
+                        validator: (val) =>
+                            val!.isEmpty ? 'Enter an email' : null,
                         onChanged: (val) {
-                          setState(() => email = val);
+                          setState(() {
+                            email = val;
+                            _emailError = null; // Clear error on change
+                          });
                         },
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: () async {
                           if (_formKey.currentState!.validate()) {
-                            setState(() => loading = true);
+                            setState(() {
+                              loading = true;
+                              _generalError = ''; // Clear general errors
+                              _emailError = null; // Clear email specific error
+                            });
+
                             try {
-                              await _auth.sendPasswordResetEmail(email);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Password reset link sent to your email!'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                              // Navigate back to login or show success message permanently
-                              widget.onBackPressed();
-                            } catch (e) {
+                              // Check if the email exists
+                              final List<String> signInMethods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+
+                              if (signInMethods.isEmpty) {
+                                // Email not found
+                                setState(() {
+                                  _emailError = 'Email not found';
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Email not found.'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              } else {
+                                // Email exists, send reset link
+                                await _auth.sendPasswordResetEmail(email);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Password reset link sent to your email!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                                widget.onBackPressed(); // Navigate back after showing the message
+                              }
+                            } on FirebaseAuthException catch (e) {
                               setState(() {
-                                error = 'Error: ${e.toString()}';
+                                if (e.code == 'invalid-email') {
+                                  _emailError = 'Please enter a valid email address.';
+                                } else {
+                                  _generalError = 'Error: ${e.message}';
+                                }
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(error),
+                                  content: Text(_emailError ?? _generalError),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            } catch (e) {
+                              setState(() {
+                                _generalError = 'An unexpected error occurred.';
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(_generalError),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -103,10 +147,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         child: const Text('Send Reset Email'),
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        error,
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
-                      ),
+                      if (_generalError.isNotEmpty) // Only show general error if present
+                        Text(
+                          _generalError,
+                          style: const TextStyle(color: Colors.red, fontSize: 14),
+                        ),
                     ],
                   ),
                 ),

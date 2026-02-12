@@ -97,7 +97,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return _isLoading
-        ? Loading() // Removed const keyword
+        ? const LoadingSpinner() // Corrected to LoadingSpinner
         : Scaffold(
             appBar: AppBar(
               title: const Text('Profile Setup'),

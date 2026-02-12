@@ -63,7 +63,7 @@ class _SettingsFormState extends State<SettingsForm> {
                             value: userData.isDarkMode ?? false,
                             onChanged: (value) async {
                               await DatabaseService(uid: user.uid)
-                                  .updateTheme(value);
+                                  .updateUserData(isDarkMode: value);
                             },
                             secondary: const Icon(Icons.dark_mode_outlined),
                           ),
@@ -80,9 +80,9 @@ class _SettingsFormState extends State<SettingsForm> {
                               if (_formKey.currentState?.validate() ?? false) {
                                 await DatabaseService(uid: user.uid)
                                     .updateUserData(
-                                  userData.sugar ?? '0',
-                                  _currentName ?? userData.name ?? 'new crew member',
-                                  userData.strength ?? 100,
+                                  sugar: userData.sugar ?? '0',
+                                  name: _currentName ?? userData.name ?? 'new crew member',
+                                  strength: userData.strength ?? 100,
                                 );
                                 Navigator.pop(context);
                               }

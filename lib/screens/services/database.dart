@@ -12,28 +12,26 @@ class DatabaseService{
 
   final CollectionReference usersCollection = FirebaseFirestore.instance.collection('users');
 
-  Future updateUserData (String sugar, String name, int strength) async {
-    return await usersCollection.doc(uid).set({
-      'sugar': sugar,
-      'name': name,
-      'strength': strength,
-    });
+  // Refactored updateUserData to use named optional parameters for flexibility
+  Future<void> updateUserData({
+    String? sugar,
+    String? name,
+    int? strength,
+    String? profileImageUrl, // Maps to 'avatarUrl' in Firestore
+    bool? isDarkMode,
+    bool? onboardingCompleted,
+  }) async {
+    Map<String, dynamic> dataToUpdate = {};
+    if (sugar != null) dataToUpdate['sugar'] = sugar;
+    if (name != null) dataToUpdate['name'] = name;
+    if (strength != null) dataToUpdate['strength'] = strength;
+    if (profileImageUrl != null) dataToUpdate['avatarUrl'] = profileImageUrl;
+    if (isDarkMode != null) dataToUpdate['isDarkMode'] = isDarkMode;
+    if (onboardingCompleted != null) dataToUpdate['onboardingCompleted'] = onboardingCompleted;
 
-  }
-
-  Future updateOnboardingData(String avatarUrl, String name, bool isDarkMode) async {
-    return await usersCollection.doc(uid).set({
-      'avatarUrl': avatarUrl,
-      'name': name,
-      'isDarkMode': isDarkMode,
-      'onboardingCompleted': true,
-    });
-  }
-
-  Future<void> updateTheme(bool isDarkMode) async {
-    return await usersCollection.doc(uid).update({
-      'isDarkMode': isDarkMode,
-    });
+    if (dataToUpdate.isNotEmpty) {
+      return await usersCollection.doc(uid).update(dataToUpdate);
+    }
   }
 
   // brew list from snapshot

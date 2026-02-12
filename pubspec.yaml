@@ -45,6 +45,8 @@ dependencies:
   audio_waveforms: ^1.0.5
   flutter_tts: ^4.0.2
   speech_to_text: ^7.3.0 # Updated speech_to_text dependency
+  shared_preferences: ^2.2.0 # Added shared_preferences
+  firebase_storage: ^11.0.0 # Added firebase_storage
 
 dev_dependencies:
   flutter_test:
@@ -69,6 +71,7 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
+
   assets:
      - assets/sagiri.jpg
      - assets/teaparty.jpg

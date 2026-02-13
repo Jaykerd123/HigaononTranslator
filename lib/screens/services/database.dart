@@ -34,6 +34,13 @@ class DatabaseService{
     }
   }
 
+  // New method to update the theme preference (isDarkMode)
+  Future<void> updateTheme(bool isDarkMode) async {
+    return await usersCollection.doc(uid).update({
+      'isDarkMode': isDarkMode,
+    });
+  }
+
   // brew list from snapshot
   List<Brew> _brewListFromSnapshot(QuerySnapshot snapshot) {
     return snapshot.docs.map((doc) {

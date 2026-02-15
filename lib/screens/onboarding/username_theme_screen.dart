@@ -114,22 +114,34 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
                 const Spacer(),
                 ElevatedButton(
                   onPressed: () async {
+                    print('Finish button pressed. Current page index: $_currentPageIndex');
                     if (_currentPageIndex == pages.length - 1) {
                       if (user != null) {
-                        // Update user data in Firestore using the existing updateUserData method
-                        await DatabaseService(uid: user.uid).updateUserData(
-                          profileImageUrl: _selectedAvatar,
-                          name: _usernameController.text.trim(),
-                          isDarkMode: _isDarkMode,
-                          onboardingCompleted: true, // Mark onboarding as complete
-                        );
+                        print('User is not null. Attempting to update data and navigate.');
+                        try {
+                          // Update user data in Firestore using the existing updateUserData method
+                          await DatabaseService(uid: user.uid).updateUserData(
+                            profileImageUrl: _selectedAvatar,
+                            name: _usernameController.text.trim(),
+                            isDarkMode: _isDarkMode,
+                            onboardingCompleted: true, // Mark onboarding as complete
+                          );
+                          print('Firestore data updated.');
 
-                        // Set onboarding completed flag in SharedPreferences
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('onboarding_completed', true);
+                          // Set onboarding completed flag in SharedPreferences
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('onboarding_completed', true);
+                          print('SharedPreferences updated. Navigating to home.');
 
-                        // Navigate to home and remove all previous routes
-                        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                          // Navigate to home and remove all previous routes
+                          Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                          print('Navigation initiated.');
+                        } catch (e) {
+                          print('Error during onboarding finish: $e');
+                          // Optionally, show a SnackBar or AlertDialog to the user
+                        }
+                      } else {
+                        print('User is null. Cannot update data or navigate.');
                       }
                     } else {
                       _goToNextPage();

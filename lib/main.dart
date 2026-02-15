@@ -3,7 +3,7 @@ import 'package:fireb/screens/home/home.dart';
 import 'package:fireb/screens/services/auth.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:fireb/screens/services/history_service.dart';
-import 'package:fireb/screens/splash/splash_screen.dart';
+import 'package:fireb/screens/wrapper.dart'; // Import the Wrapper
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -32,12 +32,12 @@ class MyApp extends StatelessWidget {
           initialData: null,
         ),
       ],
-      child: Consumer<CustomUser?>(
+      child: Consumer<CustomUser?>( // This user is from AuthService stream
         builder: (context, user, _) {
           return MultiProvider(
             providers: [
               ChangeNotifierProvider<HistoryService>(
-                key: ValueKey(user?.uid),
+                key: ValueKey(user?.uid), // Key is good for change notifier
                 create: (_) => HistoryService(),
               ),
               StreamProvider<UserData?>.value(
@@ -45,17 +45,19 @@ class MyApp extends StatelessWidget {
                 initialData: null,
               ),
             ],
-            child: Consumer<UserData?>(
+            child: Consumer<UserData?>( // This userData is from DatabaseService stream
               builder: (context, userData, _) {
                 final isLoggedIn = user != null;
-                final isDarkMode = isLoggedIn && (userData?.isDarkMode ?? false);
+                // Removed userData?.isDarkMode ?? false logic from here,
+                // as it will be handled by UsernameThemeScreen's dark mode toggle
+                // and saved to SharedPreferences.
 
                 return MaterialApp(
                   title: 'fireb',
                   theme: ThemeData.light(),
                   darkTheme: ThemeData.dark(),
-                  themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-                  home: const SplashScreen(),
+                  themeMode: (userData?.isDarkMode ?? false) ? ThemeMode.dark : ThemeMode.light, // Use userData for theme
+                  home: Wrapper(), // Directly use Wrapper as home, removed const
                   routes: {
                     '/home': (context) => Home(key: ValueKey(user?.uid)),
                   },

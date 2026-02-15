@@ -1,12 +1,15 @@
+import 'dart:io';
 import 'package:fireb/models/user.dart';
 import 'package:fireb/screens/services/database.dart';
+import 'package:fireb/shared/loading.dart'; // For LoadingSpinner
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
+import 'package:firebase_storage/firebase_storage.dart'; // For Firebase Storage
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UsernameThemeScreen extends StatefulWidget {
-  final String avatar;
-  const UsernameThemeScreen({super.key, required this.avatar});
+  const UsernameThemeScreen({super.key}); // Removed avatar parameter
 
   @override
   State<UsernameThemeScreen> createState() => _UsernameThemeScreenState();
@@ -17,14 +20,19 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
   int _currentPageIndex = 0;
   final _usernameController = TextEditingController();
   bool _isDarkMode = false;
-  late String _selectedAvatar;
+
+  File? _pickedImageFile; // For a custom image picked from gallery/camera
+  String? _finalProfileImageUrl; // For the URL from Firebase Storage or asset path
+
+  bool _isUploadingImage = false; // To show loading during upload
+
   final GlobalKey<FormState> _usernameFormKey = GlobalKey<FormState>();
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedAvatar = widget.avatar;
-  }
+  final List<String> _defaultAvatars = [
+    'assets/avatars/avatar1.png',
+    'assets/avatars/avatar2.png',
+    'assets/avatars/avatar3.png',
+  ];
 
   @override
   void dispose() {
@@ -33,10 +41,53 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
     super.dispose();
   }
 
+  Future<void> _uploadImageAndProceed(String uid) async {
+    setState(() {
+      _isUploadingImage = true;
+    });
+
+    try {
+      if (_pickedImageFile != null) {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('user_profile_images')
+            .child('$uid.jpg');
+        await storageRef.putFile(_pickedImageFile!);
+        _finalProfileImageUrl = await storageRef.getDownloadURL();
+        print('Image uploaded to Firebase: $_finalProfileImageUrl');
+      } else if (_finalProfileImageUrl == null) {
+        // If no custom image and no default selected yet, maybe select a default or force selection
+        // For now, let's default to the first avatar if nothing is selected.
+        _finalProfileImageUrl = _defaultAvatars[0];
+        print('No avatar selected, defaulting to: $_finalProfileImageUrl');
+      }
+      _goToNextPage();
+    } catch (e) {
+      print('Error uploading image: $e');
+      // Show error to user
+    } finally {
+      setState(() {
+        _isUploadingImage = false;
+      });
+    }
+  }
+
   void _goToNextPage() {
-    if (_currentPageIndex == 1) {
+    if (_currentPageIndex == 0) { // On avatar selection page
+      final user = Provider.of<CustomUser?>(context, listen: false);
+      if (user != null) {
+        // If a custom image is picked, upload it first
+        if (_pickedImageFile != null) {
+          _uploadImageAndProceed(user.uid);
+          return; // Don't proceed until upload is done
+        } else if (_finalProfileImageUrl == null) {
+          // If no custom image and no default selected, default to first avatar
+          _finalProfileImageUrl = _defaultAvatars[0];
+        }
+      }
+    } else if (_currentPageIndex == 1) { // On Username Input Page
       if (!_usernameFormKey.currentState!.validate()) {
-        return;
+        return; // Don't proceed if validation fails
       }
     }
 
@@ -61,12 +112,25 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
   Widget build(BuildContext context) {
     final user = Provider.of<CustomUser?>(context);
 
+    if (_isUploadingImage) {
+      return const LoadingSpinner(); // Show loading during image upload
+    }
+
     List<Widget> pages = [
-      _ChooseProfilePage(
-        currentAvatar: _selectedAvatar,
-        onAvatarSelected: (newAvatar) {
+      _AvatarSelectionPage(
+        currentPickedImage: _pickedImageFile,
+        currentSelectedAvatarUrl: _finalProfileImageUrl,
+        defaultAvatars: _defaultAvatars,
+        onImagePicked: (file) {
           setState(() {
-            _selectedAvatar = newAvatar;
+            _pickedImageFile = file;
+            _finalProfileImageUrl = null; // Clear default if custom is picked
+          });
+        },
+        onDefaultAvatarSelected: (avatarPath) {
+          setState(() {
+            _finalProfileImageUrl = avatarPath;
+            _pickedImageFile = null; // Clear custom if default is selected
           });
         },
       ),
@@ -114,34 +178,25 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
                 const Spacer(),
                 ElevatedButton(
                   onPressed: () async {
-                    print('Finish button pressed. Current page index: $_currentPageIndex');
                     if (_currentPageIndex == pages.length - 1) {
                       if (user != null) {
-                        print('User is not null. Attempting to update data and navigate.');
-                        try {
-                          // Update user data in Firestore using the existing updateUserData method
-                          await DatabaseService(uid: user.uid).updateUserData(
-                            profileImageUrl: _selectedAvatar,
-                            name: _usernameController.text.trim(),
-                            isDarkMode: _isDarkMode,
-                            onboardingCompleted: true, // Mark onboarding as complete
-                          );
-                          print('Firestore data updated.');
+                        // Ensure an avatar is selected or default to the first one if none is selected
+                        final avatarToSave = _finalProfileImageUrl ?? _defaultAvatars[0];
 
-                          // Set onboarding completed flag in SharedPreferences
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.setBool('onboarding_completed', true);
-                          print('SharedPreferences updated. Navigating to home.');
+                        // Update user data in Firestore
+                        await DatabaseService(uid: user.uid).updateUserData(
+                          profileImageUrl: avatarToSave,
+                          name: _usernameController.text.trim(),
+                          isDarkMode: _isDarkMode,
+                          onboardingCompleted: true, // Mark onboarding as complete
+                        );
 
-                          // Navigate to home and remove all previous routes
-                          Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-                          print('Navigation initiated.');
-                        } catch (e) {
-                          print('Error during onboarding finish: $e');
-                          // Optionally, show a SnackBar or AlertDialog to the user
-                        }
-                      } else {
-                        print('User is null. Cannot update data or navigate.');
+                        // Set onboarding completed flag in SharedPreferences
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('onboarding_completed', true);
+
+                        // Navigate to home and remove all previous routes
+                        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
                       }
                     } else {
                       _goToNextPage();
@@ -158,18 +213,53 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
   }
 }
 
-class _ChooseProfilePage extends StatelessWidget {
-  final String currentAvatar;
-  final ValueChanged<String> onAvatarSelected;
+// Avatar Selection Page - Refactored from _ChooseProfilePage
+class _AvatarSelectionPage extends StatefulWidget {
+  final File? currentPickedImage;
+  final String? currentSelectedAvatarUrl;
+  final List<String> defaultAvatars;
+  final ValueChanged<File?> onImagePicked;
+  final ValueChanged<String> onDefaultAvatarSelected;
 
-  const _ChooseProfilePage({
+  const _AvatarSelectionPage({
     Key? key,
-    required this.currentAvatar,
-    required this.onAvatarSelected,
+    required this.currentPickedImage,
+    required this.currentSelectedAvatarUrl,
+    required this.defaultAvatars,
+    required this.onImagePicked,
+    required this.onDefaultAvatarSelected,
   }) : super(key: key);
 
   @override
+  State<_AvatarSelectionPage> createState() => _AvatarSelectionPageState();
+}
+
+class _AvatarSelectionPageState extends State<_AvatarSelectionPage> {
+  Future _pickImage(ImageSource source) async {
+    final pickedFile = await ImagePicker().pickImage(source: source);
+    if (pickedFile != null) {
+      widget.onImagePicked(File(pickedFile.path));
+    }
+  }
+
+  void _selectDefaultAvatar(String avatarPath) {
+    widget.onDefaultAvatarSelected(avatarPath);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    ImageProvider<Object>? backgroundImage;
+
+    if (widget.currentPickedImage != null) {
+      backgroundImage = FileImage(widget.currentPickedImage!); // Use custom picked image
+    } else if (widget.currentSelectedAvatarUrl != null) {
+      if (widget.currentSelectedAvatarUrl!.startsWith('assets')) {
+        backgroundImage = AssetImage(widget.currentSelectedAvatarUrl!); // Use default asset
+      } else if (Uri.tryParse(widget.currentSelectedAvatarUrl!)?.hasAbsolutePath == true) {
+        backgroundImage = NetworkImage(widget.currentSelectedAvatarUrl!); // Use uploaded URL
+      }
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -183,27 +273,65 @@ class _ChooseProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             GestureDetector(
-              onTap: () {
-                onAvatarSelected('https://picsum.photos/id/${(DateTime.now().millisecond % 100).toString()}/200/300');
-              },
+              onTap: () => _pickImage(ImageSource.gallery), // Tapping avatar picks from gallery
               child: CircleAvatar(
-                radius: 60,
+                radius: 80,
                 backgroundColor: Colors.grey[300],
-                backgroundImage: currentAvatar.isNotEmpty && Uri.tryParse(currentAvatar)?.hasAbsolutePath == true
-                    ? NetworkImage(currentAvatar) as ImageProvider<Object>?
-                    : null,
-                child: currentAvatar.isEmpty || Uri.tryParse(currentAvatar)?.hasAbsolutePath == false
-                    ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                backgroundImage: backgroundImage,
+                child: backgroundImage == null
+                    ? Icon(
+                        Icons.camera_alt,
+                        size: 50,
+                        color: Colors.grey[600],
+                      )
                     : null,
               ),
             ),
-            const SizedBox(height: 10),
-            Text(currentAvatar.isNotEmpty ? 'Tap to change avatar' : 'Tap to select an avatar'),
             const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _pickImage(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('Take Photo'),
+                ),
+                const SizedBox(width: 10),
+                TextButton.icon(
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                  icon: const Icon(Icons.image),
+                  label: const Text('Choose from Gallery'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 40),
             const Text(
-              'Select an avatar to represent yourself. You can change this later.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              'Or choose a default avatar:',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 80,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: widget.defaultAvatars.length,
+                itemBuilder: (context, index) {
+                  final avatarPath = widget.defaultAvatars[index];
+                  return GestureDetector(
+                    onTap: () => _selectDefaultAvatar(avatarPath),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: CircleAvatar(
+                        radius: 30,
+                        backgroundImage: AssetImage(avatarPath),
+                        backgroundColor: widget.currentSelectedAvatarUrl == avatarPath
+                            ? Colors.red.withOpacity(0.5) // Highlight selected default avatar
+                            : Colors.transparent,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -212,6 +340,7 @@ class _ChooseProfilePage extends StatelessWidget {
   }
 }
 
+// Username Input Page - remains largely the same
 class _UsernameInputPage extends StatelessWidget {
   final TextEditingController controller;
   final GlobalKey<FormState> formKey;
@@ -263,6 +392,7 @@ class _UsernameInputPage extends StatelessWidget {
   }
 }
 
+// Dark Mode Enable Page - remains largely the same
 class _DarkModeEnablePage extends StatelessWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onToggle;

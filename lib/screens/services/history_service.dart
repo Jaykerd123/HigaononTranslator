@@ -15,9 +15,11 @@ class HistoryService with ChangeNotifier {
   Future<void> loadHistoryFromFirestore() async {
     final user = _auth.currentUser;
     if (user == null) {
-      return; // User not logged in
+      print('HistoryService: Cannot load history, user is not logged in.');
+      return;
     }
 
+    print('HistoryService: Loading history for user ${user.uid}...');
     try {
       final historySnapshot = await _firestore
           .collection('users')
@@ -30,18 +32,21 @@ class HistoryService with ChangeNotifier {
       for (var doc in historySnapshot.docs) {
         _history.add(Word.fromJson(doc.data()));
       }
+      print('HistoryService: Loaded ${_history.length} items from Firestore.');
       notifyListeners();
     } catch (e) {
-      print('Error loading history from Firestore: $e');
+      print('HistoryService: Error loading history from Firestore: $e');
     }
   }
 
   void addWordToHistory(Word word) async {
     final user = _auth.currentUser;
     if (user == null) {
-      return; // User not logged in, cannot save history
+      print('HistoryService: Cannot add word to history, user is not logged in.');
+      return;
     }
 
+    print('HistoryService: Adding word '${word.higaonon}' to history for user ${user.uid}.');
     // Remove the word if it already exists to avoid duplicates and move it to the top.
     _history.removeWhere((w) => w.higaonon == word.higaonon);
     _history.insert(0, word);
@@ -58,8 +63,9 @@ class HistoryService with ChangeNotifier {
           .collection('history')
           .doc(word.higaonon) // Using higaonon as document ID for easy lookup/replacement
           .set(wordData);
+      print('HistoryService: Successfully saved word to Firestore.');
     } catch (e) {
-      print('Error saving word to history: $e');
+      print('HistoryService: Error saving word to history: $e');
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fireb/models/user.dart';
 import 'package:fireb/screens/services/database.dart';
@@ -45,6 +46,12 @@ class AuthService {
     try{
       UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       User? user = result.user;
+
+      // Create a new document for the user with the uid
+      if (user != null) {
+        await DatabaseService(uid: user.uid).updateUserData(name: 'new member', sugar: '0', strength: 100, onboardingCompleted: false, isDarkMode: false, );
+      }
+
       return _userFromFirebaseUser(user);
     } catch(e){
       return null;
@@ -65,6 +72,16 @@ class AuthService {
       );
       UserCredential result = await _auth.signInWithCredential(credential);
       User? user = result.user;
+
+      if (user != null) {
+        // Check if the user document already exists
+        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (!doc.exists) {
+          // If it doesn't exist, create it (new user)
+          await DatabaseService(uid: user.uid).updateUserData(name: googleUser.displayName ?? 'new member', sugar: '0', strength: 100, onboardingCompleted: false, isDarkMode: false, profileImageUrl: googleUser.photoUrl);
+        }
+      }
+
       return _userFromFirebaseUser(user);
     } catch (e) {
       return null;
@@ -81,6 +98,16 @@ class AuthService {
           final AuthCredential credential = FacebookAuthProvider.credential(accessToken.tokenString);
           UserCredential userCredential = await _auth.signInWithCredential(credential);
           User? user = userCredential.user;
+
+          if (user != null) {
+            // Check if the user document already exists
+            final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+            if (!doc.exists) {
+              // If it doesn't exist, create it (new user)
+              final userData = await fb.FacebookAuth.instance.getUserData();
+              await DatabaseService(uid: user.uid).updateUserData(name: userData['name'] ?? 'new member', sugar: '0', strength: 100, onboardingCompleted: false, isDarkMode: false, profileImageUrl: userData['picture']?['data']?['url']);
+            }
+          }
           return _userFromFirebaseUser(user);
         }
       }

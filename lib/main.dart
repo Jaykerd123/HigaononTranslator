@@ -39,8 +39,11 @@ class MyApp extends StatelessWidget {
               ChangeNotifierProvider<HistoryService>(
                 key: ValueKey(user?.uid),
                 create: (context) {
-                  // For now, just create the service. We will load history later.
-                  return HistoryService();
+                  final historyService = HistoryService();
+                  if (user != null) {
+                    historyService.loadHistoryFromFirestore();
+                  }
+                  return historyService;
                 },
               ),
               StreamProvider<UserData?>.value(

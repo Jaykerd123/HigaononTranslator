@@ -230,7 +230,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
       itemBuilder: (context, index) {
         final word = _filteredWords[index];
         return _buildWordCard(word);
-      },\
+      },
     );
   }
 
@@ -244,7 +244,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [\
+          children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -285,7 +285,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     );
   }
 
-  Widget _buildTranslationSection({\
+  Widget _buildTranslationSection({
     required String language,
     required String definition,
     required String example,

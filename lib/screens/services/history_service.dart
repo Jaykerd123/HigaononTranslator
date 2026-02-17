@@ -46,7 +46,7 @@ class HistoryService with ChangeNotifier {
       return;
     }
 
-    print('HistoryService: Adding word '${word.higaonon}' to history for user ${user.uid}.');
+    print('HistoryService: Adding word ${word.higaonon} to history for user ${user.uid}.');
     // Remove the word if it already exists to avoid duplicates and move it to the top.
     _history.removeWhere((w) => w.higaonon == word.higaonon);
     _history.insert(0, word);

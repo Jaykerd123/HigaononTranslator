@@ -10,11 +10,9 @@ class HistoryService with ChangeNotifier {
 
   List<Word> get history => _history;
 
-  HistoryService() {
-    _loadHistoryFromFirestore();
-  }
+  HistoryService();
 
-  Future<void> _loadHistoryFromFirestore() async {
+  Future<void> loadHistoryFromFirestore() async {
     final user = _auth.currentUser;
     if (user == null) {
       return; // User not logged in

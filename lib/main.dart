@@ -14,16 +14,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  final historyService = HistoryService(); // Create an instance of HistoryService
-  await historyService.loadHistoryFromFirestore(); // Load history
-
-  runApp(MyApp(historyService: historyService)); // Pass it to MyApp
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final HistoryService historyService; // Add this
-
-  const MyApp({super.key, required this.historyService}); // Update constructor
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -36,14 +31,18 @@ class MyApp extends StatelessWidget {
           create: (context) => context.read<AuthService>().user,
           initialData: null,
         ),
-        ChangeNotifierProvider<HistoryService>.value(
-          value: historyService, // Use the instance from main
-        ),
       ],
       child: Consumer<CustomUser?>( // This user is from AuthService stream
         builder: (context, user, _) {
           return MultiProvider(
             providers: [
+              ChangeNotifierProvider<HistoryService>(
+                key: ValueKey(user?.uid),
+                create: (context) {
+                  // For now, just create the service. We will load history later.
+                  return HistoryService();
+                },
+              ),
               StreamProvider<UserData?>.value(
                 value: user != null ? DatabaseService(uid: user.uid).userData : null,
                 initialData: null,
@@ -51,14 +50,12 @@ class MyApp extends StatelessWidget {
             ],
             child: Consumer<UserData?>( // This userData is from DatabaseService stream
               builder: (context, userData, _) {
-                final isLoggedIn = user != null;
-
                 return MaterialApp(
                   title: 'fireb',
                   theme: ThemeData.light(),
                   darkTheme: ThemeData.dark(),
-                  themeMode: (userData?.isDarkMode ?? false) ? ThemeMode.dark : ThemeMode.light, // Use userData for theme
-                  home: Wrapper(), // Directly use Wrapper as home, removed const
+                  themeMode: (userData?.isDarkMode ?? false) ? ThemeMode.dark : ThemeMode.light,
+                  home: Wrapper(),
                   routes: {
                     '/home': (context) => Home(key: ValueKey(user?.uid)),
                   },

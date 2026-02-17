@@ -50,30 +50,54 @@ class _TranslateScreenState extends State<TranslateScreen> {
   void _startListening() async {
     await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US'); // English input
     setState(() {
-      _translationResult = '';
+      _lastWords = ''; // Clear previous recognized words
+      _translationResult = 'Listening...'; // Show listening state
     });
   }
 
   void _stopListening() async {
     await _speechToText.stop();
-    setState(() {});
+    setState(() {
+      if (_lastWords.isEmpty && _translationResult == 'Listening...') {
+        _translationResult = ''; // Clear if nothing was recognized
+      }
+    });
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
     setState(() {
       _lastWords = result.recognizedWords;
     });
-    _translateVoiceInput();
+
+    // Only translate when the speech recognizer has a final result
+    if (result.finalResult) {
+      _translateVoiceInput();
+    }
+  }
+
+  String _normalizeString(String text) {
+    return text.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), ''); // Remove punctuation
   }
 
   void _translateVoiceInput() {
     if (_lastWords.isNotEmpty) {
-      final foundWord = _words.firstWhere(
-        (word) => word.english.toLowerCase() == _lastWords.toLowerCase(), // Search by English word
-        orElse: () => Word(higaonon: '', english: 'No translation found', tagalog: '', partOfSpeech: '', exampleHigaonon: '', exampleEnglish: ''),
+      final normalizedLastWords = _normalizeString(_lastWords);
+      final foundSentence = _words.firstWhere(
+        (word) => _normalizeString(word.exampleEnglish) == normalizedLastWords, // Search by normalized English example sentence
+        orElse: () => Word(
+            higaonon: '',
+            english: '',
+            tagalog: '',
+            partOfSpeech: '',
+            exampleHigaonon: 'No translation found for sentence',
+            exampleEnglish: ''),
       );
       setState(() {
-        _translationResult = foundWord.tagalog; // Translate to Bisaya (Tagalog field)
+        _translationResult = foundSentence.exampleHigaonon; // Translate to Higaonon example sentence
+      });
+    } else {
+      setState(() {
+        _translationResult = 'Please speak something.'; // Prompt user if no words were recognized
       });
     }
   }
@@ -179,7 +203,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
             style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
           ),
           const SizedBox(height: 20),
-          if (_lastWords.isNotEmpty)
+          if (_lastWords.isNotEmpty || _translationResult.isNotEmpty)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -187,9 +211,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text('Recognized (English):', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(_lastWords),
+                    Text(_lastWords.isNotEmpty ? _lastWords : 'Speak something...'),
                     const SizedBox(height: 10),
-                    const Text('Translation (Bisaya):', style: TextStyle(fontWeight: FontWeight.bold)), // Changed label to Bisaya
+                    const Text('Translation (Higaonon):', style: TextStyle(fontWeight: FontWeight.bold)), // Changed label to Higaonon
                     Text(_translationResult),
                   ],
                 ),
@@ -206,7 +230,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
       itemBuilder: (context, index) {
         final word = _filteredWords[index];
         return _buildWordCard(word);
-      },
+      },\
     );
   }
 
@@ -220,7 +244,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: [\
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -261,7 +285,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     );
   }
 
-  Widget _buildTranslationSection({
+  Widget _buildTranslationSection({\
     required String language,
     required String definition,
     required String example,

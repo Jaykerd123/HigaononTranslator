@@ -95,6 +95,10 @@ class _TranslateScreenState extends State<TranslateScreen> {
       setState(() {
         _translationResult = foundSentence.exampleHigaonon; // Translate to Higaonon example sentence
       });
+
+      if (foundSentence.higaonon.isNotEmpty) {
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
+      }
     } else {
       setState(() {
         _translationResult = 'Please speak something.'; // Prompt user if no words were recognized

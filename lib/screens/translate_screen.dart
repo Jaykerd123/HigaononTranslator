@@ -97,6 +97,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
       });
 
       if (foundSentence.higaonon.isNotEmpty) {
+        print('TranslateScreen: Adding translated word to history...');
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
       }
     } else {
@@ -138,6 +139,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _speak(Word word) async {
+    print('TranslateScreen: _speak function called for word: ${word.higaonon}. Attempting to add to history.');
     Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
     await _flutterTts.speak(word.higaonon);
   }

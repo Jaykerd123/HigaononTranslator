@@ -14,11 +14,16 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  final historyService = HistoryService(); // Create an instance of HistoryService
+  await historyService.loadHistoryFromFirestore(); // Load history
+
+  runApp(MyApp(historyService: historyService)); // Pass it to MyApp
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final HistoryService historyService; // Add this
+
+  const MyApp({super.key, required this.historyService}); // Update constructor
 
   @override
   Widget build(BuildContext context) {
@@ -31,15 +36,14 @@ class MyApp extends StatelessWidget {
           create: (context) => context.read<AuthService>().user,
           initialData: null,
         ),
+        ChangeNotifierProvider<HistoryService>.value(
+          value: historyService, // Use the instance from main
+        ),
       ],
       child: Consumer<CustomUser?>( // This user is from AuthService stream
         builder: (context, user, _) {
           return MultiProvider(
             providers: [
-              ChangeNotifierProvider<HistoryService>(
-                key: ValueKey(user?.uid), // Key is good for change notifier
-                create: (_) => HistoryService(),
-              ),
               StreamProvider<UserData?>.value(
                 value: user != null ? DatabaseService(uid: user.uid).userData : null,
                 initialData: null,
@@ -48,9 +52,6 @@ class MyApp extends StatelessWidget {
             child: Consumer<UserData?>( // This userData is from DatabaseService stream
               builder: (context, userData, _) {
                 final isLoggedIn = user != null;
-                // Removed userData?.isDarkMode ?? false logic from here,
-                // as it will be handled by UsernameThemeScreen's dark mode toggle
-                // and saved to SharedPreferences.
 
                 return MaterialApp(
                   title: 'fireb',

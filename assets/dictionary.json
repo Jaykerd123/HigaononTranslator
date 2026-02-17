@@ -80,4 +80,86 @@
     "example_higaonon": "Gusto ko moinom ug tubig.",
     "example_english": "I want to drink water."
   }
+,
+  {
+    "higaonon": "Tubig",
+    "tagalog": "Tubig",
+    "part_of_speech": "Noun",
+    "english": "Water",
+    "example_higaonon": "Importante an tubig sa kinabuhi.",
+    "example_english": "Water is important in life."
+  },
+  {
+    "higaonon": "Adlaw",
+    "tagalog": "Araw",
+    "part_of_speech": "Noun",
+    "english": "Sun / Day",
+    "example_higaonon": "Mainit an adlaw karon.",
+    "example_english": "The sun is hot today."
+  },
+  {
+    "higaonon": "Gabii",
+    "tagalog": "Gabi",
+    "part_of_speech": "Noun",
+    "english": "Night",
+    "example_higaonon": "Ming-abot siya kagabii.",
+    "example_english": "He arrived last night."
+  },
+  {
+    "higaonon": "Ama",
+    "tagalog": "Ama",
+    "part_of_speech": "Noun",
+    "english": "Father",
+    "example_higaonon": "An ama nagaubra sa uma.",
+    "example_english": "The father works in the farm."
+  },
+  {
+    "higaonon": "Ina",
+    "tagalog": "Ina",
+    "part_of_speech": "Noun",
+    "english": "Mother",
+    "example_higaonon": "An ina nagaandam ug pagkaon.",
+    "example_english": "The mother prepares food."
+  },
+  {
+    "higaonon": "Anak",
+    "tagalog": "Anak",
+    "part_of_speech": "Noun",
+    "english": "Child",
+    "example_higaonon": "Malipayon an anak.",
+    "example_english": "The child is happy."
+  },
+  {
+    "higaonon": "Lakaw",
+    "tagalog": "Lakad",
+    "part_of_speech": "Verb",
+    "english": "Walk",
+    "example_higaonon": "Maglakaw kita padulong sa balay.",
+    "example_english": "Let us walk toward the house."
+  },
+  {
+    "higaonon": "Tulug",
+    "tagalog": "Tulog",
+    "part_of_speech": "Verb",
+    "english": "Sleep",
+    "example_higaonon": "Gusto ko matulug sayo.",
+    "example_english": "I want to sleep early."
+  },
+  {
+    "higaonon": "Isda",
+    "tagalog": "Isda",
+    "part_of_speech": "Noun",
+    "english": "Fish",
+    "example_higaonon": "Nagkuha siya ug isda sa sapa.",
+    "example_english": "He caught a fish from the river."
+  },
+  {
+    "higaonon": "Kahoy",
+    "tagalog": "Puno / Kahoy",
+    "part_of_speech": "Noun",
+    "english": "Tree",
+    "example_higaonon": "Ta-as an kahoy sa uma.",
+    "example_english": "The tree in the farm is tall."
+  }
+
 ]

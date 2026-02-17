@@ -30,15 +30,18 @@ class DatabaseService{
     if (onboardingCompleted != null) dataToUpdate['onboardingCompleted'] = onboardingCompleted;
 
     if (dataToUpdate.isNotEmpty) {
-      return await usersCollection.doc(uid).update(dataToUpdate);
+      // Use set with merge: true to create the document if it doesn't exist,
+      // or update it if it does, without overwriting existing fields.
+      return await usersCollection.doc(uid).set(dataToUpdate, SetOptions(merge: true));
     }
   }
 
   // New method to update the theme preference (isDarkMode)
   Future<void> updateTheme(bool isDarkMode) async {
-    return await usersCollection.doc(uid).update({
+    // Use set with merge: true for theme preference as well
+    return await usersCollection.doc(uid).set({
       'isDarkMode': isDarkMode,
-    });
+    }, SetOptions(merge: true));
   }
 
   // brew list from snapshot

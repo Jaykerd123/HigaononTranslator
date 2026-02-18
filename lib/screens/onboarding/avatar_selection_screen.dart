@@ -1,8 +1,7 @@
-
-import 'dart:io';
-import 'package:fireb/screens/onboarding/username_theme_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:fireb/screens/services/database.dart';
+import 'package:provider/provider.dart';
+import 'package:fireb/models/user.dart';
 
 class AvatarSelectionScreen extends StatefulWidget {
   const AvatarSelectionScreen({super.key});
@@ -13,95 +12,74 @@ class AvatarSelectionScreen extends StatefulWidget {
 
 class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
   final List<String> _avatars = [
-    'assets/avatar/anby.webp',
-    'assets/avatar/billy.webp',
-    'assets/avatar/corin.webp',
-    'assets/avatar/miyabi.webp',
-    'assets/avatar/nicole.webp',
-    'assets/avatar/lighter.webp',
-    'assets/avatar/harumasa.webp',
-    'assets/avatar/nekomata.webp',
+    'assets/avatar/avatar1.png',
+    'assets/avatar/avatar2.png',
+    'assets/avatar/avatar3.png',
+    'assets:/avatar/avatar4.png',
+    'assets/avatar/avatar5.png',
+    'assets/avatar/avatar6.png',
   ];
 
   String? _selectedAvatar;
-  File? _customAvatar;
 
-  Future<void> _pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _customAvatar = File(pickedFile.path);
-        _selectedAvatar = null;
-      });
-    }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final userData = Provider.of<UserData?>(context);
+    _selectedAvatar = userData?.avatarUrl;
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<CustomUser?>(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose Your Avatar'),
+        title: const Text('Select Avatar'),
       ),
-      body: Padding(
+      body: GridView.builder(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemCount: _avatars.length,
-                itemBuilder: (context, index) {
-                  final avatar = _avatars[index];
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedAvatar = avatar;
-                        _customAvatar = null;
-                      });
-                    },
-                    child: CircleAvatar(
-                      radius: 40,
-                      backgroundImage: AssetImage(avatar),
-                      child: _selectedAvatar == avatar
-                          ? const Icon(Icons.check_circle, size: 30)
-                          : null,
-                    ),
-                  );
-                },
-              ),
-            ),
-            if (_customAvatar != null)
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: FileImage(_customAvatar!),
-                child: const Icon(Icons.check_circle, size: 30),
-              ),
-            ElevatedButton(
-              onPressed: _pickImage,
-              child: const Text('Upload Your Own'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UsernameThemeScreen(
-                      avatar: _selectedAvatar ?? _customAvatar!.path,
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Next'),
-            ),
-          ],
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 16.0,
+          mainAxisSpacing: 16.0,
         ),
+        itemCount: _avatars.length,
+        itemBuilder: (context, index) {
+          final avatar = _avatars[index];
+          final isSelected = avatar == _selectedAvatar;
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedAvatar = avatar;
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: isSelected
+                    ? Border.all(color: Colors.blue, width: 3)
+                    : null,
+              ),
+              child: CircleAvatar(
+                radius: 40,
+                backgroundImage: AssetImage(avatar),
+              ),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          if (_selectedAvatar != null) {
+            await DatabaseService(uid: user?.uid).updateUserData(
+              profileImageUrl: _selectedAvatar,
+            );
+            Navigator.pop(context);
+          }
+        },
+        child: const Icon(Icons.save),
       ),
     );
   }

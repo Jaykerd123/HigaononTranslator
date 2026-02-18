@@ -44,10 +44,9 @@ dependencies:
   permission_handler: ^11.3.1
   audio_waveforms: ^1.0.5
   flutter_tts: ^4.0.2
-  speech_to_text: ^7.3.0 # Updated speech_to_text dependency
-  shared_preferences: ^2.2.0 # Added shared_preferences
-  firebase_storage: ^11.0.0 # Added firebase_storage
-  audioplayers: ^6.0.0
+  speech_to_text: ^7.3.0
+  shared_preferences: ^2.2.0
+  firebase_storage: ^11.0.0
 
 dev_dependencies:
   flutter_test:
@@ -76,7 +75,7 @@ flutter:
   assets:
      - assets/sagiri.jpg
      - assets/teaparty.jpg
-     - assets/avatars/
+     - assets/avatar/
      - assets/app_logo/
      - assets/social_icons/
      - assets/dictionary.json

@@ -145,12 +145,32 @@ class _MenuScreenState extends State<MenuScreen> {
               // User Container
               GestureDetector(
                 onTap: () => _showAvatarSelection(context),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _getAvatarImage(userData?.avatarUrl),
-                  onBackgroundImageError: (exception, stackTrace) {
-                    print('[MenuScreen] Error loading avatar image: $exception');
-                  },
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundImage: _getAvatarImage(userData?.avatarUrl),
+                      onBackgroundImageError: (exception, stackTrace) {
+                        print('[MenuScreen] Error loading avatar image: $exception');
+                      },
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.camera_alt,
+                          size: 20,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),

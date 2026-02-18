@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:fireb/widgets/audio_spectrum.dart';
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
@@ -208,21 +209,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
         children: [
           SizedBox(
             height: 70,
-            child: _speechEnabled && _recorderController != null && _speechToText.isListening
-                ? AudioWaveform(
-                    height: 50,
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    recorderController: _recorderController!,
-                    waveStyle: const WaveStyle(
-                      waveColor: Colors.red,
-                      showDurationLabel: false,
-                      spacing: 8.0,
-                      showBottom: false,
-                      extendWaveform: true,
-                      showMiddleLine: false,
-                    ),
-                  )
-                : const SizedBox(height: 50), // Placeholder to prevent layout shift
+            child: (_speechEnabled && _recorderController != null && _speechToText.isListening)
+                ? AudioSpectrum(recorderController: _recorderController!)
+                : const SizedBox(height: 50),
           ),
           GestureDetector(
             onTap: _speechToText.isNotListening ? _startListening : _stopListening,

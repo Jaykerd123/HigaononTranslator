@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +30,8 @@ class _TranslateScreenState extends State<TranslateScreen> {
   String _lastWords = '';
   String _translationResult = '';
   final AudioPlayer _audioPlayer = AudioPlayer();
+  late final RecorderController _recorderController;
+
 
   @override
   void initState() {
@@ -37,6 +40,11 @@ class _TranslateScreenState extends State<TranslateScreen> {
     _loadDictionary();
     _searchController.addListener(_onSearchChanged);
     _initSpeech();
+    _recorderController = RecorderController()
+      ..androidEncoder = AndroidEncoder.aac
+      ..androidOutputFormat = AndroidOutputFormat.mpeg4
+      ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
+      ..sampleRate = 16000;
   }
 
   void _initSpeech() async {
@@ -51,6 +59,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   void _startListening() async {
     await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
+    await _recorderController.record();
     await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US'); // English input
     setState(() {
       _lastWords = ''; // Clear previous recognized words
@@ -60,6 +69,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   void _stopListening() async {
     await _audioPlayer.play(AssetSource('sounds/mic_off.mp3'));
+    await _recorderController.stop();
     await _speechToText.stop();
     setState(() {
       if (_lastWords.isEmpty && _translationResult == 'Listening...') {
@@ -153,6 +163,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     _searchController.dispose();
     _flutterTts.stop();
     _audioPlayer.dispose();
+    _recorderController.dispose();
     super.dispose();
   }
 
@@ -191,6 +202,20 @@ class _TranslateScreenState extends State<TranslateScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(height: 20),
+          AudioWaveform(            
+            height: 50,
+            width: MediaQuery.of(context).size.width * 0.8,
+            recorderController: _recorderController,
+            waveStyle: const WaveStyle(              
+              waveColor: Colors.red,
+              showDurationLabel: false,
+              spacing: 8.0,
+              showBottom: false,
+              extendWaveform: true,
+              showMiddleLine: false,
+            ),
+          ),
           const SizedBox(height: 20),
           GestureDetector(
             onTap: _speechToText.isNotListening ? _startListening : _stopListening,

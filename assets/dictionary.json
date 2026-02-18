@@ -198,5 +198,37 @@
     "english": "Run",
     "example_higaonon": "Magdagan kita.",
     "example_english": "Let's run."
+  },
+  {
+    "higaonon": "Eskwelahan",
+    "tagalog": "Paaralan",
+    "part_of_speech": "Noun",
+    "english": "School",
+    "example_higaonon": "An mga bata naga-eskwela sa eskwelahan.",
+    "example_english": "The children are studying in the school."
+  },
+  {
+    "higaonon": "Maestro / Maestra",
+    "tagalog": "Guro",
+    "part_of_speech": "Noun",
+    "english": "Teacher",
+    "example_higaonon": "An maestro nagatudlo sa mga bata.",
+    "example_english": "The teacher is teaching the children."
+  },
+  {
+    "higaonon": "Estudyante",
+    "tagalog": "Mag-aaral",
+    "part_of_speech": "Noun",
+    "english": "Student",
+    "example_higaonon": "An mga estudyante nagabasa sa libro.",
+    "example_english": "The students are reading a book."
+  },
+  {
+    "higaonon": "Libro",
+    "tagalog": "Aklat",
+    "part_of_speech": "Noun",
+    "english": "Book",
+    "example_higaonon": "Gusto ko magbasa ug libro.",
+    "example_english": "I want to read a book."
   }
 ]

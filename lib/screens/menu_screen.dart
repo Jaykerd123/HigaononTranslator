@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:fireb/models/user.dart';
@@ -14,11 +13,21 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
+
+  @override
+  State<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+  XFile? _selectedImage;
 
   ImageProvider _getAvatarImage(String? avatarUrl) {
     print('[MenuScreen] _getAvatarImage called with avatarUrl: $avatarUrl');
+    if (_selectedImage != null) {
+      return FileImage(File(_selectedImage!.path));
+    }
     if (avatarUrl == null || avatarUrl.isEmpty) {
       print('[MenuScreen] No avatarUrl, using default avatar.');
       return const AssetImage('assets/sagiri.jpg'); // Default avatar
@@ -54,20 +63,9 @@ class MenuScreen extends StatelessWidget {
                 final XFile? image = await picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
                   print('[MenuScreen] Image selected from gallery: ${image.path}');
-                  if (user != null) {
-                    final dbService = DatabaseService(uid: user.uid);
-                    final imageUrl = await dbService.uploadProfilePicture(image.path);
-                    if (imageUrl.isNotEmpty) {
-                      print('[MenuScreen] Image uploaded to storage. Updating user data with URL: $imageUrl');
-                      await dbService.updateUserData(
-                        profileImageUrl: imageUrl,
-                      );
-                    } else {
-                      print('[MenuScreen] Image upload failed.');
-                    }
-                  }
-                } else {
-                  print('[MenuScreen] No image selected from gallery.');
+                  setState(() {
+                    _selectedImage = image;
+                  });
                 }
               },
             ),
@@ -89,6 +87,27 @@ class MenuScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _saveProfilePicture() async {
+    if (_selectedImage == null) return;
+
+    final user = Provider.of<CustomUser?>(context, listen: false);
+    if (user != null) {
+      final dbService = DatabaseService(uid: user.uid);
+      final imageUrl = await dbService.uploadProfilePicture(_selectedImage!.path);
+      if (imageUrl.isNotEmpty) {
+        print('[MenuScreen] Image uploaded to storage. Updating user data with URL: $imageUrl');
+        await dbService.updateUserData(
+          profileImageUrl: imageUrl,
+        );
+        setState(() {
+          _selectedImage = null;
+        });
+      } else {
+        print('[MenuScreen] Image upload failed.');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<UserData?>(context);
@@ -100,6 +119,13 @@ class MenuScreen extends StatelessWidget {
         title: const Text('Menu'),
         elevation: 0,
         backgroundColor: Colors.transparent,
+        actions: [
+          if (_selectedImage != null)
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: _saveProfilePicture,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

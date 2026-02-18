@@ -49,7 +49,7 @@ class DatabaseService{
     try {
       final ref = _storage.ref().child('user_avatars').child('$uid.jpg');
       print('[DatabaseService] Storage reference: ${ref.fullPath}');
-      final uploadTask = await ref.putFile(File(imagePath));
+      final uploadTask = await ref.putFile(File(imagePath), SettableMetadata(contentType: 'image/jpeg'));
       final url = await uploadTask.ref.getDownloadURL();
       print('[DatabaseService] Upload successful. Image URL: $url');
       return url;

@@ -88,10 +88,15 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Future<void> _saveProfilePicture() async {
-    if (_selectedImage == null) return;
+    print('[MenuScreen] _saveProfilePicture called');
+    if (_selectedImage == null) {
+      print('[MenuScreen] No image selected, aborting save.');
+      return;
+    }
 
     final user = Provider.of<CustomUser?>(context, listen: false);
     if (user != null) {
+      print('[MenuScreen] User found, proceeding with upload.');
       final dbService = DatabaseService(uid: user.uid);
       final imageUrl = await dbService.uploadProfilePicture(_selectedImage!.path);
       if (imageUrl.isNotEmpty) {
@@ -99,12 +104,16 @@ class _MenuScreenState extends State<MenuScreen> {
         await dbService.updateUserData(
           profileImageUrl: imageUrl,
         );
+        print('[MenuScreen] User data updated successfully.');
         setState(() {
           _selectedImage = null;
         });
+        print('[MenuScreen] Selected image reset.');
       } else {
         print('[MenuScreen] Image upload failed.');
       }
+    } else {
+      print('[MenuScreen] User not found, cannot save profile picture.');
     }
   }
 

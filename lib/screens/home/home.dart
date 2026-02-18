@@ -252,19 +252,63 @@ class _HomeScreenState extends State<_HomeScreen> {
     );
   }
 
+  Widget _buildHistoryListView(HistoryService historyService) {
+    final int effectiveItemCount = _showAllHistory
+        ? historyService.history.length
+        : min(_historyDisplayLimit, historyService.history.length);
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: effectiveItemCount,
+      itemBuilder: (context, index) {
+        final word = historyService.history[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            title: Text(word.higaonon),
+            subtitle: Text(word.english),
+            trailing: IconButton(
+              icon: const Icon(Icons.volume_up, size: 22),
+              onPressed: () => _speak(word),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildHistorySection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'History',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.textTheme.bodySmall?.color),
-        ),
-        const SizedBox(height: 12),
-        Consumer<HistoryService>(
-          builder: (context, historyService, child) {
-            if (historyService.history.isEmpty) {
-              return Container(
+    return Consumer<HistoryService>(
+      builder: (context, historyService, child) {
+        final showToggle = historyService.history.length > _historyDisplayLimit;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'History',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: theme.textTheme.bodySmall?.color),
+                ),
+                if (showToggle)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _showAllHistory = !_showAllHistory;
+                      });
+                    },
+                    child: Text(_showAllHistory ? 'Show Less' : 'Show All'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (historyService.history.isEmpty)
+              Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -274,72 +318,17 @@ class _HomeScreenState extends State<_HomeScreen> {
                 child: Center(
                   child: Text(
                     'Your browsing history will appear here.',
-                    style: TextStyle(color: theme.textTheme.bodySmall?.color, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                        color: theme.textTheme.bodySmall?.color,
+                        fontStyle: FontStyle.italic),
                   ),
                 ),
-              );
-            } else {
-              final int effectiveItemCount = _showAllHistory
-                  ? historyService.history.length
-                  : min(_historyDisplayLimit, historyService.history.length);
-
-              return Column(
-                children: [
-                  _showAllHistory
-                      ? ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: effectiveItemCount,
-                          itemBuilder: (context, index) {
-                            final word = historyService.history[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              child: ListTile(
-                                title: Text(word.higaonon),
-                                subtitle: Text(word.english),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.volume_up, size: 22),
-                                  onPressed: () => _speak(word),
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                      : SizedBox(
-                          height: 150, // Keep original fixed height for limited display
-                          child: ListView.builder(
-                            itemCount: effectiveItemCount,
-                            itemBuilder: (context, index) {
-                              final word = historyService.history[index];
-                              return Card(
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                child: ListTile(
-                                  title: Text(word.higaonon),
-                                  subtitle: Text(word.english),
-                                  trailing: IconButton(
-                                    icon: const Icon(Icons.volume_up, size: 22),
-                                    onPressed: () => _speak(word),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                  if (!_showAllHistory && historyService.history.length > _historyDisplayLimit)
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _showAllHistory = true;
-                        });
-                      },
-                      child: const Text('Show All'),
-                    ),
-                ],
-              );
-            }
-          },
-        ),
-      ],
+              )
+            else
+              _buildHistoryListView(historyService),
+          ],
+        );
+      },
     );
   }
 }

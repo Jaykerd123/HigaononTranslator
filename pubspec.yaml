@@ -47,6 +47,7 @@ dependencies:
   speech_to_text: ^7.3.0 # Updated speech_to_text dependency
   shared_preferences: ^2.2.0 # Added shared_preferences
   firebase_storage: ^11.0.0 # Added firebase_storage
+  audioplayers: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +80,7 @@ flutter:
      - assets/app_logo/
      - assets/social_icons/
      - assets/dictionary.json
+     - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

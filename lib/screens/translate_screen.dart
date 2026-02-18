@@ -30,8 +30,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   String _lastWords = '';
   String _translationResult = '';
   final AudioPlayer _audioPlayer = AudioPlayer();
-  late final RecorderController _recorderController;
-
+  RecorderController? _recorderController;
 
   @override
   void initState() {
@@ -40,40 +39,46 @@ class _TranslateScreenState extends State<TranslateScreen> {
     _loadDictionary();
     _searchController.addListener(_onSearchChanged);
     _initSpeech();
-    _recorderController = RecorderController()
-      ..androidEncoder = AndroidEncoder.aac
-      ..androidOutputFormat = AndroidOutputFormat.mpeg4
-      ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
-      ..sampleRate = 16000;
   }
 
   void _initSpeech() async {
     final status = await Permission.microphone.request();
-    if (status.isGranted) {
-      _speechEnabled = await _speechToText.initialize();
-    } else {
-      _speechEnabled = false;
+    if (mounted) {
+      if (status.isGranted) {
+        _speechEnabled = await _speechToText.initialize();
+        if (_speechEnabled) {
+          _recorderController = RecorderController()
+            ..androidEncoder = AndroidEncoder.aac
+            ..androidOutputFormat = AndroidOutputFormat.mpeg4
+            ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
+            ..sampleRate = 16000;
+        }
+      } else {
+        _speechEnabled = false;
+      }
+      setState(() {});
     }
-    setState(() {});
   }
 
   void _startListening() async {
+    if (!_speechEnabled || _recorderController == null || _speechToText.isListening) return;
     await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
-    await _recorderController.record();
-    await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US'); // English input
+    await _recorderController!.record();
+    await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US');
     setState(() {
-      _lastWords = ''; // Clear previous recognized words
-      _translationResult = 'Listening...'; // Show listening state
+      _lastWords = '';
+      _translationResult = 'Listening...';
     });
   }
 
   void _stopListening() async {
+    if (!_speechEnabled || _recorderController == null || !_speechToText.isListening) return;
     await _audioPlayer.play(AssetSource('sounds/mic_off.mp3'));
-    await _recorderController.stop();
+    await _recorderController!.stop();
     await _speechToText.stop();
     setState(() {
       if (_lastWords.isEmpty && _translationResult == 'Listening...') {
-        _translationResult = ''; // Clear if nothing was recognized
+        _translationResult = '';
       }
     });
   }
@@ -83,21 +88,20 @@ class _TranslateScreenState extends State<TranslateScreen> {
       _lastWords = result.recognizedWords;
     });
 
-    // Only translate when the speech recognizer has a final result
     if (result.finalResult) {
       _translateVoiceInput();
     }
   }
 
   String _normalizeString(String text) {
-    return text.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), ''); // Remove punctuation
+    return text.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), '');
   }
 
   void _translateVoiceInput() {
     if (_lastWords.isNotEmpty) {
       final normalizedLastWords = _normalizeString(_lastWords);
       final foundSentence = _words.firstWhere(
-        (word) => _normalizeString(word.exampleEnglish) == normalizedLastWords, // Search by normalized English example sentence
+        (word) => _normalizeString(word.exampleEnglish) == normalizedLastWords,
         orElse: () => Word(
             higaonon: '',
             english: '',
@@ -107,16 +111,15 @@ class _TranslateScreenState extends State<TranslateScreen> {
             exampleEnglish: ''),
       );
       setState(() {
-        _translationResult = foundSentence.exampleHigaonon; // Translate to Higaonon example sentence
+        _translationResult = foundSentence.exampleHigaonon;
       });
 
       if (foundSentence.higaonon.isNotEmpty) {
-        print('TranslateScreen: Adding translated word to history...');
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
       }
     } else {
       setState(() {
-        _translationResult = 'Please speak something.'; // Prompt user if no words were recognized
+        _translationResult = 'Please speak something.';
       });
     }
   }
@@ -128,10 +131,12 @@ class _TranslateScreenState extends State<TranslateScreen> {
   Future<void> _loadDictionary() async {
     final String response = await rootBundle.loadString('assets/dictionary.json');
     final data = await json.decode(response) as List;
-    setState(() {
-      _words = data.map((word) => Word.fromJson(word)).toList();
-      _words.sort((a, b) => a.higaonon.compareTo(b.higaonon));
-    });
+    if (mounted) {
+      setState(() {
+        _words = data.map((word) => Word.fromJson(word)).toList();
+        _words.sort((a, b) => a.higaonon.compareTo(b.higaonon));
+      });
+    }
   }
 
   void _onSearchChanged() {
@@ -153,7 +158,6 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _speak(Word word) async {
-    print('TranslateScreen: _speak function called for word: ${word.higaonon}. Attempting to add to history.');
     Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
     await _flutterTts.speak(word.higaonon);
   }
@@ -163,7 +167,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     _searchController.dispose();
     _flutterTts.stop();
     _audioPlayer.dispose();
-    _recorderController.dispose();
+    _recorderController?.dispose();
     super.dispose();
   }
 
@@ -202,21 +206,24 @@ class _TranslateScreenState extends State<TranslateScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
-          AudioWaveform(            
-            height: 50,
-            width: MediaQuery.of(context).size.width * 0.8,
-            recorderController: _recorderController,
-            waveStyle: const WaveStyle(              
-              waveColor: Colors.red,
-              showDurationLabel: false,
-              spacing: 8.0,
-              showBottom: false,
-              extendWaveform: true,
-              showMiddleLine: false,
-            ),
+          SizedBox(
+            height: 70,
+            child: _speechEnabled && _recorderController != null && _speechToText.isListening
+                ? AudioWaveform(
+                    height: 50,
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    recorderController: _recorderController!,
+                    waveStyle: const WaveStyle(
+                      waveColor: Colors.red,
+                      showDurationLabel: false,
+                      spacing: 8.0,
+                      showBottom: false,
+                      extendWaveform: true,
+                      showMiddleLine: false,
+                    ),
+                  )
+                : const SizedBox(height: 50), // Placeholder to prevent layout shift
           ),
-          const SizedBox(height: 20),
           GestureDetector(
             onTap: _speechToText.isNotListening ? _startListening : _stopListening,
             child: CircleAvatar(
@@ -249,7 +256,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                     const Text('Recognized (English):', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(_lastWords.isNotEmpty ? _lastWords : 'Speak something...'),
                     const SizedBox(height: 10),
-                    const Text('Translation (Higaonon):', style: TextStyle(fontWeight: FontWeight.bold)), // Changed label to Higaonon
+                    const Text('Translation (Higaonon):', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(_translationResult),
                   ],
                 ),

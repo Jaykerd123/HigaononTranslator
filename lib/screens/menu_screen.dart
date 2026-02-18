@@ -5,6 +5,7 @@ import 'package:fireb/models/user.dart';
 import 'package:fireb/screens/about_screen.dart';
 import 'package:fireb/screens/dictionary_screen.dart';
 import 'package:fireb/screens/learning_history_screen.dart';
+import 'package:fireb/screens/profile_screen.dart';
 import 'package:fireb/screens/services/auth.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:fireb/screens/settings_screen.dart';
@@ -55,7 +56,10 @@ class MenuScreen extends StatelessWidget {
               ),
               TextButton.icon(
                 onPressed: () {
-                  // TODO: Implement profile screen navigation
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  );
                 },
                 icon: const Icon(Icons.person_outline, size: 18),
                 label: const Text(

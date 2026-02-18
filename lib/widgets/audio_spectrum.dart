@@ -13,11 +13,13 @@ class AudioSpectrum extends StatefulWidget {
 class _AudioSpectrumState extends State<AudioSpectrum> {
   @override
   Widget build(BuildContext context) {
-    return AudioWaveform(
-      height: 50,
-      width: MediaQuery.of(context).size.width * 0.8,
+    return AudioWaveforms(
+      size: Size(
+        MediaQuery.of(context).size.width * 0.8,
+        50,
+      ),
       recorderController: widget.recorderController,
-      waveStyle: WaveStyle(
+      waveStyle: const WaveStyle(
         waveColor: Colors.red,
         showDurationLabel: false,
         spacing: 8.0,

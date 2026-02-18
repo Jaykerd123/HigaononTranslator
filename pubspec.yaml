@@ -75,7 +75,7 @@ flutter:
   assets:
      - assets/sagiri.jpg
      - assets/teaparty.jpg
-     - assets/avatar/
+     - assets/avatars/
      - assets/app_logo/
      - assets/social_icons/
      - assets/dictionary.json

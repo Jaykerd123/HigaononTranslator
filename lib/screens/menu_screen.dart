@@ -23,6 +23,8 @@ class MenuScreen extends StatelessWidget {
     }
     if (avatarUrl.startsWith('assets/')) {
       return AssetImage(avatarUrl);
+    } else if (avatarUrl.startsWith('http')) {
+      return NetworkImage(avatarUrl);
     } else {
       return FileImage(File(avatarUrl));
     }
@@ -43,9 +45,13 @@ class MenuScreen extends StatelessWidget {
                 final XFile? image = await picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
                   final user = Provider.of<CustomUser?>(context, listen: false);
-                  await DatabaseService(uid: user?.uid).updateUserData(
-                    profileImageUrl: image.path,
-                  );
+                  final dbService = DatabaseService(uid: user?.uid);
+                  final imageUrl = await dbService.uploadProfilePicture(image.path);
+                  if (imageUrl.isNotEmpty) {
+                    await dbService.updateUserData(
+                      profileImageUrl: imageUrl,
+                    );
+                  }
                 }
               },
             ),

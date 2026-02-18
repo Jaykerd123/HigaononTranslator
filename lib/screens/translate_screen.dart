@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'package:audioplayers/audioplayers.dart';
-import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +8,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:fireb/widgets/audio_spectrum.dart';
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
@@ -30,8 +27,6 @@ class _TranslateScreenState extends State<TranslateScreen> {
   bool _speechEnabled = false;
   String _lastWords = '';
   String _translationResult = '';
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  RecorderController? _recorderController;
 
   @override
   void initState() {
@@ -50,13 +45,6 @@ class _TranslateScreenState extends State<TranslateScreen> {
           onStatus: (status) => print('[SpeechToText] Status: $status'),
           onError: (error) => print('[SpeechToText] Error: $error'),
         );
-        if (_speechEnabled) {
-          _recorderController = RecorderController()
-            ..androidEncoder = AndroidEncoder.aac
-            ..androidOutputFormat = AndroidOutputFormat.mpeg4
-            ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
-            ..sampleRate = 16000;
-        }
       } else {
         _speechEnabled = false;
       }
@@ -65,11 +53,14 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _startListening() async {
-    if (!_speechEnabled || _recorderController == null || _speechToText.isListening) return;
+    if (!_speechEnabled || _speechToText.isListening) return;
     print("--- Start Listening ---");
-    await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
-    await _recorderController!.record();
-    await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US');
+    await _speechToText.listen(
+      onResult: _onSpeechResult,
+      localeId: 'en_US',
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+    );
     setState(() {
       _lastWords = '';
       _translationResult = 'Listening...';
@@ -77,12 +68,8 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _stopListening() async {
-    if (!_speechEnabled || _recorderController == null || !_speechToText.isListening) return;
+    if (!_speechEnabled) return;
     print("--- Stop Listening (Manual) ---");
-    await _audioPlayer.play(AssetSource('sounds/mic_off.mp3'));
-    if (_recorderController!.isRecording) {
-      await _recorderController!.stop();
-    }
     if (_speechToText.isListening) {
       await _speechToText.stop();
     }
@@ -96,15 +83,14 @@ class _TranslateScreenState extends State<TranslateScreen> {
   void _onSpeechResult(SpeechRecognitionResult result) {
     print("[SpeechToText] Result: ${result.recognizedWords}, Final: ${result.finalResult}");
     setState(() {
-        _lastWords = result.recognizedWords;
+      _lastWords = result.recognizedWords;
     });
 
     if (result.finalResult) {
-        print("[SpeechToText] Final result received. Translating.");
-        _translateVoiceInput();
+      print("[SpeechToText] Final result received. Translating.");
+      _translateVoiceInput();
     }
   }
-
 
   String _normalizeString(String text) {
     return text.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), '');
@@ -133,7 +119,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
       }
     } else {
-       print("No voice input to translate.");
+      print("No voice input to translate.");
       setState(() {
         _translationResult = 'Please speak something.';
       });
@@ -182,8 +168,6 @@ class _TranslateScreenState extends State<TranslateScreen> {
   void dispose() {
     _searchController.dispose();
     _flutterTts.stop();
-    _audioPlayer.dispose();
-    _recorderController?.dispose();
     super.dispose();
   }
 
@@ -222,12 +206,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            height: 70,
-            child: (_speechEnabled && _recorderController != null && _speechToText.isListening)
-                ? AudioSpectrum(recorderController: _recorderController!)
-                : const SizedBox(height: 50),
-          ),
+          const SizedBox(height: 70), // Placeholder for the waveform
           GestureDetector(
             onTap: _speechToText.isNotListening ? _startListening : _stopListening,
             child: CircleAvatar(

@@ -28,11 +28,13 @@ class _WrapperState extends State<Wrapper> {
     print('Wrapper: _checkOnboardingStatus started.');
     final prefs = await SharedPreferences.getInstance();
     final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
-    setState(() {
-      _showOnboarding = !onboardingCompleted;
-      _isLoading = false;
-      print('Wrapper: _checkOnboardingStatus completed. _showOnboarding: $_showOnboarding, _isLoading: $_isLoading');
-    });
+    if (mounted) {
+      setState(() {
+        _showOnboarding = !onboardingCompleted;
+        _isLoading = false;
+        print('Wrapper: _checkOnboardingStatus completed. _showOnboarding: $_showOnboarding, _isLoading: $_isLoading');
+      });
+    }
   }
 
   @override

@@ -25,6 +25,7 @@ class DatabaseService{
     bool? isDarkMode,
     bool? onboardingCompleted,
   }) async {
+    print('[DatabaseService] updateUserData called for uid: $uid');
     Map<String, dynamic> dataToUpdate = {};
     if (sugar != null) dataToUpdate['sugar'] = sugar;
     if (name != null) dataToUpdate['name'] = name;
@@ -34,20 +35,26 @@ class DatabaseService{
     if (onboardingCompleted != null) dataToUpdate['onboardingCompleted'] = onboardingCompleted;
 
     if (dataToUpdate.isNotEmpty) {
+      print('[DatabaseService] Data to update: $dataToUpdate');
       // Use set with merge: true to create the document if it doesn't exist,
       // or update it if it does, without overwriting existing fields.
       return await usersCollection.doc(uid).set(dataToUpdate, SetOptions(merge: true));
+    } else {
+      print('[DatabaseService] No data to update.');
     }
   }
 
   Future<String> uploadProfilePicture(String imagePath) async {
+    print('[DatabaseService] Starting profile picture upload from path: $imagePath');
     try {
       final ref = _storage.ref().child('user_avatars').child('$uid.jpg');
+      print('[DatabaseService] Storage reference: ${ref.fullPath}');
       final uploadTask = await ref.putFile(File(imagePath));
       final url = await uploadTask.ref.getDownloadURL();
+      print('[DatabaseService] Upload successful. Image URL: $url');
       return url;
     } catch (e) {
-      print('Error uploading profile picture: $e');
+      print('[DatabaseService] Error uploading profile picture: $e');
       return '';
     }
   }

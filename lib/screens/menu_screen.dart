@@ -18,19 +18,25 @@ class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
 
   ImageProvider _getAvatarImage(String? avatarUrl) {
+    print('[MenuScreen] _getAvatarImage called with avatarUrl: $avatarUrl');
     if (avatarUrl == null || avatarUrl.isEmpty) {
+      print('[MenuScreen] No avatarUrl, using default avatar.');
       return const AssetImage('assets/sagiri.jpg'); // Default avatar
     }
     if (avatarUrl.startsWith('assets/')) {
+      print('[Menu.dart] avatarUrl is an asset, using AssetImage');
       return AssetImage(avatarUrl);
     } else if (avatarUrl.startsWith('http')) {
+      print('[MenuScreen] avatarUrl is a network image, using NetworkImage');
       return NetworkImage(avatarUrl);
     } else {
+      print('[MenuScreen] avatarUrl is a file path, using FileImage');
       return FileImage(File(avatarUrl));
     }
   }
 
   void _showAvatarSelection(BuildContext context) {
+    print('[MenuScreen] _showAvatarSelection called');
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -40,18 +46,25 @@ class MenuScreen extends StatelessWidget {
               leading: const Icon(Icons.photo_library),
               title: const Text('Select Profile Picture'),
               onTap: () async {
+                print('[MenuScreen] Select Profile Picture tapped');
                 Navigator.pop(context);
                 final picker = ImagePicker();
                 final XFile? image = await picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
+                  print('[MenuScreen] Image selected from gallery: ${image.path}');
                   final user = Provider.of<CustomUser?>(context, listen: false);
                   final dbService = DatabaseService(uid: user?.uid);
                   final imageUrl = await dbService.uploadProfilePicture(image.path);
                   if (imageUrl.isNotEmpty) {
+                     print('[MenuScreen] Image uploaded to storage. Updating user data with URL: $imageUrl');
                     await dbService.updateUserData(
                       profileImageUrl: imageUrl,
                     );
+                  } else {
+                    print('[MenuScreen] Image upload failed.');
                   }
+                } else {
+                  print('[MenuScreen] No image selected from gallery.');
                 }
               },
             ),
@@ -59,6 +72,7 @@ class MenuScreen extends StatelessWidget {
               leading: const Icon(Icons.face),
               title: const Text('Change Avatar'),
               onTap: () {
+                print('[MenuScreen] Change Avatar tapped');
                 Navigator.pop(context);
                 Navigator.push(
                   context,
@@ -76,6 +90,7 @@ class MenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final userData = Provider.of<UserData?>(context);
     final auth = Provider.of<AuthService>(context);
+    print('[MenuScreen] build called. UserData avatarUrl: ${userData?.avatarUrl}');
 
     return Scaffold(
       appBar: AppBar(

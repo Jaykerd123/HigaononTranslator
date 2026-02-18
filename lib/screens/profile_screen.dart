@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fireb/models/user.dart';
 import 'package:fireb/screens/onboarding/avatar_selection_screen.dart';
 import 'package:fireb/screens/services/database.dart';
@@ -29,12 +31,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  ImageProvider? _getAvatarImage(String? avatarUrl) {
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      return null;
+    }
+    if (avatarUrl.startsWith('assets/')) {
+      return AssetImage(avatarUrl);
+    } else if (avatarUrl.startsWith('http')) {
+      return NetworkImage(avatarUrl);
+    } else {
+      return FileImage(File(avatarUrl));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<CustomUser?>(context);
     final userData = Provider.of<UserData?>(context);
     final firebaseUser = FirebaseAuth.instance.currentUser;
     final avatarUrl = userData?.avatarUrl;
+    final ImageProvider? avatarImage = _getAvatarImage(avatarUrl);
 
     return Scaffold(
       appBar: AppBar(
@@ -86,10 +102,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: CircleAvatar(
                       radius: 50,
-                      backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
-                          ? NetworkImage(avatarUrl)
-                          : null,
-                      child: (avatarUrl == null || avatarUrl.isEmpty)
+                      backgroundImage: avatarImage,
+                      child: avatarImage == null
                           ? const Icon(Icons.person, size: 50)
                           : null,
                     ),

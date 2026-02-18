@@ -1,4 +1,3 @@
-
 [
   {
     "higaonon": "Bana",
@@ -79,8 +78,7 @@
     "english": "Drink",
     "example_higaonon": "Gusto ko moinom ug tubig.",
     "example_english": "I want to drink water."
-  }
-,
+  },
   {
     "higaonon": "Tubig",
     "tagalog": "Tubig",
@@ -160,6 +158,85 @@
     "english": "Tree",
     "example_higaonon": "Ta-as an kahoy sa uma.",
     "example_english": "The tree in the farm is tall."
+  },
+  {
+    "higaonon": "Lalaki",
+    "tagalog": "Lalaki",
+    "part_of_speech": "Noun",
+    "english": "Man",
+    "example_higaonon": "An lalaki naga-uma.",
+    "example_english": "The man is farming."
+  },
+  {
+    "higaonon": "Babaye",
+    "tagalog": "Babae",
+    "part_of_speech": "Noun",
+    "english": "Woman",
+    "example_higaonon": "An babaye nagaluto.",
+    "example_english": "The woman is cooking."
+  },
+  {
+    "higaonon": "Langit",
+    "tagalog": "Langit",
+    "part_of_speech": "Noun",
+    "english": "Sky",
+    "example_higaonon": "Asul an langit.",
+    "example_english": "The sky is blue."
+  },
+  {
+    "higaonon": "Bukid",
+    "tagalog": "Bundok",
+    "part_of_speech": "Noun",
+    "english": "Mountain",
+    "example_higaonon": "Mataas an bukid.",
+    "example_english": "The mountain is high."
+  },
+  {
+    "higaonon": "Dagan",
+    "tagalog": "Takbo",
+    "part_of_speech": "Verb",
+    "english": "Run",
+    "example_higaonon": "Magdagan kita.",
+    "example_english": "Let's run."
+  },
+  ,{
+  "higaonon": "Lalaki",
+  "tagalog": "Lalaki",
+  "part_of_speech": "Noun",
+  "english": "Man",
+  "example_higaonon": "An lalaki naga-uma.",
+  "example_english": "The man is farming."
+},
+  {
+    "higaonon": "Babaye",
+    "tagalog": "Babae",
+    "part_of_speech": "Noun",
+    "english": "Woman",
+    "example_higaonon": "An babaye nagaluto.",
+    "example_english": "The woman is cooking."
+  },
+  {
+    "higaonon": "Langit",
+    "tagalog": "Langit",
+    "part_of_speech": "Noun",
+    "english": "Sky",
+    "example_higaonon": "Asul an langit.",
+    "example_english": "The sky is blue."
+  },
+  {
+    "higaonon": "Bukid",
+    "tagalog": "Bundok",
+    "part_of_speech": "Noun",
+    "english": "Mountain",
+    "example_higaonon": "Mataas an bukid.",
+    "example_english": "The mountain is high."
+  },
+  {
+    "higaonon": "Dagan",
+    "tagalog": "Takbo",
+    "part_of_speech": "Verb",
+    "english": "Run",
+    "example_higaonon": "Magdagan kita.",
+    "example_english": "Let's run."
   }
-
 ]

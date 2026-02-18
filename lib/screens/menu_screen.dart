@@ -9,6 +9,7 @@ import 'package:fireb/screens/profile_screen.dart';
 import 'package:fireb/screens/services/auth.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:fireb/screens/settings_screen.dart';
+import 'package:fireb/screens/your_progress_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -202,10 +203,13 @@ class _MenuScreenState extends State<MenuScreen> {
               _buildMenuListItem(
                 context: context,
                 icon: Icons.show_chart,
-                title: 'Track Your Progress',
+                title: 'Your Progress',
                 subtitle: 'Track your learning',
                 onTap: () {
-                  // TODO: Implement navigation
+                   Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const YourProgressScreen()),
+                  );
                 },
               ),
               _buildMenuListItem(

@@ -46,7 +46,10 @@ class _TranslateScreenState extends State<TranslateScreen> {
     final status = await Permission.microphone.request();
     if (mounted) {
       if (status.isGranted) {
-        _speechEnabled = await _speechToText.initialize();
+        _speechEnabled = await _speechToText.initialize(
+          onStatus: (status) => print('[SpeechToText] Status: $status'),
+          onError: (error) => print('[SpeechToText] Error: $error'),
+        );
         if (_speechEnabled) {
           _recorderController = RecorderController()
             ..androidEncoder = AndroidEncoder.aac
@@ -63,6 +66,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   void _startListening() async {
     if (!_speechEnabled || _recorderController == null || _speechToText.isListening) return;
+    print("--- Start Listening ---");
     await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
     await _recorderController!.record();
     await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US');
@@ -74,6 +78,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   void _stopListening() async {
     if (!_speechEnabled || _recorderController == null || !_speechToText.isListening) return;
+    print("--- Stop Listening ---");
     await _audioPlayer.play(AssetSource('sounds/mic_off.mp3'));
     await _recorderController!.stop();
     await _speechToText.stop();
@@ -85,12 +90,13 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
+    print("[SpeechToText] Result: ${result.recognizedWords}");
     setState(() {
       _lastWords = result.recognizedWords;
     });
-
-    if (result.finalResult) {
-      _translateVoiceInput();
+    if(result.finalResult) {
+        print("[SpeechToText] Final Result: ${result.recognizedWords}");
+        _translateVoiceInput();
     }
   }
 
@@ -99,6 +105,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _translateVoiceInput() {
+    print("--- Translating Voice Input: '$_lastWords' ---");
     if (_lastWords.isNotEmpty) {
       final normalizedLastWords = _normalizeString(_lastWords);
       final foundSentence = _words.firstWhere(
@@ -111,6 +118,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
             exampleHigaonon: 'No translation found for sentence',
             exampleEnglish: ''),
       );
+      print("Translation result: ${foundSentence.exampleHigaonon}");
       setState(() {
         _translationResult = foundSentence.exampleHigaonon;
       });
@@ -119,6 +127,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
       }
     } else {
+       print("No voice input to translate.");
       setState(() {
         _translationResult = 'Please speak something.';
       });

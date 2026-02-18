@@ -30,7 +30,8 @@ class DatabaseService{
     if (sugar != null) dataToUpdate['sugar'] = sugar;
     if (name != null) dataToUpdate['name'] = name;
     if (strength != null) dataToUpdate['strength'] = strength;
-    if (profileImageUrl != null) dataToUpdate['avatarUrl'] = profileImageUrl;
+    // TEMPORARY: Always update the avatar URL to clear out bad data
+    dataToUpdate['avatarUrl'] = profileImageUrl;
     if (isDarkMode != null) dataToUpdate['isDarkMode'] = isDarkMode;
     if (onboardingCompleted != null) dataToUpdate['onboardingCompleted'] = onboardingCompleted;
 

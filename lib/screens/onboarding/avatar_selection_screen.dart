@@ -12,12 +12,14 @@ class AvatarSelectionScreen extends StatefulWidget {
 
 class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
   final List<String> _avatars = [
-    'assets/avatar/avatar1.png',
-    'assets/avatar/avatar2.png',
-    'assets/avatar/avatar3.png',
-    'assets:/avatar/avatar4.png',
-    'assets/avatar/avatar5.png',
-    'assets/avatar/avatar6.png',
+    'assets/avatar/anby.webp',
+    'assets/avatar/billy.webp',
+    'assets/avatar/corin.webp',
+    'assets/avatar/miyabi.webp',
+    'assets/avatar/nicole.webp',
+    'assets/avatar/lighter.webp',
+    'assets/avatar/harumasa.webp',
+    'assets/avatar/nekomata.webp',
   ];
 
   String? _selectedAvatar;
@@ -65,6 +67,9 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
               child: CircleAvatar(
                 radius: 40,
                 backgroundImage: AssetImage(avatar),
+                onBackgroundImageError: (exception, stackTrace) {
+                    print('[AvatarSelectionScreen] Error loading avatar image: $exception');
+                },
               ),
             ),
           );

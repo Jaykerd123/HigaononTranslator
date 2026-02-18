@@ -69,12 +69,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     print("--- Start Listening ---");
     await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
     await _recorderController!.record();
-    await _speechToText.listen(
-      onResult: _onSpeechResult, 
-      localeId: 'en_US',
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 3),
-      ); 
+    await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US');
     setState(() {
       _lastWords = '';
       _translationResult = 'Listening...';
@@ -82,7 +77,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _stopListening() async {
-    if (!_speechEnabled || _recorderController == null) return;
+    if (!_speechEnabled || _recorderController == null || !_speechToText.isListening) return;
     print("--- Stop Listening (Manual) ---");
     await _audioPlayer.play(AssetSource('sounds/mic_off.mp3'));
     if (_recorderController!.isRecording) {

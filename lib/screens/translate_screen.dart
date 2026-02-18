@@ -69,7 +69,12 @@ class _TranslateScreenState extends State<TranslateScreen> {
     print("--- Start Listening ---");
     await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
     await _recorderController!.record();
-    await _speechToText.listen(onResult: _onSpeechResult, localeId: 'en_US');
+    await _speechToText.listen(
+      onResult: _onSpeechResult, 
+      localeId: 'en_US',
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+      ); 
     setState(() {
       _lastWords = '';
       _translationResult = 'Listening...';
@@ -77,11 +82,15 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _stopListening() async {
-    if (!_speechEnabled || _recorderController == null || !_speechToText.isListening) return;
-    print("--- Stop Listening ---");
+    if (!_speechEnabled || _recorderController == null) return;
+    print("--- Stop Listening (Manual) ---");
     await _audioPlayer.play(AssetSource('sounds/mic_off.mp3'));
-    await _recorderController!.stop();
-    await _speechToText.stop();
+    if (_recorderController!.isRecording) {
+      await _recorderController!.stop();
+    }
+    if (_speechToText.isListening) {
+      await _speechToText.stop();
+    }
     setState(() {
       if (_lastWords.isEmpty && _translationResult == 'Listening...') {
         _translationResult = '';
@@ -90,15 +99,17 @@ class _TranslateScreenState extends State<TranslateScreen> {
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
-    print("[SpeechToText] Result: ${result.recognizedWords}");
+    print("[SpeechToText] Result: ${result.recognizedWords}, Final: ${result.finalResult}");
     setState(() {
-      _lastWords = result.recognizedWords;
+        _lastWords = result.recognizedWords;
     });
-    if(result.finalResult) {
-        print("[SpeechToText] Final Result: ${result.recognizedWords}");
+
+    if (result.finalResult) {
+        print("[SpeechToText] Final result received. Translating.");
         _translateVoiceInput();
     }
   }
+
 
   String _normalizeString(String text) {
     return text.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), '');

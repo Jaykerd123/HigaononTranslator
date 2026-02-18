@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,8 @@ class _TranslateScreenState extends State<TranslateScreen> {
   String _lastWords = '';
   String _translationResult = '';
 
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +57,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   void _startListening() async {
     if (!_speechEnabled || _speechToText.isListening) return;
+    await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
     print("--- Start Listening ---");
     await _speechToText.listen(
       onResult: _onSpeechResult,
@@ -69,6 +73,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   void _stopListening() async {
     if (!_speechEnabled) return;
+    await _audioPlayer.play(AssetSource('sounds/mic_off.mp3'));
     print("--- Stop Listening (Manual) ---");
     if (_speechToText.isListening) {
       await _speechToText.stop();
@@ -168,6 +173,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   void dispose() {
     _searchController.dispose();
     _flutterTts.stop();
+    _audioPlayer.dispose();
     super.dispose();
   }
 

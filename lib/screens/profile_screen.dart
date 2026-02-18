@@ -1,4 +1,5 @@
 import 'package:fireb/models/user.dart';
+import 'package:fireb/screens/onboarding/avatar_selection_screen.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,23 +13,19 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _emailController;
+  bool _isEditingName = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final userData = Provider.of<UserData?>(context);
-    final user = FirebaseAuth.instance.currentUser;
     _nameController = TextEditingController(text: userData?.name ?? '');
-    _emailController = TextEditingController(text: user?.email ?? '');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
@@ -36,62 +33,199 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = Provider.of<CustomUser?>(context);
     final userData = Provider.of<UserData?>(context);
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    final avatarUrl = userData?.avatarUrl;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+        titleTextStyle: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: NetworkImage(userData?.avatarUrl ?? ''),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || !value.contains('@')) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    await DatabaseService(uid: user?.uid).updateUserData(
-                      name: _nameController.text,
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            // Profile Header
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // PFP
+                GestureDetector(
+                  onTap: () {
+                    if (!mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AvatarSelectionScreen()),
                     );
-                    // Note: Email update requires re-authentication and is more complex.
-                    // For now, we only update the name.
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Profile updated successfully')),
-                    );
-                  }
-                },
-                child: const Text('Save'),
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .secondary
+                            .withAlpha(128),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(26),
+                          spreadRadius: 1,
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                          ? NetworkImage(avatarUrl)
+                          : null,
+                      child: (avatarUrl == null || avatarUrl.isEmpty)
+                          ? const Icon(Icons.person, size: 50)
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // Name and Email
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: _isEditingName
+                                  ? TextFormField(
+                                      controller: _nameController,
+                                      autofocus: true,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.bold),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                        border: InputBorder.none,
+                                      ),
+                                    )
+                                  : Text(
+                                      _nameController.text,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                            ),
+                            IconButton(
+                              icon: Icon(_isEditingName
+                                  ? Icons.check
+                                  : Icons.edit_outlined),
+                              iconSize: 20,
+                              color: Theme.of(context).colorScheme.secondary,
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                if (_isEditingName) {
+                                  if (_nameController.text.isNotEmpty) {
+                                    await DatabaseService(uid: user?.uid)
+                                        .updateUserData(
+                                      name: _nameController.text,
+                                    );
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Name updated successfully')),
+                                    );
+                                    setState(() {
+                                      _isEditingName = false;
+                                    });
+                                  }
+                                } else {
+                                  setState(() {
+                                    _isEditingName = true;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          firebaseUser?.email ?? 'No email',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            // Bookmarks Card
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.0),
               ),
-            ],
-          ),
+              elevation: 4,
+              shadowColor: Colors.black.withAlpha(26),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.bookmark_border,
+                      color: Theme.of(context).colorScheme.secondary,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Bookmarks",
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "View your saved words",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          ],
         ),
       ),
     );

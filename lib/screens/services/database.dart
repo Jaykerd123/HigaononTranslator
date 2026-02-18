@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fireb/models/brew.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import '../../models/user.dart';
 
@@ -14,7 +11,6 @@ class DatabaseService{
   // collection reference
 
   final CollectionReference usersCollection = FirebaseFirestore.instance.collection('users');
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Refactored updateUserData to use named optional parameters for flexibility
   Future<void> updateUserData({
@@ -43,22 +39,6 @@ class DatabaseService{
       print('[DatabaseService] No data to update.');
     }
   }
-
-  Future<String> uploadProfilePicture(String imagePath) async {
-    print('[DatabaseService] Starting profile picture upload from path: $imagePath');
-    try {
-      final ref = _storage.ref().child('user_avatars').child('$uid.jpg');
-      print('[DatabaseService] Storage reference: ${ref.fullPath}');
-      final uploadTask = await ref.putFile(File(imagePath), SettableMetadata(contentType: 'image/jpeg'));
-      final url = await uploadTask.ref.getDownloadURL();
-      print('[DatabaseService] Upload successful. Image URL: $url');
-      return url;
-    } catch (e) {
-      print('[DatabaseService] Error uploading profile picture: $e');
-      return '';
-    }
-  }
-
 
   // New method to update the theme preference (isDarkMode)
   Future<void> updateTheme(bool isDarkMode) async {

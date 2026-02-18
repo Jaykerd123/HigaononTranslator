@@ -88,7 +88,7 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Future<void> _saveProfilePicture() async {
-    print('[MenuScreen] _saveProfilePicture called');
+    print('[MenuScreen] _saveProfilePicture (local path method) called');
     if (_selectedImage == null) {
       print('[MenuScreen] No image selected, aborting save.');
       return;
@@ -96,21 +96,20 @@ class _MenuScreenState extends State<MenuScreen> {
 
     final user = Provider.of<CustomUser?>(context, listen: false);
     if (user != null) {
-      print('[MenuScreen] User found, proceeding with upload.');
+      final localPath = _selectedImage!.path;
+      print('[MenuScreen] User found, saving local image path to Firestore: $localPath');
       final dbService = DatabaseService(uid: user.uid);
-      final imageUrl = await dbService.uploadProfilePicture(_selectedImage!.path);
-      if (imageUrl.isNotEmpty) {
-        print('[MenuScreen] Image uploaded to storage. Updating user data with URL: $imageUrl');
+      try {
         await dbService.updateUserData(
-          profileImageUrl: imageUrl,
+          profileImageUrl: localPath,
         );
-        print('[MenuScreen] User data updated successfully.');
+        print('[MenuScreen] User data updated successfully with local path.');
         setState(() {
           _selectedImage = null;
         });
         print('[MenuScreen] Selected image reset.');
-      } else {
-        print('[MenuScreen] Image upload failed.');
+      } catch (e) {
+        print('[MenuScreen] Failed to update user data with local path: $e');
       }
     } else {
       print('[MenuScreen] User not found, cannot save profile picture.');

@@ -4,6 +4,7 @@ import 'package:fireb/screens/services/auth.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:fireb/screens/services/history_service.dart';
 import 'package:fireb/screens/wrapper.dart'; // Import the Wrapper
+import 'package:fireb/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -58,7 +59,7 @@ class MyApp extends StatelessWidget {
                   theme: ThemeData.light(),
                   darkTheme: ThemeData.dark(),
                   themeMode: (userData?.isDarkMode ?? false) ? ThemeMode.dark : ThemeMode.light,
-                  home: Wrapper(),
+                  home: SplashScreen(),
                   routes: {
                     '/home': (context) => Home(key: ValueKey(user?.uid)),
                   },

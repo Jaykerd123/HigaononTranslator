@@ -5,11 +5,13 @@ import 'package:fireb/models/user.dart';
 import 'package:fireb/screens/about_screen.dart';
 import 'package:fireb/screens/dictionary_screen.dart';
 import 'package:fireb/screens/learning_history_screen.dart';
+import 'package:fireb/screens/onboarding/avatar_selection_screen.dart';
 import 'package:fireb/screens/profile_screen.dart';
 import 'package:fireb/screens/services/auth.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:fireb/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class MenuScreen extends StatelessWidget {
@@ -24,6 +26,44 @@ class MenuScreen extends StatelessWidget {
     } else {
       return FileImage(File(avatarUrl));
     }
+  }
+
+  void _showAvatarSelection(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Wrap(
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Select Profile Picture'),
+              onTap: () async {
+                Navigator.pop(context);
+                final picker = ImagePicker();
+                final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                if (image != null) {
+                  final user = Provider.of<CustomUser?>(context, listen: false);
+                  await DatabaseService(uid: user?.uid).updateUserData(
+                    profileImageUrl: image.path,
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.face),
+              title: const Text('Change Avatar'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AvatarSelectionScreen()),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -45,9 +85,12 @@ class MenuScreen extends StatelessWidget {
             children: [
               const SizedBox(height: 20),
               // User Container
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: _getAvatarImage(userData?.avatarUrl),
+              GestureDetector(
+                onTap: () => _showAvatarSelection(context),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundImage: _getAvatarImage(userData?.avatarUrl),
+                ),
               ),
               const SizedBox(height: 12),
               Text(

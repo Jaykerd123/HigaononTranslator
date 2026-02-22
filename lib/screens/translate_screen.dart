@@ -28,6 +28,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
   bool _speechEnabled = false;
   String _lastWords = '';
   String _translationResult = '';
+  bool _translationFound = false;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
 
@@ -68,6 +69,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     setState(() {
       _lastWords = '';
       _translationResult = 'Listening...';
+      _translationFound = false;
     });
   }
 
@@ -81,6 +83,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
     setState(() {
       if (_lastWords.isEmpty && _translationResult == 'Listening...') {
         _translationResult = '';
+        _translationFound = false;
       }
     });
   }
@@ -118,15 +121,18 @@ class _TranslateScreenState extends State<TranslateScreen> {
       print("Translation result: ${foundSentence.exampleHigaonon}");
       setState(() {
         _translationResult = foundSentence.exampleHigaonon;
+        _translationFound = foundSentence.higaonon.isNotEmpty;
       });
 
       if (foundSentence.higaonon.isNotEmpty) {
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
+        _flutterTts.speak(foundSentence.exampleHigaonon);
       }
     } else {
       print("No voice input to translate.");
       setState(() {
         _translationResult = 'Please speak something.';
+        _translationFound = false;
       });
     }
   }
@@ -246,7 +252,20 @@ class _TranslateScreenState extends State<TranslateScreen> {
                     Text(_lastWords.isNotEmpty ? _lastWords : 'Speak something...'),
                     const SizedBox(height: 10),
                     const Text('Translation (Higaonon):', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(_translationResult),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(_translationResult),
+                        ),
+                        if (_translationFound)
+                          IconButton(
+                            icon: const Icon(Icons.volume_up),
+                            onPressed: () =>
+                                _flutterTts.speak(_translationResult),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),

@@ -51,15 +51,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final firebaseUser = FirebaseAuth.instance.currentUser;
     final avatarUrl = userData?.avatarUrl;
     final ImageProvider? avatarImage = _getAvatarImage(avatarUrl);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+        iconTheme: IconThemeData(color: colorScheme.primary),
         titleTextStyle: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
+            color: colorScheme.primary,
             fontSize: 20,
             fontWeight: FontWeight.bold),
       ),
@@ -85,10 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .secondary
-                            .withAlpha(128),
+                        color: colorScheme.secondary.withAlpha(128),
                         width: 2,
                       ),
                       boxShadow: [
@@ -125,9 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ? TextFormField(
                                       controller: _nameController,
                                       autofocus: true,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall
+                                      style: theme.textTheme.headlineSmall
                                           ?.copyWith(
                                               fontWeight: FontWeight.bold),
                                       decoration: const InputDecoration(
@@ -138,9 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     )
                                   : Text(
                                       _nameController.text,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall
+                                      style: theme.textTheme.headlineSmall
                                           ?.copyWith(
                                               fontWeight: FontWeight.bold),
                                       overflow: TextOverflow.ellipsis,
@@ -151,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ? Icons.check
                                   : Icons.edit_outlined),
                               iconSize: 20,
-                              color: Theme.of(context).colorScheme.secondary,
+                              color: colorScheme.secondary,
                               onPressed: () async {
                                 final messenger = ScaffoldMessenger.of(context);
                                 if (_isEditingName) {
@@ -182,10 +177,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 4),
                         Text(
                           firebaseUser?.email ?? 'No email',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: Colors.grey[600]),
+                          style: theme.textTheme.bodyLarge
+                              ?.copyWith(color: colorScheme.onSurface.withOpacity(0.6)),
                         ),
                       ],
                     ),
@@ -207,7 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Icon(
                       Icons.bookmark_border,
-                      color: Theme.of(context).colorScheme.secondary,
+                      color: colorScheme.secondary,
                       size: 28,
                     ),
                     const SizedBox(width: 16),
@@ -217,9 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Text(
                             "Bookmarks",
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
+                            style: theme.textTheme.titleLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -227,10 +218,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 4),
                           Text(
                             "View your saved words",
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(color: Colors.grey[600]),
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(color: colorScheme.onSurface.withOpacity(0.6)),
                           ),
                         ],
                       ),

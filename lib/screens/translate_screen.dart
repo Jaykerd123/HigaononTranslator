@@ -27,10 +27,15 @@ class _TranslateScreenState extends State<TranslateScreen> {
   final SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
   String _lastWords = '';
-  String _translationResult = '';
-  bool _translationFound = false;
+  String _voiceTranslationResult = '';
+  bool _voiceTranslationFound = false;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
+
+  // State for Text Translation Mode
+  bool _isVoiceMode = true; // True for Voice, False for Text
+  final TextEditingController _textInputController = TextEditingController();
+  String _textTranslationResult = '';
 
   @override
   void initState() {
@@ -68,8 +73,8 @@ class _TranslateScreenState extends State<TranslateScreen> {
     );
     setState(() {
       _lastWords = '';
-      _translationResult = 'Listening...';
-      _translationFound = false;
+      _voiceTranslationResult = 'Listening...';
+      _voiceTranslationFound = false;
     });
   }
 
@@ -81,9 +86,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
       await _speechToText.stop();
     }
     setState(() {
-      if (_lastWords.isEmpty && _translationResult == 'Listening...') {
-        _translationResult = '';
-        _translationFound = false;
+      if (_lastWords.isEmpty && _voiceTranslationResult == 'Listening...') {
+        _voiceTranslationResult = '';
+        _voiceTranslationFound = false;
       }
     });
   }
@@ -120,8 +125,8 @@ class _TranslateScreenState extends State<TranslateScreen> {
       );
       print("Translation result: ${foundSentence.exampleHigaonon}");
       setState(() {
-        _translationResult = foundSentence.exampleHigaonon;
-        _translationFound = foundSentence.higaonon.isNotEmpty;
+        _voiceTranslationResult = foundSentence.exampleHigaonon;
+        _voiceTranslationFound = foundSentence.higaonon.isNotEmpty;
       });
 
       if (foundSentence.higaonon.isNotEmpty) {
@@ -131,8 +136,8 @@ class _TranslateScreenState extends State<TranslateScreen> {
     } else {
       print("No voice input to translate.");
       setState(() {
-        _translationResult = 'Please speak something.';
-        _translationFound = false;
+        _voiceTranslationResult = 'Please speak something.';
+        _voiceTranslationFound = false;
       });
     }
   }
@@ -176,9 +181,73 @@ class _TranslateScreenState extends State<TranslateScreen> {
     await _flutterTts.speak(word.higaonon);
   }
 
+  // Text Translation Methods
+  void _translateText() {
+    final inputText = _textInputController.text;
+    if (inputText.isEmpty) {
+      setState(() {
+        _textTranslationResult = 'Please enter text to translate.';
+      });
+      return;
+    }
+
+    final normalizedInput = _normalizeString(inputText);
+
+    final foundWord = _words.firstWhere(
+      (word) => _normalizeString(word.english) == normalizedInput ||
+                _normalizeString(word.exampleEnglish) == normalizedInput,
+      orElse: () => Word(
+          higaonon: '',
+          english: '',
+          tagalog: '',
+          partOfSpeech: '',
+          exampleHigaonon: 'No direct translation found',
+          exampleEnglish: ''),
+    );
+
+    setState(() {
+      if (foundWord.higaonon.isNotEmpty) {
+        _textTranslationResult = foundWord.higaonon;
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundWord);
+        _flutterTts.speak(foundWord.higaonon);
+      } else {
+        final foundSentence = _words.firstWhere(
+            (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
+            orElse: () => Word(
+                higaonon: '',
+                english: '',
+                tagalog: '',
+                partOfSpeech: '',
+                exampleHigaonon: 'No translation found for sentence',
+                exampleEnglish: '')
+        );
+        if (foundSentence.higaonon.isNotEmpty) {
+           _textTranslationResult = foundSentence.higaonon;
+           Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
+           _flutterTts.speak(foundSentence.higaonon);
+        } else {
+          _textTranslationResult = 'No translation found for: "$inputText"';
+        }
+      }
+    });
+  }
+
+  void _copyToClipboard() {
+    if (_textTranslationResult.isNotEmpty && 
+        _textTranslationResult != 'No translation found for sentence' && 
+        _textTranslationResult != 'No translation found for: "${_textInputController.text}"' && 
+        _textTranslationResult != 'Please enter text to translate.') {
+      Clipboard.setData(ClipboardData(text: _textTranslationResult));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Translation copied to clipboard!')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _textInputController.dispose();
     _flutterTts.stop();
     _audioPlayer.dispose();
     super.dispose();
@@ -206,14 +275,44 @@ class _TranslateScreenState extends State<TranslateScreen> {
             ),
           ),
           Expanded(
-            child: _isSearching ? _buildSearchResults() : _buildTranslationBody(),
+            child: _isSearching ? _buildSearchResults() : (_isVoiceMode ? _buildVoiceTranslationBody() : _buildTextTranslationBody()),
           ),
         ],
+      ),
+      floatingActionButton: _isSearching ? null : _buildModeToggleButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildModeToggleButton() {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 60.0, // Smaller size for the button
+      height: 60.0, // Smaller size for the button
+      child: FloatingActionButton(
+        backgroundColor: theme.colorScheme.secondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Rounded corners
+        onPressed: () {
+          setState(() {
+            _isVoiceMode = !_isVoiceMode;
+            // Clear results when switching modes
+            _lastWords = '';
+            _voiceTranslationResult = '';
+            _voiceTranslationFound = false;
+            _textInputController.clear();
+            _textTranslationResult = '';
+          });
+        },
+        child: Icon(
+          _isVoiceMode ? Icons.text_fields : Icons.mic, // Icon changes based on mode
+          color: Colors.white,
+          size: 30, // Smaller icon size
+        ),
       ),
     );
   }
 
-  Widget _buildTranslationBody() {
+  Widget _buildVoiceTranslationBody() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -224,7 +323,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
             onTap: _speechToText.isNotListening ? _startListening : _stopListening,
             child: CircleAvatar(
               radius: 40,
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.primary, // Using theme color
               child: Icon(
                 _speechToText.isNotListening ? Icons.mic : Icons.stop,
                 color: Colors.white,
@@ -242,7 +341,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
             style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
           ),
           const SizedBox(height: 20),
-          if (_lastWords.isNotEmpty || _translationResult.isNotEmpty)
+          if (_lastWords.isNotEmpty || _voiceTranslationResult.isNotEmpty)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -257,13 +356,13 @@ class _TranslateScreenState extends State<TranslateScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(_translationResult),
+                          child: Text(_voiceTranslationResult),
                         ),
-                        if (_translationFound)
+                        if (_voiceTranslationFound)
                           IconButton(
                             icon: const Icon(Icons.volume_up),
                             onPressed: () =>
-                                _flutterTts.speak(_translationResult),
+                                _flutterTts.speak(_voiceTranslationResult),
                           ),
                       ],
                     ),
@@ -271,6 +370,86 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextTranslationBody() {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _textInputController,
+              maxLines: null, // Allows multiple lines
+              expands: true, // Makes the TextField take available height
+              textAlignVertical: TextAlignVertical.top,
+              decoration: InputDecoration(
+                hintText: 'Enter text to translate...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                  borderSide: BorderSide(color: theme.colorScheme.primary),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                  borderSide: BorderSide(color: theme.colorScheme.secondary, width: 2.0),
+                ),
+                alignLabelWithHint: true,
+              ),
+              style: theme.textTheme.bodyLarge,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _translateText,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Translate',
+              style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onPrimary),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Translation (Higaonon):',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _textTranslationResult.isEmpty ? 'Your translation will appear here.' : _textTranslationResult,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ),
+                  if (_textTranslationResult.isNotEmpty && 
+                      _textTranslationResult != 'No translation found for sentence' && 
+                      _textTranslationResult != 'No translation found for: "${_textInputController.text}"' && 
+                      _textTranslationResult != 'Please enter text to translate.')
+                    IconButton(
+                      icon: Icon(Icons.copy, color: theme.colorScheme.secondary),
+                      onPressed: _copyToClipboard,
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -137,8 +137,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
     }
   }
 
-  void _initializeTts() {
+  void _initializeTts() async {
     _flutterTts = FlutterTts();
+    await _flutterTts.setLanguage("ceb-PH");
   }
 
   Future<void> _loadDictionary() async {

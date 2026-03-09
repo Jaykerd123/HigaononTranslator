@@ -67,7 +67,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   void _startListening() async {
     if (!_speechEnabled || _speechToText.isListening) return;
     await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
-    print("--- Start Listening ---");
     await _speechToText.listen(
       onResult: _onSpeechResult,
       localeId: 'en_US',
@@ -84,7 +83,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   void _stopListening() async {
     if (!_speechEnabled) return;
     await _audioPlayer.play(AssetSource('sounds/mic_off.mp3'));
-    print("--- Stop Listening (Manual) ---");
     if (_speechToText.isListening) {
       await _speechToText.stop();
     }
@@ -97,13 +95,11 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
-    print("[SpeechToText] Result: ${result.recognizedWords}, Final: ${result.finalResult}");
     setState(() {
       _lastWords = result.recognizedWords;
     });
 
     if (result.finalResult) {
-      print("[SpeechToText] Final result received. Translating.");
       _translateVoiceInput();
     }
   }
@@ -113,7 +109,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   }
 
   void _translateVoiceInput() {
-    print("--- Translating Voice Input: '$_lastWords' ---");
     if (_lastWords.isNotEmpty) {
       final normalizedLastWords = _normalizeString(_lastWords);
       final foundSentence = _words.firstWhere(
@@ -126,7 +121,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
             exampleHigaonon: 'No translation found for sentence',
             exampleEnglish: ''),
       );
-      print("Translation result: ${foundSentence.exampleHigaonon}");
       setState(() {
         _voiceTranslationResult = foundSentence.exampleHigaonon;
         _voiceTranslationFound = foundSentence.higaonon.isNotEmpty;
@@ -136,12 +130,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
         _flutterTts.speak(foundSentence.exampleHigaonon);
       }
-    } else {
-      print("No voice input to translate.");
-      setState(() {
-        _voiceTranslationResult = 'Please speak something.';
-        _voiceTranslationFound = false;
-      });
     }
   }
 
@@ -184,7 +172,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     await _flutterTts.speak(word.higaonon);
   }
 
-  // Text Translation Methods
   void _translateText() {
     final inputText = _textInputController.text;
     if (inputText.isEmpty) {
@@ -236,10 +223,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   }
 
   void _copyToClipboard() {
-    if (_textTranslationResult.isNotEmpty && 
-        _textTranslationResult != 'No translation found for sentence' && 
-        _textTranslationResult != 'No translation found for: "${_textInputController.text}"' && 
-        _textTranslationResult != 'Please enter text to translate.') {
+    if (_textTranslationResult.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: _textTranslationResult));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Translation copied to clipboard!')),
@@ -259,297 +243,250 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Translate'),
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search dictionary...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                ),
-              ),
-            ),
-          ),
+          _buildAppBar(theme),
+          _buildModeSelector(theme),
           Expanded(
-            child: _isSearching ? _buildSearchResults() : (_isVoiceMode ? _buildVoiceTranslationBody() : _buildTextTranslationBody()),
+            child: _isSearching 
+                ? _buildSearchResults(theme) 
+                : (_isVoiceMode ? _buildVoiceTranslationBody(theme) : _buildTextTranslationBody(theme)),
           ),
         ],
       ),
-      floatingActionButton: _isSearching ? null : _buildModeToggleButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget _buildModeToggleButton() {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: 60.0, // Smaller size for the button
-      height: 60.0, // Smaller size for the button
-      child: FloatingActionButton(
-        backgroundColor: theme.colorScheme.secondary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Rounded corners
-        onPressed: () {
-          setState(() {
-            _isVoiceMode = !_isVoiceMode;
-            // Clear results when switching modes
-            _lastWords = '';
-            _voiceTranslationResult = '';
-            _voiceTranslationFound = false;
-            _textInputController.clear();
-            _textTranslationResult = '';
-          });
-        },
-        child: Icon(
-          _isVoiceMode ? Icons.text_fields : Icons.mic, // Icon changes based on mode
-          color: Colors.white,
-          size: 30, // Smaller icon size
+  Widget _buildAppBar(ThemeData theme) {
+    return Container(
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, left: 16, right: 16, bottom: 16),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5)),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Translator',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Quick dictionary search...',
+              prefixIcon: const Icon(Icons.search_rounded, color: Colors.redAccent),
+              filled: true,
+              fillColor: theme.scaffoldBackgroundColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeSelector(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          _buildModeTab('Voice', Icons.mic_rounded, _isVoiceMode, () => setState(() => _isVoiceMode = true), theme),
+          const SizedBox(width: 12),
+          _buildModeTab('Text', Icons.text_fields_rounded, !_isVoiceMode, () => setState(() => _isVoiceMode = false), theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeTab(String label, IconData icon, bool isActive, VoidCallback onTap, ThemeData theme) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.redAccent : theme.cardColor,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: isActive ? [BoxShadow(color: Colors.redAccent.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? Colors.white : Colors.grey,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildVoiceTranslationBody() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 70), // Placeholder for the waveform
-          GestureDetector(
-            onTap: _speechToText.isNotListening ? _startListening : _stopListening,
-            child: CircleAvatar(
-              radius: 40,
-              backgroundColor: Theme.of(context).colorScheme.primary, // Using theme color
-              child: Icon(
-                _speechToText.isNotListening ? Icons.mic : Icons.stop,
-                color: Colors.white,
-                size: 40,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            _speechToText.isListening
-                ? 'Listening...'
-                : _speechEnabled
-                    ? 'Tap the microphone to start listening...'
-                    : 'Speech not available',
-            style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
-          ),
-          const SizedBox(height: 20),
-          if (_lastWords.isNotEmpty || _voiceTranslationResult.isNotEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text('Recognized (English):', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(_lastWords.isNotEmpty ? _lastWords : 'Speak something...'),
-                    const SizedBox(height: 10),
-                    const Text('Translation (Higaonon):', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(_voiceTranslationResult),
-                        ),
-                        if (_voiceTranslationFound)
-                          IconButton(
-                            icon: const Icon(Icons.volume_up),
-                            onPressed: () =>
-                                _flutterTts.speak(_voiceTranslationResult),
-                          ),
-                      ],
-                    ),
-                  ],
+  Widget _buildVoiceTranslationBody(ThemeData theme) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Spacer(),
+        GestureDetector(
+          onTap: _speechToText.isNotListening ? _startListening : _stopListening,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _speechToText.isListening ? Colors.redAccent : theme.cardColor,
+              boxShadow: [
+                BoxShadow(
+                  color: (_speechToText.isListening ? Colors.redAccent : Colors.grey).withOpacity(0.2),
+                  blurRadius: 20,
+                  spreadRadius: 10,
                 ),
-              ),
+              ],
             ),
-        ],
-      ),
+            child: Icon(
+              _speechToText.isNotListening ? Icons.mic_rounded : Icons.stop_rounded,
+              color: _speechToText.isListening ? Colors.white : Colors.redAccent,
+              size: 50,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          _speechToText.isListening ? 'Listening...' : 'Tap to Translate Voice',
+          style: TextStyle(fontSize: 18, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+        ),
+        const Spacer(),
+        if (_lastWords.isNotEmpty || _voiceTranslationResult.isNotEmpty)
+          _buildResultCard(theme, _lastWords, _voiceTranslationResult, _voiceTranslationFound),
+        const SizedBox(height: 24),
+      ],
     );
   }
 
-  Widget _buildTextTranslationBody() {
-    final theme = Theme.of(context);
+  Widget _buildTextTranslationBody(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: TextField(
-              controller: _textInputController,
-              maxLines: null, // Allows multiple lines
-              expands: true, // Makes the TextField take available height
-              textAlignVertical: TextAlignVertical.top,
-              decoration: InputDecoration(
-                hintText: 'Enter text to translate...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                  borderSide: BorderSide(color: theme.colorScheme.primary),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                  borderSide: BorderSide(color: theme.colorScheme.secondary, width: 2.0),
-                ),
-                alignLabelWithHint: true,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(24),
               ),
-              style: theme.textTheme.bodyLarge,
+              child: TextField(
+                controller: _textInputController,
+                maxLines: null,
+                decoration: const InputDecoration(
+                  hintText: 'Type English sentence here...',
+                  border: InputBorder.none,
+                ),
+                style: const TextStyle(fontSize: 18),
+              ),
             ),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _translateText,
             style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 56),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: 5,
             ),
-            child: Text(
-              'Translate',
-              style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onPrimary),
-            ),
+            child: const Text('Translate', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Translation (Higaonon):',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
+          const SizedBox(height: 16),
+          if (_textTranslationResult.isNotEmpty)
+             _buildResultCard(theme, _textInputController.text, _textTranslationResult, true),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultCard(ThemeData theme, String source, String result, bool showSpeaker) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(source, style: TextStyle(color: theme.disabledColor, fontSize: 14)),
           const SizedBox(height: 8),
-          Card(
-            elevation: 1,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      _textTranslationResult.isEmpty ? 'Your translation will appear here.' : _textTranslationResult,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ),
-                  if (_textTranslationResult.isNotEmpty && 
-                      _textTranslationResult != 'No translation found for sentence' && 
-                      _textTranslationResult != 'No translation found for: "${_textInputController.text}"' && 
-                      _textTranslationResult != 'Please enter text to translate.')
-                    IconButton(
-                      icon: Icon(Icons.copy, color: theme.colorScheme.secondary),
-                      onPressed: _copyToClipboard,
-                    ),
-                ],
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  result,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                ),
               ),
-            ),
+              if (showSpeaker)
+                IconButton(
+                  icon: const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
+                  onPressed: () => _flutterTts.speak(result),
+                ),
+              IconButton(
+                icon: const Icon(Icons.copy_rounded, color: Colors.grey, size: 20),
+                onPressed: _copyToClipboard,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSearchResults() {
+  Widget _buildSearchResults(ThemeData theme) {
     return ListView.builder(
+      padding: const EdgeInsets.all(16),
       itemCount: _filteredWords.length,
       itemBuilder: (context, index) {
         final word = _filteredWords[index];
-        return _buildWordCard(word);
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: ListTile(
+            title: Text(word.higaonon, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(word.english),
+            trailing: IconButton(
+              icon: const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
+              onPressed: () => _speak(word),
+            ),
+          ),
+        );
       },
-    );
-  }
-
-  Widget _buildWordCard(Word word) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    word.higaonon,
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.volume_up, color: theme.colorScheme.secondary, size: 30),
-                  onPressed: () => _speak(word),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${word.partOfSpeech} • ${word.tagalog}',
-              style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: theme.textTheme.bodySmall?.color),
-            ),
-            const Divider(height: 24),
-            _buildTranslationSection(
-              language: 'English',
-              definition: word.english,
-              example: word.exampleEnglish,
-              theme: theme,
-            ),
-            const SizedBox(height: 16),
-            _buildTranslationSection(
-              language: 'Higaonon Example',
-              definition: word.exampleHigaonon,
-              example: '',
-              theme: theme,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTranslationSection({
-    required String language,
-    required String definition,
-    required String example,
-    required ThemeData theme,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          language,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
-        ),
-        const SizedBox(height: 4),
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: Text(
-            definition,
-            style: TextStyle(fontSize: 16, color: theme.textTheme.bodyMedium?.color),
-          ),
-        ),
-        if (example.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0, top: 4),
-            child: Text(
-              '“$example”',
-              style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: theme.textTheme.bodySmall?.color),
-            ),
-          ),
-      ],
     );
   }
 }

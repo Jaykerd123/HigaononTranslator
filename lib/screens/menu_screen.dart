@@ -28,95 +28,71 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
   bool get wantKeepAlive => true;
 
   ImageProvider _getAvatarImage(String? avatarUrl) {
-    print('[MenuScreen] _getAvatarImage called with avatarUrl: $avatarUrl');
     if (_selectedImage != null) {
       return FileImage(File(_selectedImage!.path));
     }
     if (avatarUrl == null || avatarUrl.isEmpty) {
-      print('[MenuScreen] No avatarUrl, using default avatar.');
-      return const AssetImage('assets/sagiri.jpg'); // Default avatar
+      return const AssetImage('assets/sagiri.jpg');
     }
     if (avatarUrl.startsWith('assets/')) {
-       print('[MenuScreen] avatarUrl is an asset, using AssetImage');
       return AssetImage(avatarUrl);
     } else if (avatarUrl.startsWith('http')) {
-      print('[MenuScreen] avatarUrl is a network image, using NetworkImage');
       return NetworkImage(avatarUrl);
     } else {
-      print('[MenuScreen] avatarUrl is a file path, using FileImage');
       return FileImage(File(avatarUrl));
     }
   }
 
   void _showAvatarSelection(BuildContext context) {
-    print('[MenuScreen] _showAvatarSelection called');
-    final user = Provider.of<CustomUser?>(context, listen: false);
-
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
       builder: (BuildContext modalContext) {
-        return Wrap(
-          children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Select Profile Picture'),
-              onTap: () async {
-                print('[MenuScreen] Select Profile Picture tapped');
-                Navigator.pop(modalContext);
-                final picker = ImagePicker();
-                final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-                if (image != null) {
-                  print('[MenuScreen] Image selected from gallery: ${image.path}');
-                  setState(() {
-                    _selectedImage = image;
-                  });
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.face),
-              title: const Text('Change Avatar'),
-              onTap: () {
-                print('[MenuScreen] Change Avatar tapped');
-                Navigator.pop(modalContext);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AvatarSelectionScreen()),
-                );
-              },
-            ),
-          ],
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Wrap(
+            children: <Widget>[
+              const Center(
+                child: Text('Update Profile Picture', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.photo_library, color: Colors.white)),
+                title: const Text('Select from Gallery'),
+                onTap: () async {
+                  Navigator.pop(modalContext);
+                  final picker = ImagePicker();
+                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                  if (image != null) {
+                    setState(() => _selectedImage = image);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const CircleAvatar(backgroundColor: Colors.orangeAccent, child: Icon(Icons.face, color: Colors.white)),
+                title: const Text('Choose Character Avatar'),
+                onTap: () {
+                  Navigator.pop(modalContext);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AvatarSelectionScreen()));
+                },
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
   Future<void> _saveProfilePicture() async {
-    print('[MenuScreen] _saveProfilePicture (local path method) called');
-    if (_selectedImage == null) {
-      print('[MenuScreen] No image selected, aborting save.');
-      return;
-    }
-
+    if (_selectedImage == null) return;
     final user = Provider.of<CustomUser?>(context, listen: false);
     if (user != null) {
-      final localPath = _selectedImage!.path;
-      print('[MenuScreen] User found, saving local image path to Firestore: $localPath');
       final dbService = DatabaseService(uid: user.uid);
       try {
-        await dbService.updateUserData(
-          profileImageUrl: localPath,
-        );
-        print('[MenuScreen] User data updated successfully with local path.');
-        setState(() {
-          _selectedImage = null;
-        });
-        print('[MenuScreen] Selected image reset.');
-      } catch (e) {
-        print('[MenuScreen] Failed to update user data with local path: $e');
-      }
-    } else {
-      print('[MenuScreen] User not found, cannot save profile picture.');
+        await dbService.updateUserData(profileImageUrl: _selectedImage!.path);
+        setState(() => _selectedImage = null);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile picture updated!')));
+      } catch (e) {}
     }
   }
 
@@ -125,232 +101,161 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
     super.build(context);
     final userData = Provider.of<UserData?>(context);
     final auth = Provider.of<AuthService>(context);
-    print('[MenuScreen] build called. UserData avatarUrl: ${userData?.avatarUrl}');
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Menu'),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        actions: [
-          if (_selectedImage != null)
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _saveProfilePicture,
-            ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              // User Container
-              GestureDetector(
-                onTap: () => _showAvatarSelection(context),
-                child: Stack(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 220,
+            pinned: true,
+            backgroundColor: Colors.redAccent,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.redAccent, Colors.orangeAccent],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundImage: _getAvatarImage(userData?.avatarUrl),
-                      onBackgroundImageError: (exception, stackTrace) {
-                        print('[MenuScreen] Error loading avatar image: $exception');
-                      },
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.camera_alt,
-                          size: 20,
-                          color: Colors.grey[800],
-                        ),
+                    const SizedBox(height: 40),
+                    GestureDetector(
+                      onTap: () => _showAvatarSelection(context),
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.white,
+                            child: CircleAvatar(
+                              radius: 46,
+                              backgroundImage: _getAvatarImage(userData?.avatarUrl),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: CircleAvatar(
+                              radius: 15,
+                              backgroundColor: Colors.white,
+                              child: Icon(Icons.camera_alt, size: 16, color: Colors.redAccent),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      userData?.name ?? 'User',
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                userData?.name ?? 'User',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                  );
-                },
-                icon: const Icon(Icons.person_outline, size: 18),
-                label: const Text(
-                  'Profile',
-                  style: TextStyle(fontSize: 14),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).textTheme.bodySmall?.color,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 10),
-
-              // Menu Items
-              _buildMenuListItem(
-                context: context,
-                icon: Icons.show_chart,
-                title: 'Your Progress',
-                subtitle: 'Track your learning',
-                onTap: () {
-                   Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const YourProgressScreen()),
-                  );
-                },
-              ),
-              _buildMenuListItem(
-                context: context,
-                icon: Icons.book_outlined,
-                title: 'Dictionary',
-                subtitle: 'Browse all words',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const DictionaryScreen()),
-                  );
-                },
-              ),
-              _buildMenuListItem(
-                context: context,
-                icon: Icons.history,
-                title: 'Learning History',
-                subtitle: 'View studied words',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LearningHistoryScreen()),
-                  );
-                },
-              ),
-              _buildMenuListItem(
-                context: context,
-                icon: Icons.settings_outlined,
-                title: 'Settings',
-                subtitle: 'App preferences',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                  );
-                },
-              ),
-              _buildMenuListItem(
-                context: context,
-                icon: Icons.info_outline,
-                title: 'About',
-                subtitle: 'App information',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AboutScreen()),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // Logout Button
-              Center(
-                child: TextButton.icon(
-                  onPressed: () async {
-                    final bool? shouldLogout = await showDialog<bool>(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text('Confirm Logout'),
-                          content:
-                              const Text('Are you sure you want to log out?'),
-                          actions: <Widget>[
-                            TextButton(
-                              child: const Text('Cancel'),
-                              onPressed: () {
-                                Navigator.of(context).pop(false);
-                              },
-                            ),
-                            TextButton(
-                              child: const Text('Logout'),
-                              onPressed: () {
-                                Navigator.of(context).pop(true);
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
-
-                    if (shouldLogout == true) {
-                      await auth.signOut();
-                    }
-                  },
-                  icon: const Icon(Icons.logout, color: Colors.red),
-                  label: const Text(
-                    'Logout',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  style: TextButton.styleFrom(
-                      backgroundColor: Colors.red.withOpacity(0.1),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 12)),
-                ),
-              ),
-              const SizedBox(height: 20),
-               const Column(
-                children: [
-                  Text(
-                    'Higa - Language Learning Platform',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Version 1.0.0',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+            ),
+            actions: [
+              if (_selectedImage != null)
+                IconButton(icon: const Icon(Icons.check, color: Colors.white), onPressed: _saveProfilePicture),
             ],
           ),
-        ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildMenuSection(theme, 'Learning', [
+                    _MenuData(Icons.show_chart_rounded, 'Your Progress', 'Track your growth', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const YourProgressScreen())), Colors.blue),
+                    _MenuData(Icons.book_rounded, 'Dictionary', 'All Higaonon words', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DictionaryScreen())), Colors.green),
+                    _MenuData(Icons.history_rounded, 'Learning History', 'Recently studied', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LearningHistoryScreen())), Colors.orange),
+                  ]),
+                  const SizedBox(height: 24),
+                  _buildMenuSection(theme, 'Settings', [
+                    _MenuData(Icons.settings_rounded, 'App Settings', 'Theme and notifications', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())), Colors.blueGrey),
+                    _MenuData(Icons.info_rounded, 'About Higa', 'App and developer info', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen())), Colors.teal),
+                  ]),
+                  const SizedBox(height: 40),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final bool? shouldLogout = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Logout'),
+                          content: const Text('Are you sure you want to exit?'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout', style: TextStyle(color: Colors.red))),
+                          ],
+                        ),
+                      );
+                      if (shouldLogout == true) await auth.signOut();
+                    },
+                    icon: const Icon(Icons.logout_rounded),
+                    label: const Text('Logout'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.withOpacity(0.1),
+                      foregroundColor: Colors.red,
+                      elevation: 0,
+                      minimumSize: const Size(double.infinity, 56),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMenuListItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+  Widget _buildMenuSection(ThemeData theme, String title, List<_MenuData> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 12),
+          child: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.disabledColor)),
         ),
-      ),
-      onTap: onTap,
+        Container(
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            children: items.map((item) => _buildMenuItem(item, theme, items.last == item)).toList(),
+          ),
+        ),
+      ],
     );
   }
+
+  Widget _buildMenuItem(_MenuData item, ThemeData theme, bool isLast) {
+    return ListTile(
+      onTap: item.onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(color: item.color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+        child: Icon(item.icon, color: item.color),
+      ),
+      title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(item.subtitle, style: TextStyle(fontSize: 12, color: theme.disabledColor)),
+      trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+      shape: isLast ? null : Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.05))),
+    );
+  }
+}
+
+class _MenuData {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Color color;
+  _MenuData(this.icon, this.title, this.subtitle, this.onTap, this.color);
 }

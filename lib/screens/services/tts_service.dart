@@ -17,6 +17,10 @@ class TtsService {
 
   TtsService() {
     _initSystemTts();
+    print('[TtsService] Initialized. Token present: ${_hfToken.isNotEmpty}');
+    if (_hfToken.isNotEmpty) {
+      print('[TtsService] Token starts with: ${_hfToken.substring(0, 4)}...');
+    }
   }
 
   Future<void> _initSystemTts() async {
@@ -44,8 +48,12 @@ class TtsService {
         headers: {
           "Authorization": "Bearer $_hfToken",
           "Content-Type": "application/json",
+          "x-use-cache": "false", // Try to bypass cache to see if it helps with 410
         },
-        body: jsonEncode({"inputs": text}),
+        body: jsonEncode({
+          "inputs": text,
+          "options": {"wait_for_model": true}
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -56,10 +64,12 @@ class TtsService {
         final file = File('${tempDir.path}/tts_audio.wav');
         await file.writeAsBytes(audioBytes);
 
-        print('[TtsService] Audio received, playing...');
+        print('[TtsService] Audio received (${audioBytes.length} bytes), playing...');
         await _audioPlayer.play(DeviceFileSource(file.path));
       } else {
-        print('[TtsService] API Error: ${response.statusCode}, falling back to system TTS.');
+        print('[TtsService] API Error: ${response.statusCode}');
+        print('[TtsService] Response body: ${response.body}');
+        print('[TtsService] Falling back to system TTS.');
         await _flutterTts.speak(text);
       }
     } catch (e) {

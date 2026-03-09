@@ -167,30 +167,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          setState(() => loading = true);
-                          dynamic result = await _auth.signInWithFacebook();
-                          if (result == null) {
-                            setState(() {
-                              error = 'Could not sign in with Facebook';
-                              loading = false;
-                            });
-                          }
-                        },
-                        icon: Image.asset('assets/social_icons/facebook.png',
-                            height: 24),
-                        label: const Text('Continue with Facebook'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          side: const BorderSide(color: Colors.grey),
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 40),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,

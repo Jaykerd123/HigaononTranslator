@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fireb/models/user.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart' as fb;
 
 class AuthService {
 
@@ -88,35 +87,6 @@ class AuthService {
     }
   }
 
-  // sign in with facebook
-  Future<CustomUser?> signInWithFacebook() async {
-    try {
-      final fb.LoginResult result = await fb.FacebookAuth.instance.login();
-      if (result.status == fb.LoginStatus.success) {
-        final fb.AccessToken? accessToken = result.accessToken;
-        if (accessToken != null) {
-          final AuthCredential credential = FacebookAuthProvider.credential(accessToken.tokenString);
-          UserCredential userCredential = await _auth.signInWithCredential(credential);
-          User? user = userCredential.user;
-
-          if (user != null) {
-            // Check if the user document already exists
-            final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-            if (!doc.exists) {
-              // If it doesn't exist, create it (new user)
-              final userData = await fb.FacebookAuth.instance.getUserData();
-              await DatabaseService(uid: user.uid).updateUserData(name: userData['name'] ?? 'new member', sugar: '0', strength: 100, onboardingCompleted: false, isDarkMode: false, profileImageUrl: userData['picture']?['data']?['url']);
-            }
-          }
-          return _userFromFirebaseUser(user);
-        }
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
   // send password reset email
   Future<void> sendPasswordResetEmail(String email) async {
     await _auth.sendPasswordResetEmail(email: email);
@@ -126,7 +96,6 @@ class AuthService {
   Future<void> signOut() async {
     try {
       await _googleSignIn.signOut();
-      await fb.FacebookAuth.instance.logOut();
       await _auth.signOut();
     } catch (e) {
       // It's generally safe to ignore errors on sign out

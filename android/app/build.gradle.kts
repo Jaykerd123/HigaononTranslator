@@ -43,9 +43,6 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-
-    // Facebook Login
-    implementation("com.facebook.android:facebook-login:[16,17)")
 }
 
 flutter {

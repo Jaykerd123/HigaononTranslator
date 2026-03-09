@@ -1,6 +1,3 @@
 <resources>
     <string name="app_name">fireb</string>
-    <string name="facebook_app_id">4322726007945379</string>
-    <string name="facebook_client_token">4c02a5d63aa7a67e6dda31f8156091eb</string>
-    <string name="fb_login_protocol_scheme">fb4322726007945379</string>
 </resources>

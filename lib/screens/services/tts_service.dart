@@ -9,10 +9,13 @@ import 'package:flutter_tts/flutter_tts.dart';
 class TtsService {
   static const String _hfToken = String.fromEnvironment('HF_TOKEN', defaultValue: ''); 
   
-  // New Hugging Face Router URL
-  static const String _primaryUrl = "https://router.huggingface.co/models/facebook/mms-tts-ceb";
-  // Classic Inference URL (Backup)
-  static const String _backupUrl = "https://api-inference.huggingface.co/models/facebook/mms-tts-ceb";
+  // The model name might need to be prefixed for the router or might just be slightly different.
+  // Testing multiple common formats for the Inference API.
+  static const List<String> _urlOptions = [
+    "https://api-inference.huggingface.co/models/facebook/mms-tts-ceb",
+    "https://router.huggingface.co/hf-inference/models/facebook/mms-tts-ceb",
+    "https://router.huggingface.co/models/facebook/mms-tts-ceb",
+  ];
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   final FlutterTts _flutterTts = FlutterTts();
@@ -39,25 +42,21 @@ class TtsService {
       return;
     }
 
-    // Try Primary URL (Router)
-    bool success = await _callApi(_primaryUrl, text);
-    
-    // If Primary fails, try Backup URL (Classic)
-    if (!success) {
-      print('[TtsService] Retrying with backup URL...');
-      success = await _callApi(_backupUrl, text);
+    bool success = false;
+    for (String url in _urlOptions) {
+      print('[TtsService] Attempting: $url');
+      success = await _callApi(url, text);
+      if (success) break;
     }
 
-    // If both fail, use system TTS
     if (!success) {
-      print('[TtsService] Both APIs failed. Falling back to system TTS.');
+      print('[TtsService] All AI API attempts failed. Falling back to system TTS.');
       await _flutterTts.speak(text);
     }
   }
 
   Future<bool> _callApi(String url, String text) async {
     try {
-      print('[TtsService] POST -> $url');
       final response = await http.post(
         Uri.parse(url),
         headers: {
@@ -73,7 +72,7 @@ class TtsService {
       if (response.statusCode == 200) {
         final Uint8List audioBytes = response.bodyBytes;
         if (audioBytes.length < 100) {
-           print('[TtsService] API returned suspiciously small file (${audioBytes.length} bytes).');
+           print('[TtsService] API returned suspiciously small file (${audioBytes.length} bytes): ${response.body}');
            return false;
         }
 
@@ -81,7 +80,7 @@ class TtsService {
         final file = File('${tempDir.path}/tts_${DateTime.now().millisecondsSinceEpoch}.wav');
         await file.writeAsBytes(audioBytes);
 
-        print('[TtsService] SUCCESS: Audio received. Playing...');
+        print('[TtsService] SUCCESS: Audio received (${audioBytes.length} bytes). Playing...');
         await _audioPlayer.play(DeviceFileSource(file.path));
         return true;
       } else {
@@ -89,7 +88,7 @@ class TtsService {
         return false;
       }
     } catch (e) {
-      print('[TtsService] REQUEST EXCEPTION: $e');
+      print('[TtsService] REQUEST EXCEPTION to $url: $e');
       return false;
     }
   }

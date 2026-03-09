@@ -222,8 +222,6 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
                 children: [
                   _buildWordOfTheDayCard(theme),
                   const SizedBox(height: 24),
-                  _buildQuickActions(theme),
-                  const SizedBox(height: 24),
                   _buildHistorySection(theme),
                 ],
               ),
@@ -311,77 +309,6 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
                   ),
                 ],
               ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActions(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Quick Learning',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: theme.textTheme.bodyLarge?.color,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            _buildActionCard(
-              theme,
-              'Daily Quiz',
-              Icons.quiz_rounded,
-              Colors.blueAccent,
-              () {},
-            ),
-            const SizedBox(width: 16),
-            _buildActionCard(
-              theme,
-              'Practice',
-              Icons.record_voice_over_rounded,
-              Colors.greenAccent.shade700,
-              () {},
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard(ThemeData theme, String title, IconData icon, Color color, VoidCallback onTap) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.dividerColor.withOpacity(0.05)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 30),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

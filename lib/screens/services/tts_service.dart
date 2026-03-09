@@ -8,8 +8,11 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 class TtsService {
   static const String _hfToken = String.fromEnvironment('HF_TOKEN', defaultValue: ''); 
-  // Using the router URL as recommended by HF logs
-  static const String _modelUrl = "https://router.huggingface.co/hf-inference/models/facebook/mms-tts-ceb";
+  
+  // New Hugging Face Router URL
+  static const String _primaryUrl = "https://router.huggingface.co/models/facebook/mms-tts-ceb";
+  // Classic Inference URL (Backup)
+  static const String _backupUrl = "https://api-inference.huggingface.co/models/facebook/mms-tts-ceb";
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   final FlutterTts _flutterTts = FlutterTts();
@@ -31,16 +34,32 @@ class TtsService {
     if (text.isEmpty) return;
 
     if (_hfToken.isEmpty) {
-      print('[TtsService] Falling back to system TTS (No Token).');
+      print('[TtsService] No HF Token. Using system TTS.');
       await _flutterTts.speak(text);
       return;
     }
 
+    // Try Primary URL (Router)
+    bool success = await _callApi(_primaryUrl, text);
+    
+    // If Primary fails, try Backup URL (Classic)
+    if (!success) {
+      print('[TtsService] Retrying with backup URL...');
+      success = await _callApi(_backupUrl, text);
+    }
+
+    // If both fail, use system TTS
+    if (!success) {
+      print('[TtsService] Both APIs failed. Falling back to system TTS.');
+      await _flutterTts.speak(text);
+    }
+  }
+
+  Future<bool> _callApi(String url, String text) async {
     try {
-      print('[TtsService] Calling AI API for: "$text"');
-      
+      print('[TtsService] POST -> $url');
       final response = await http.post(
-        Uri.parse(_modelUrl),
+        Uri.parse(url),
         headers: {
           "Authorization": "Bearer $_hfToken",
           "Content-Type": "application/json",
@@ -53,20 +72,25 @@ class TtsService {
 
       if (response.statusCode == 200) {
         final Uint8List audioBytes = response.bodyBytes;
+        if (audioBytes.length < 100) {
+           print('[TtsService] API returned suspiciously small file (${audioBytes.length} bytes).');
+           return false;
+        }
+
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/tts_audio_${DateTime.now().millisecondsSinceEpoch}.wav');
+        final file = File('${tempDir.path}/tts_${DateTime.now().millisecondsSinceEpoch}.wav');
         await file.writeAsBytes(audioBytes);
 
-        print('[TtsService] SUCCESS: Received ${audioBytes.length} bytes. Playing audio...');
+        print('[TtsService] SUCCESS: Audio received. Playing...');
         await _audioPlayer.play(DeviceFileSource(file.path));
+        return true;
       } else {
         print('[TtsService] API ERROR ${response.statusCode}: ${response.body}');
-        print('[TtsService] Falling back to system TTS.');
-        await _flutterTts.speak(text);
+        return false;
       }
     } catch (e) {
-      print('[TtsService] EXCEPTION: $e');
-      await _flutterTts.speak(text);
+      print('[TtsService] REQUEST EXCEPTION: $e');
+      return false;
     }
   }
 

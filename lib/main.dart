@@ -3,6 +3,7 @@ import 'package:fireb/screens/home/home.dart';
 import 'package:fireb/screens/services/auth.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:fireb/screens/services/history_service.dart';
+import 'package:fireb/screens/services/tts_service.dart';
 import 'package:fireb/screens/wrapper.dart'; // Import the Wrapper
 import 'package:fireb/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +28,9 @@ class MyApp extends StatelessWidget {
       providers: [
         Provider<AuthService>(
           create: (_) => AuthService(),
+        ),
+        Provider<TtsService>(
+          create: (_) => TtsService(),
         ),
         StreamProvider<CustomUser?>(
           create: (context) => context.read<AuthService>().user,

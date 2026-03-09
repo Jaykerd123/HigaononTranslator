@@ -1,13 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:fireb/models/user.dart';
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
+import 'package:fireb/screens/services/tts_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:provider/provider.dart';
 
 import '../menu_screen.dart';
@@ -119,7 +117,6 @@ class _HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientMixin {
   Word? _wordOfTheDay;
-  late FlutterTts _flutterTts;
   late bool _showAllHistory;
   final int _historyDisplayLimit = 4;
 
@@ -130,24 +127,13 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
   void initState() {
     super.initState();
     _showAllHistory = widget.initialShowAllHistory;
-    _initializeTts();
     _loadWordOfTheDay();
-  }
-
-  @override
-  void dispose() {
-    _flutterTts.stop();
-    super.dispose();
-  }
-
-  void _initializeTts() {
-    _flutterTts = FlutterTts();
   }
 
   Future<void> _loadWordOfTheDay() async {
     try {
-      final String response = await rootBundle.loadString('assets/dictionary.json');
-      final List<dynamic> data = json.decode(response);
+      final String response = await DefaultAssetBundle.of(context).loadString('assets/dictionary.json');
+      final List<dynamic> data = List.from(jsonDecode(response));
       if (data.isNotEmpty) {
         final randomWord = data[Random().nextInt(data.length)];
         setState(() {
@@ -159,9 +145,9 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
     }
   }
 
-  void _speak(Word word) async {
+  void _speak(Word word) {
     Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
-    await _flutterTts.speak(word.higaonon);
+    Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
   }
 
   ImageProvider _getAvatarImage(String? avatarUrl) {

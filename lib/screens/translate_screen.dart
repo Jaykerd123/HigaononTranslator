@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
+import 'package:fireb/screens/services/tts_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -21,7 +21,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   List<Word> _words = [];
   List<Word> _filteredWords = [];
   final TextEditingController _searchController = TextEditingController();
-  late FlutterTts _flutterTts;
   bool _isSearching = false;
 
   final SpeechToText _speechToText = SpeechToText();
@@ -43,7 +42,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   @override
   void initState() {
     super.initState();
-    _initializeTts();
     _loadDictionary();
     _searchController.addListener(_onSearchChanged);
     _initSpeech();
@@ -128,14 +126,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
       if (foundSentence.higaonon.isNotEmpty) {
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
-        _flutterTts.speak(foundSentence.exampleHigaonon);
+        Provider.of<TtsService>(context, listen: false).speak(foundSentence.exampleHigaonon);
       }
     }
-  }
-
-  void _initializeTts() async {
-    _flutterTts = FlutterTts();
-    await _flutterTts.setLanguage("ceb-PH");
   }
 
   Future<void> _loadDictionary() async {
@@ -167,9 +160,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     }
   }
 
-  void _speak(Word word) async {
+  void _speak(Word word) {
     Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
-    await _flutterTts.speak(word.higaonon);
+    Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
   }
 
   void _translateText() {
@@ -199,7 +192,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       if (foundWord.higaonon.isNotEmpty) {
         _textTranslationResult = foundWord.higaonon;
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundWord);
-        _flutterTts.speak(foundWord.higaonon);
+        Provider.of<TtsService>(context, listen: false).speak(foundWord.higaonon);
       } else {
         final foundSentence = _words.firstWhere(
             (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
@@ -214,7 +207,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         if (foundSentence.higaonon.isNotEmpty) {
            _textTranslationResult = foundSentence.higaonon;
            Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
-           _flutterTts.speak(foundSentence.higaonon);
+           Provider.of<TtsService>(context, listen: false).speak(foundSentence.higaonon);
         } else {
           _textTranslationResult = 'No translation found for: "$inputText"';
         }
@@ -235,7 +228,6 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   void dispose() {
     _searchController.dispose();
     _textInputController.dispose();
-    _flutterTts.stop();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -452,7 +444,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
               if (showSpeaker)
                 IconButton(
                   icon: const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
-                  onPressed: () => _flutterTts.speak(result),
+                  onPressed: () => Provider.of<TtsService>(context, listen: false).speak(result),
                 ),
               IconButton(
                 icon: const Icon(Icons.copy_rounded, color: Colors.grey, size: 20),

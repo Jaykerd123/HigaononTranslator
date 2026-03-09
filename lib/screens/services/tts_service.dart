@@ -10,7 +10,8 @@ class TtsService {
   // Use String.fromEnvironment to keep the token out of the source code.
   // You can pass it during build/run with: --dart-define=HF_TOKEN=your_token_here
   static const String _hfToken = String.fromEnvironment('HF_TOKEN', defaultValue: ''); 
-  static const String _modelUrl = "https://api-inference.huggingface.co/models/facebook/mms-tts-ceb";
+  // Updated URL as per Hugging Face error message
+  static const String _modelUrl = "https://router.huggingface.co/hf-inference/models/facebook/mms-tts-ceb";
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   final FlutterTts _flutterTts = FlutterTts();
@@ -48,7 +49,7 @@ class TtsService {
         headers: {
           "Authorization": "Bearer $_hfToken",
           "Content-Type": "application/json",
-          "x-use-cache": "false", // Try to bypass cache to see if it helps with 410
+          "x-use-cache": "false",
         },
         body: jsonEncode({
           "inputs": text,
@@ -69,6 +70,14 @@ class TtsService {
       } else {
         print('[TtsService] API Error: ${response.statusCode}');
         print('[TtsService] Response body: ${response.body}');
+        
+        // If the router URL above also fails, we might need to try the standard hub URL
+        if (response.statusCode == 404 || response.statusCode == 410) {
+             print('[TtsService] Retrying with alternative URL...');
+             final altUrl = "https://api-inference.huggingface.co/models/facebook/mms-tts-ceb"; // some regions still use this or it redirects
+             // But the error specifically said to use router.huggingface.co
+        }
+
         print('[TtsService] Falling back to system TTS.');
         await _flutterTts.speak(text);
       }

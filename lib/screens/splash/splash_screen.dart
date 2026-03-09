@@ -21,14 +21,19 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _startAnimation() async {
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
     setState(() {
       _logoMoved = true;
     });
+    
     await Future.delayed(const Duration(milliseconds: 250));
+    if (!mounted) return;
     setState(() {
       _textVisible = true;
     });
+    
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (BuildContext context) => const Wrapper(),
@@ -52,8 +57,8 @@ class _SplashScreenState extends State<SplashScreen> {
             AnimatedOpacity(
               duration: const Duration(seconds: 1),
               opacity: _textVisible ? 1.0 : 0.0,
-              child: Column(
-                children: const [
+              child: const Column(
+                children: [
                   Text(
                     'GOOD DAY!',
                     style: TextStyle(fontSize: 18),

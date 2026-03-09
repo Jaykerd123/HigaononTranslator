@@ -7,10 +7,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 class TtsService {
-  // Use String.fromEnvironment to keep the token out of the source code.
-  // You can pass it during build/run with: --dart-define=HF_TOKEN=your_token_here
   static const String _hfToken = String.fromEnvironment('HF_TOKEN', defaultValue: ''); 
-  // Updated URL as per Hugging Face error message
+  // Using the router URL as recommended by HF logs
   static const String _modelUrl = "https://router.huggingface.co/hf-inference/models/facebook/mms-tts-ceb";
 
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -18,10 +16,8 @@ class TtsService {
 
   TtsService() {
     _initSystemTts();
-    print('[TtsService] Initialized. Token present: ${_hfToken.isNotEmpty}');
-    if (_hfToken.isNotEmpty) {
-      print('[TtsService] Token starts with: ${_hfToken.substring(0, 4)}...');
-    }
+    print('[TtsService] Initialized.');
+    print('[TtsService] Token status: ${_hfToken.isEmpty ? "MISSING" : "PRESENT (${_hfToken.length} chars)"}');
   }
 
   Future<void> _initSystemTts() async {
@@ -34,22 +30,20 @@ class TtsService {
   Future<void> speak(String text) async {
     if (text.isEmpty) return;
 
-    // If token is missing, fallback to system TTS
     if (_hfToken.isEmpty) {
-      print('[TtsService] Hugging Face Token missing, falling back to system TTS.');
+      print('[TtsService] Falling back to system TTS (No Token).');
       await _flutterTts.speak(text);
       return;
     }
 
     try {
-      print('[TtsService] Requesting AI voice for: $text');
+      print('[TtsService] Calling AI API for: "$text"');
       
       final response = await http.post(
         Uri.parse(_modelUrl),
         headers: {
           "Authorization": "Bearer $_hfToken",
           "Content-Type": "application/json",
-          "x-use-cache": "false",
         },
         body: jsonEncode({
           "inputs": text,
@@ -59,30 +53,19 @@ class TtsService {
 
       if (response.statusCode == 200) {
         final Uint8List audioBytes = response.bodyBytes;
-        
-        // Save to a temporary file to play
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/tts_audio.wav');
+        final file = File('${tempDir.path}/tts_audio_${DateTime.now().millisecondsSinceEpoch}.wav');
         await file.writeAsBytes(audioBytes);
 
-        print('[TtsService] Audio received (${audioBytes.length} bytes), playing...');
+        print('[TtsService] SUCCESS: Received ${audioBytes.length} bytes. Playing audio...');
         await _audioPlayer.play(DeviceFileSource(file.path));
       } else {
-        print('[TtsService] API Error: ${response.statusCode}');
-        print('[TtsService] Response body: ${response.body}');
-        
-        // If the router URL above also fails, we might need to try the standard hub URL
-        if (response.statusCode == 404 || response.statusCode == 410) {
-             print('[TtsService] Retrying with alternative URL...');
-             final altUrl = "https://api-inference.huggingface.co/models/facebook/mms-tts-ceb"; // some regions still use this or it redirects
-             // But the error specifically said to use router.huggingface.co
-        }
-
+        print('[TtsService] API ERROR ${response.statusCode}: ${response.body}');
         print('[TtsService] Falling back to system TTS.');
         await _flutterTts.speak(text);
       }
     } catch (e) {
-      print('[TtsService] Exception: $e, falling back to system TTS.');
+      print('[TtsService] EXCEPTION: $e');
       await _flutterTts.speak(text);
     }
   }

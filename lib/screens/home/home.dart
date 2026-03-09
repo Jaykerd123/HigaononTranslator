@@ -23,20 +23,29 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    print('Home initState called');
+    _pageController = PageController(initialPage: _selectedIndex);
   }
 
   @override
   void dispose() {
-    print('Home dispose called');
+    _pageController.dispose();
     super.dispose();
   }
 
   void _onItemTapped(int index) {
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _onPageChanged(int index) {
     setState(() {
       _selectedIndex = index;
     });
@@ -45,14 +54,15 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
-      _HomeScreen(key: ValueKey(widget.key), initialShowAllHistory: false), // Pass the key and initialShowAllHistory
+      _HomeScreen(key: ValueKey(widget.key), initialShowAllHistory: false),
       const TranslateScreen(),
       const MenuScreen(),
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
         children: screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -78,7 +88,7 @@ class _HomeState extends State<Home> {
 }
 
 class _HomeScreen extends StatefulWidget {
-  final bool initialShowAllHistory; // New parameter
+  final bool initialShowAllHistory;
 
   const _HomeScreen({super.key, this.initialShowAllHistory = false});
 
@@ -86,24 +96,25 @@ class _HomeScreen extends StatefulWidget {
   State<_HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<_HomeScreen> {
+class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientMixin {
   Word? _wordOfTheDay;
   late FlutterTts _flutterTts;
-  late bool _showAllHistory; // Initialize with widget parameter
+  late bool _showAllHistory;
   final int _historyDisplayLimit = 4;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    print('_HomeScreen initState called');
-    _showAllHistory = widget.initialShowAllHistory; // Set initial state
+    _showAllHistory = widget.initialShowAllHistory;
     _initializeTts();
     _loadWordOfTheDay();
   }
 
   @override
   void dispose() {
-    print('_HomeScreen dispose called');
     _flutterTts.stop();
     super.dispose();
   }
@@ -123,7 +134,7 @@ class _HomeScreenState extends State<_HomeScreen> {
         });
       }
     } catch (e) {
-      // Handle error, maybe show a default word or an error message
+      // Handle error
     }
   }
 
@@ -134,7 +145,7 @@ class _HomeScreenState extends State<_HomeScreen> {
 
   ImageProvider _getAvatarImage(String? avatarUrl) {
     if (avatarUrl == null || avatarUrl.isEmpty) {
-      return const AssetImage('assets/sagiri.jpg'); // Default avatar
+      return const AssetImage('assets/sagiri.jpg');
     }
     if (avatarUrl.startsWith('assets/')) {
       return AssetImage(avatarUrl);
@@ -145,6 +156,7 @@ class _HomeScreenState extends State<_HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final userData = Provider.of<UserData?>(context);
     final theme = Theme.of(context);
 
@@ -159,15 +171,10 @@ class _HomeScreenState extends State<_HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Section
             _buildUserSection(userData, theme),
             const SizedBox(height: 30),
-
-            // Word of the Day Section
             _buildWordOfTheDaySection(theme),
             const SizedBox(height: 30),
-
-            // History Section
             _buildHistorySection(theme),
           ],
         ),

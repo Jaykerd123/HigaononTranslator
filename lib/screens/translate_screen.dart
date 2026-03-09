@@ -17,7 +17,7 @@ class TranslateScreen extends StatefulWidget {
   State<TranslateScreen> createState() => _TranslateScreenState();
 }
 
-class _TranslateScreenState extends State<TranslateScreen> {
+class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAliveClientMixin {
   List<Word> _words = [];
   List<Word> _filteredWords = [];
   final TextEditingController _searchController = TextEditingController();
@@ -36,6 +36,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
   bool _isVoiceMode = true; // True for Voice, False for Text
   final TextEditingController _textInputController = TextEditingController();
   String _textTranslationResult = '';
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -255,6 +258,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Translate'),

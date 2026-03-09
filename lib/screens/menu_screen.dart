@@ -21,8 +21,11 @@ class MenuScreen extends StatefulWidget {
   State<MenuScreen> createState() => _MenuScreenState();
 }
 
-class _MenuScreenState extends State<MenuScreen> {
+class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMixin {
   XFile? _selectedImage;
+
+  @override
+  bool get wantKeepAlive => true;
 
   ImageProvider _getAvatarImage(String? avatarUrl) {
     print('[MenuScreen] _getAvatarImage called with avatarUrl: $avatarUrl');
@@ -119,6 +122,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final userData = Provider.of<UserData?>(context);
     final auth = Provider.of<AuthService>(context);
     print('[MenuScreen] build called. UserData avatarUrl: ${userData?.avatarUrl}');

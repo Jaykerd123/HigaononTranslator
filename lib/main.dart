@@ -3,6 +3,7 @@ import 'package:fireb/screens/home/home.dart';
 import 'package:fireb/screens/services/auth.dart';
 import 'package:fireb/screens/services/database.dart';
 import 'package:fireb/screens/services/history_service.dart';
+import 'package:fireb/screens/services/bookmark_service.dart';
 import 'package:fireb/screens/services/tts_service.dart';
 import 'package:fireb/screens/wrapper.dart'; // Import the Wrapper
 import 'package:fireb/screens/splash/splash_screen.dart';
@@ -42,13 +43,23 @@ class MyApp extends StatelessWidget {
           return MultiProvider(
             providers: [
               ChangeNotifierProvider<HistoryService>(
-                key: ValueKey(user?.uid),
+                key: ValueKey('history_${user?.uid}'),
                 create: (context) {
                   final historyService = HistoryService();
                   if (user != null) {
                     historyService.loadHistoryFromFirestore();
                   }
                   return historyService;
+                },
+              ),
+              ChangeNotifierProvider<BookmarkService>(
+                key: ValueKey('bookmarks_${user?.uid}'),
+                create: (context) {
+                  final bookmarkService = BookmarkService();
+                  if (user != null) {
+                    bookmarkService.loadBookmarksFromFirestore();
+                  }
+                  return bookmarkService;
                 },
               ),
               StreamProvider<UserData?>.value(

@@ -230,5 +230,621 @@
     "english": "Book",
     "example_higaonon": "Gusto ko magbasa ug libro.",
     "example_english": "I want to read a book."
+  },
+  {
+    "higaonon": "hawaan",
+    "tagalog": "Iwanan",
+    "part_of_speech": "Verb",
+    "english": "Abandon",
+    "example_higaonon": "Dili ka dapat hawaan an imo pamilya.",
+    "example_english": "You should not abandon your family."
+  },
+  {
+    "higaonon": "kalay-kalay",
+    "tagalog": "Hindi normal",
+    "part_of_speech": "Adjective",
+    "english": "Abnormal",
+    "example_higaonon": "Kalay-kalay an iyang ginabuhat.",
+    "example_english": "What he is doing is abnormal."
+  },
+  {
+    "higaonon": "sampaw",
+    "tagalog": "Sa itaas",
+    "part_of_speech": "Preposition",
+    "english": "Above",
+    "example_higaonon": "Ibutang an libro sampaw sa lamesa.",
+    "example_english": "Place the book above the table."
+  },
+  {
+    "higaonon": "palabi",
+    "tagalog": "Pagmamaltrato",
+    "part_of_speech": "Noun",
+    "english": "Abuse",
+    "example_higaonon": "Dili maayo an palabi sa mga bata.",
+    "example_english": "Abuse of children is not good."
+  },
+  {
+    "higaonon": "napungahan",
+    "tagalog": "Gawin",
+    "part_of_speech": "Verb",
+    "english": "Accomplish",
+    "example_higaonon": "Napungahan niya an trabaho sa oras.",
+    "example_english": "He accomplished the work on time."
+  },
+  {
+    "higaonon": "naamol",
+    "tagalog": "Mag-ipon",
+    "part_of_speech": "Verb",
+    "english": "Accumulate",
+    "example_higaonon": "Naamol siya ug kwarta para sa umaabot.",
+    "example_english": "He accumulates money for the future."
+  },
+  {
+    "higaonon": "daygunun",
+    "tagalog": "Kilalanin",
+    "part_of_speech": "Verb",
+    "english": "Acknowledge",
+    "example_higaonon": "Daygunun nato an tabang niya.",
+    "example_english": "Let us acknowledge his help."
+  },
+  {
+    "higaonon": "tag timaan",
+    "tagalog": "Tirahan",
+    "part_of_speech": "Noun",
+    "english": "Address",
+    "example_higaonon": "Unsay tag timaan nimo?",
+    "example_english": "What is your address?"
+  },
+  {
+    "higaonon": "maymayan",
+    "tagalog": "Payuhan",
+    "part_of_speech": "Verb",
+    "english": "Admonish",
+    "example_higaonon": "Maymayan siya sa iyang amahan.",
+    "example_english": "He was admonished by his father."
+  },
+  {
+    "higaonon": "laas",
+    "tagalog": "Matanda",
+    "part_of_speech": "Noun",
+    "english": "Adult",
+    "example_higaonon": "Laas na siya ug responsable na.",
+    "example_english": "He is already an adult and responsible."
+  },
+  {
+    "higaonon": "isab",
+    "tagalog": "Muli",
+    "part_of_speech": "Adverb",
+    "english": "Again",
+    "example_higaonon": "Buhata isab.",
+    "example_english": "Do it again."
+  },
+  {
+    "higaonon": "tagpamugos",
+    "tagalog": "Mapusok",
+    "part_of_speech": "Adjective",
+    "english": "Aggressive",
+    "example_higaonon": "Tagpamugos kaayo an iro.",
+    "example_english": "The dog is very aggressive."
+  },
+  {
+    "higaonon": "tumong",
+    "tagalog": "Layunin",
+    "part_of_speech": "Noun",
+    "english": "Aim",
+    "example_higaonon": "Malinaw an iyang tumong sa kinabuhi.",
+    "example_english": "His aim in life is clear."
+  },
+  {
+    "higaonon": "kalamag",
+    "tagalog": "Hangin",
+    "part_of_speech": "Noun",
+    "english": "Air",
+    "example_higaonon": "Presko an kalamag karon.",
+    "example_english": "The air is fresh today."
+  },
+  {
+    "higaonon": "ilhanan",
+    "tagalog": "Alarm",
+    "part_of_speech": "Noun",
+    "english": "Alarm",
+    "example_higaonon": "Mutingog an ilhanan kung naay peligro.",
+    "example_english": "The alarm sounds when there is danger."
+  },
+  {
+    "higaonon": "kahangluk",
+    "tagalog": "Takot",
+    "part_of_speech": "Adjective",
+    "english": "Afraid",
+    "example_higaonon": "Kahangluk siya sa ngitngit.",
+    "example_english": "He is afraid of the dark."
+  },
+  {
+    "higaonon": "migluntod",
+    "tagalog": "Bumaba",
+    "part_of_speech": "Verb",
+    "english": "Alight",
+    "example_higaonon": "Migluntod siya sa sakyanan.",
+    "example_english": "He alighted from the vehicle."
+  },
+  {
+    "higaonon": "alan",
+    "tagalog": "Lahat",
+    "part_of_speech": "Pronoun",
+    "english": "All",
+    "example_higaonon": "Alan sila miabot sa pista.",
+    "example_english": "All of them arrived at the festival."
+  },
+  {
+    "higaonon": "tugutan",
+    "tagalog": "Payagan",
+    "part_of_speech": "Verb",
+    "english": "Allow",
+    "example_higaonon": "Tugutan siya sa iyang ginikanan.",
+    "example_english": "He was allowed by his parents."
+  },
+  {
+    "higaonon": "ilahad",
+    "tagalog": "Limos",
+    "part_of_speech": "Noun",
+    "english": "Alms",
+    "example_higaonon": "Naghatag siya ug ilahad sa kabus.",
+    "example_english": "He gave alms to the poor."
+  },
+  {
+    "higaonon": "magayhaun",
+    "tagalog": "Malayo",
+    "part_of_speech": "Adjective",
+    "english": "Aloof",
+    "example_higaonon": "Magayhaun siya sa ubang tawo.",
+    "example_english": "He is aloof from other people."
+  },
+  {
+    "higaonon": "naisab",
+    "tagalog": "Baguhin",
+    "part_of_speech": "Verb",
+    "english": "Alter",
+    "example_higaonon": "Naisab niya an plano sa trabaho.",
+    "example_english": "He altered the plan at work."
+  },
+  {
+    "higaonon": "migtubaga",
+    "tagalog": "Pagtatalo",
+    "part_of_speech": "Noun",
+    "english": "Altercation",
+    "example_higaonon": "Nagkaroon sila ug migtubaga sa merkado.",
+    "example_english": "They had an altercation at the market."
+  },
+  {
+    "higaonon": "malangkaw",
+    "tagalog": "Katiwasayan",
+    "part_of_speech": "Noun",
+    "english": "Altitude",
+    "example_higaonon": "Malangkaw an lugar sa bukid.",
+    "example_english": "The place in the mountain has high altitude."
+  },
+  {
+    "higaonon": "nabulung",
+    "tagalog": "Mamangha",
+    "part_of_speech": "Verb",
+    "english": "Amaze",
+    "example_higaonon": "Nabulung siya sa katahum sa lugar.",
+    "example_english": "He was amazed by the beauty of the place."
+  },
+  {
+    "higaonon": "moyamoya",
+    "tagalog": "Anekdota",
+    "part_of_speech": "Noun",
+    "english": "Anecdote",
+    "example_higaonon": "Nagsaysay siya ug moyamoya sa iyang kabataan.",
+    "example_english": "He told an anecdote about his childhood."
+  },
+  {
+    "higaonon": "palo",
+    "tagalog": "Bukong-bukong",
+    "part_of_speech": "Noun",
+    "english": "Ankle",
+    "example_higaonon": "Nasakitan an iyang palo sa paglakaw.",
+    "example_english": "His ankle hurt while walking."
+  },
+  {
+    "higaonon": "ingpatokawan",
+    "tagalog": "Ihayag",
+    "part_of_speech": "Verb",
+    "english": "Announce",
+    "example_higaonon": "Ingpatokawan niya an balita sa baryo.",
+    "example_english": "He announced the news in the village."
+  },
+  {
+    "higaonon": "malibug",
+    "tagalog": "Balisa",
+    "part_of_speech": "Adjective",
+    "english": "Anxious",
+    "example_higaonon": "Malibug siya sa resulta sa eksam.",
+    "example_english": "He is anxious about the exam result."
+  },
+  {
+    "higaonon": "bisan",
+    "tagalog": "Anuman",
+    "part_of_speech": "Pronoun",
+    "english": "Any",
+    "example_higaonon": "Bisan unsa pwede nimo piliun.",
+    "example_english": "You can choose any."
+  },
+  {
+    "higaonon": "tubag",
+    "tagalog": "Sagot",
+    "part_of_speech": "Noun",
+    "english": "Answer",
+    "example_higaonon": "Sakto an iyang tubag sa pangutana.",
+    "example_english": "His answer to the question is correct."
+  },
+  {
+    "higaonon": "tigasaw",
+    "tagalog": "Langgam",
+    "part_of_speech": "Noun",
+    "english": "Ant",
+    "example_higaonon": "Daghan tigasaw sa daplin sa dalan.",
+    "example_english": "There are many ants beside the road."
+  },
+  {
+    "higaonon": "aya",
+    "tagalog": "Tita",
+    "part_of_speech": "Noun",
+    "english": "Aunt",
+    "example_higaonon": "Miabot an akong aya sa balay.",
+    "example_english": "My aunt arrived at the house."
+  },
+  {
+    "higaonon": "kagtinubaga",
+    "tagalog": "Makipagtalo",
+    "part_of_speech": "Verb",
+    "english": "Argue",
+    "example_higaonon": "Kagtinubaga sila bahin sa isyu.",
+    "example_english": "They argue about the issue."
+  },
+  {
+    "higaonon": "ipahitundog",
+    "tagalog": "Bumangon",
+    "part_of_speech": "Verb",
+    "english": "Arise",
+    "example_higaonon": "Ipahitundog siya sa higdaanan.",
+    "example_english": "He arose from the bed."
+  },
+  {
+    "higaonon": "taliwada",
+    "tagalog": "Lilitaw",
+    "part_of_speech": "Verb",
+    "english": "Appear",
+    "example_higaonon": "Taliwada ang bulan sa gabii.",
+    "example_english": "The moon appears at night."
+  },
+  {
+    "higaonon": "kagdaupay",
+    "tagalog": "Palakpakan",
+    "part_of_speech": "Verb",
+    "english": "Applaud",
+    "example_higaonon": "Kagdaupay ang tanan human sa performance.",
+    "example_english": "Everyone applauded after the performance."
+  },
+  {
+    "higaonon": "balukan",
+    "tagalog": "Braso",
+    "part_of_speech": "Noun",
+    "english": "Arm",
+    "example_higaonon": "Nasakitan an iyang balukan sa trabaho.",
+    "example_english": "His arm got hurt at work."
+  },
+  {
+    "higaonon": "migdibaluya",
+    "tagalog": "Sa paligid",
+    "part_of_speech": "Adverb",
+    "english": "Around",
+    "example_higaonon": "Naglibot siya migdibaluya sa plaza.",
+    "example_english": "He walked around the plaza."
+  },
+  {
+    "higaonon": "nakauma",
+    "tagalog": "Dumating",
+    "part_of_speech": "Verb",
+    "english": "Arrive",
+    "example_higaonon": "Nakauma siya sa eskwelahan sa oras.",
+    "example_english": "He arrived at school on time."
+  },
+  {
+    "higaonon": "suminakat",
+    "tagalog": "Umakyat",
+    "part_of_speech": "Verb",
+    "english": "Ascend",
+    "example_higaonon": "Suminakat siya sa atop sa balay.",
+    "example_english": "He ascended to the roof of the house."
+  },
+  {
+    "higaonon": "nagayha",
+    "tagalog": "Nahiya",
+    "part_of_speech": "Adjective",
+    "english": "Ashamed",
+    "example_higaonon": "Nagayha siya sa iyang sayop.",
+    "example_english": "He is ashamed of his mistake."
+  },
+  {
+    "higaonon": "pangingsa",
+    "tagalog": "Magtanong",
+    "part_of_speech": "Verb",
+    "english": "Ask",
+    "example_higaonon": "Pangingsa siya bahin sa problema.",
+    "example_english": "He asked about the problem."
+  },
+  {
+    "higaonon": "nakatidoga",
+    "tagalog": "Tulog",
+    "part_of_speech": "Adjective",
+    "english": "Asleep",
+    "example_higaonon": "Nakatidoga ang bata sa higdaanan.",
+    "example_english": "The child is asleep on the bed."
+  },
+  {
+    "higaonon": "amol-amol",
+    "tagalog": "Magtipon",
+    "part_of_speech": "Verb",
+    "english": "Assemble",
+    "example_higaonon": "Amol-amol ang mga estudyante sa klase.",
+    "example_english": "The students assembled in the classroom."
+  },
+  {
+    "higaonon": "nabulong",
+    "tagalog": "Mamangha",
+    "part_of_speech": "Verb",
+    "english": "Astonish",
+    "example_higaonon": "Nabulong siya sa katahum sa tan-awon.",
+    "example_english": "He was astonished by the beautiful view."
+  },
+  {
+    "higaonon": "agapil",
+    "tagalog": "Dumalo",
+    "part_of_speech": "Verb",
+    "english": "Attend",
+    "example_higaonon": "Agapil siya sa miting sa barangay.",
+    "example_english": "He attended the village meeting."
+  },
+  {
+    "higaonon": "balus",
+    "tagalog": "Maghiganti",
+    "part_of_speech": "Verb",
+    "english": "Avenge",
+    "example_higaonon": "Balus siya sa iyang kaaway.",
+    "example_english": "He avenged his enemy."
+  },
+  {
+    "higaonon": "napukaw",
+    "tagalog": "Gisingin",
+    "part_of_speech": "Verb",
+    "english": "Awaken",
+    "example_higaonon": "Napukaw siya sa alas sais sa buntag.",
+    "example_english": "He was awakened at six in the morning."
+  },
+  {
+    "higaonon": "talikodan",
+    "tagalog": "Bumalik",
+    "part_of_speech": "Verb",
+    "english": "Back",
+    "example_higaonon": "Talikodan siya gikan sa merkado.",
+    "example_english": "He came back from the market."
+  },
+  {
+    "higaonon": "buntung",
+    "tagalog": "Kawayan",
+    "part_of_speech": "Noun",
+    "english": "Bamboo",
+    "example_higaonon": "Gamiton an buntung sa pagtukod sa balay.",
+    "example_english": "The bamboo is used to build the house."
+  },
+  {
+    "higaonon": "nalaag",
+    "tagalog": "Itaboy",
+    "part_of_speech": "Verb",
+    "english": "Banish",
+    "example_higaonon": "Nalaag siya sa baryo tungod sa iyang sala.",
+    "example_english": "He was banished from the village because of his crime."
+  },
+  {
+    "higaonon": "minanga",
+    "tagalog": "Bangko",
+    "part_of_speech": "Noun",
+    "english": "Bank",
+    "example_higaonon": "Nagdapit siya sa minanga sa lungsod.",
+    "example_english": "He went to the bank in town."
+  },
+  {
+    "higaonon": "lubas",
+    "tagalog": "Hubad",
+    "part_of_speech": "Adjective",
+    "english": "Bare",
+    "example_higaonon": "Lubas ang kahoy sa uma.",
+    "example_english": "The tree in the field is bare."
+  },
+  {
+    "higaonon": "gubo",
+    "tagalog": "Balat ng puno",
+    "part_of_speech": "Noun",
+    "english": "Bark",
+    "example_higaonon": "Gisukot niya an gubo sa kahoy.",
+    "example_english": "He peeled the bark from the tree."
+  },
+  {
+    "higaonon": "bonega",
+    "tagalog": "Kamalig",
+    "part_of_speech": "Noun",
+    "english": "Barn",
+    "example_higaonon": "Ang bonega puno sa humay.",
+    "example_english": "The barn is full of rice."
+  },
+  {
+    "higaonon": "taglangoy",
+    "tagalog": "Paliguan",
+    "part_of_speech": "Noun",
+    "english": "Bath",
+    "example_higaonon": "Nagpaligo siya sa taglangoy.",
+    "example_english": "He took a bath at the bathhouse."
+  },
+  {
+    "higaonon": "balangol",
+    "tagalog": "String",
+    "part_of_speech": "Noun",
+    "english": "Beans string",
+    "example_higaonon": "Nagatamasa siya ug balangol gikan sa tanaman.",
+    "example_english": "He harvested beans string from the garden."
+  },
+  {
+    "higaonon": "sompa",
+    "tagalog": "Balbas",
+    "part_of_speech": "Noun",
+    "english": "Beard",
+    "example_higaonon": "Nagtubo an sompa niya sa dugay na panahon.",
+    "example_english": "His beard grew over a long time."
+  },
+  {
+    "higaonon": "langgam",
+    "tagalog": "Hayop",
+    "part_of_speech": "Noun",
+    "english": "Beast",
+    "example_higaonon": "Grabe ka kusog an langgam sa kagubatan.",
+    "example_english": "The beast in the forest is very strong."
+  },
+  {
+    "higaonon": "bonalan",
+    "tagalog": "Talunin",
+    "part_of_speech": "Verb",
+    "english": "Beat",
+    "example_higaonon": "Bonalan niya an rekord sa duwa.",
+    "example_english": "He beat the record in the game."
+  },
+  {
+    "higaonon": "maydika",
+    "tagalog": "Maganda",
+    "part_of_speech": "Adjective",
+    "english": "Beautiful",
+    "example_higaonon": "Maydika an tan-awon sa kabukiran.",
+    "example_english": "The view in the mountains is beautiful."
+  },
+  {
+    "higaonon": "tungod",
+    "tagalog": "Dahil",
+    "part_of_speech": "Conjunction",
+    "english": "Because",
+    "example_higaonon": "Wala siya miapil tungod sa sakit.",
+    "example_english": "He did not attend because of illness."
+  },
+  {
+    "higaonon": "kapayun",
+    "tagalog": "Sulo",
+    "part_of_speech": "Noun",
+    "english": "Beacon",
+    "example_higaonon": "Ang kapayun naggiya sa mga mananagat.",
+    "example_english": "The beacon guided the fishermen."
+  },
+  {
+    "higaonon": "nahimo",
+    "tagalog": "Maging",
+    "part_of_speech": "Verb",
+    "english": "Become",
+    "example_higaonon": "Nahimo siya nga lider sa komunidad.",
+    "example_english": "He became a leader in the community."
+  },
+  {
+    "higaonon": "linimbongan",
+    "tagalog": "Linlangin",
+    "part_of_speech": "Verb",
+    "english": "Beguile",
+    "example_higaonon": "Linimbongan siya sa tawo nga walay maayo nga tuyo.",
+    "example_english": "He was beguiled by a person with bad intentions."
+  },
+  {
+    "higaonon": "sugu",
+    "tagalog": "Paniniwala",
+    "part_of_speech": "Noun",
+    "english": "Belief",
+    "example_higaonon": "Sugu niya an gituohan sa iyang pamilya.",
+    "example_english": "His belief is based on his family's faith."
+  },
+  {
+    "higaonon": "pangimbunal",
+    "tagalog": "Maniniwala",
+    "part_of_speech": "Verb",
+    "english": "Believe",
+    "example_higaonon": "Pangimbunal siya sa gisaad sa iyang amigo.",
+    "example_english": "He believes in the promise of his friend."
+  },
+  {
+    "higaonon": "bagtingan",
+    "tagalog": "Kampana",
+    "part_of_speech": "Noun",
+    "english": "Bell",
+    "example_higaonon": "Nagtingog an bagtingan sa simbahan.",
+    "example_english": "The bell in the church rang."
+  },
+  {
+    "higaonon": "kandin",
+    "tagalog": "Kabilang",
+    "part_of_speech": "Verb",
+    "english": "Belong",
+    "example_higaonon": "Kandin siya sa komunidad sa baryo.",
+    "example_english": "He belongs to the village community."
+  },
+  {
+    "higaonon": "maayad",
+    "tagalog": "Pinakamahusay",
+    "part_of_speech": "Adjective",
+    "english": "Best",
+    "example_higaonon": "Maayad siya sa tanan niyang ginabuhat.",
+    "example_english": "He does his best in everything he does."
+  },
+  {
+    "higaonon": "kinalitan",
+    "tagalog": "Traydoran",
+    "part_of_speech": "Verb",
+    "english": "Betray",
+    "example_higaonon": "Kinalitan siya sa iyang kasaligan nga amigo.",
+    "example_english": "He was betrayed by his trusted friend."
+  },
+  {
+    "higaonon": "maarang",
+    "tagalog": "Mas mabuti",
+    "part_of_speech": "Adjective",
+    "english": "Better",
+    "example_higaonon": "Maarang an desisyon kaysa sa una.",
+    "example_english": "The decision is better than the previous one."
+  },
+  {
+    "higaonon": "katamanaan",
+    "tagalog": "Higit pa sa",
+    "part_of_speech": "Preposition",
+    "english": "Beyond",
+    "example_higaonon": "Katamanaan sa kahibalo an iyang abot.",
+    "example_english": "He has knowledge beyond what is expected."
+  },
+  {
+    "higaonon": "adagi",
+    "tagalog": "Malaki",
+    "part_of_speech": "Adjective",
+    "english": "Big",
+    "example_higaonon": "Adagi an balay sa baryo.",
+    "example_english": "The house in the village is big."
+  },
+  {
+    "higaonon": "bagkus",
+    "tagalog": "Ibigkis",
+    "part_of_speech": "Verb",
+    "english": "Bind",
+    "example_higaonon": "Gibagkus niya an mga kahoy para sa apoy.",
+    "example_english": "He bound the wood for the fire."
+  },
+  {
+    "higaonon": "tagbis",
+    "tagalog": "Ibon",
+    "part_of_speech": "Noun",
+    "english": "Bird",
+    "example_higaonon": "Daghan tagbis sa kakahuyan.",
+    "example_english": "There are many birds in the forest."
   }
 ]

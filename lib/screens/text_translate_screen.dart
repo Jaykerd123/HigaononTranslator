@@ -46,6 +46,9 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
   }
 
   void _translateText() {
+    // Hide the keyboard
+    FocusScope.of(context).unfocus();
+
     final inputText = _textInputController.text;
     if (inputText.isEmpty) {
       setState(() {

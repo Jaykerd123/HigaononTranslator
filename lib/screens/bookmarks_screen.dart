@@ -17,6 +17,13 @@ class BookmarkedWordsScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: theme.textTheme.bodyLarge?.color,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            FocusScope.of(context).unfocus();
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Consumer<BookmarkService>(
         builder: (context, bookmarkService, child) {

@@ -180,6 +180,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   }
 
   void _translateText() {
+    // Hide the keyboard
+    FocusScope.of(context).unfocus();
+
     final inputText = _textInputController.text;
     if (inputText.isEmpty) {
       setState(() {

@@ -138,7 +138,12 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
       final String response = await DefaultAssetBundle.of(context).loadString('assets/dictionary.json');
       final List<dynamic> data = List.from(jsonDecode(response));
       if (data.isNotEmpty) {
-        final randomWord = data[Random().nextInt(data.length)];
+        // Create a seed based on the current date (YYYYMMDD) to ensure the word stays the same for the day
+        final now = DateTime.now();
+        final int seed = now.year * 10000 + now.month * 100 + now.day;
+
+        final random = Random(seed);
+        final randomWord = data[random.nextInt(data.length)];
         setState(() {
           _wordOfTheDay = Word.fromJson(randomWord);
         });

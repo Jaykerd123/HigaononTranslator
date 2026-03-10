@@ -5,7 +5,9 @@ import 'dart:math';
 import 'package:fireb/models/user.dart';
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
+import 'package:fireb/screens/services/bookmark_service.dart';
 import 'package:fireb/screens/services/tts_service.dart';
+import 'package:fireb/screens/bookmarks_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -208,6 +210,7 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildWordOfTheDayCard(theme),
+                  _buildSavedBookmarksSection(theme),
                   const SizedBox(height: 24),
                   _buildHistorySection(theme),
                 ],
@@ -244,14 +247,34 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'WORD OF THE DAY',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      fontSize: 12,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'WORD OF THE DAY',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Consumer<BookmarkService>(
+                        builder: (context, bookmarkService, child) {
+                          final isBookmarked = bookmarkService.isBookmarked(_wordOfTheDay!);
+                          return IconButton(
+                            icon: Icon(
+                              isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                            onPressed: () {
+                              bookmarkService.toggleBookmark(_wordOfTheDay!);
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -296,6 +319,36 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildSavedBookmarksSection(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BookmarkedWordsScreen()),
+          );
+        },
+        child: Row(
+          children: [
+            const Icon(Icons.bookmark_rounded, color: Colors.redAccent),
+            const SizedBox(width: 8),
+            Text(
+              'Saved Bookmarks',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right_rounded, color: theme.disabledColor),
+          ],
+        ),
       ),
     );
   }

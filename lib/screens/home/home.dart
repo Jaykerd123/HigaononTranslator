@@ -262,15 +262,20 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
                       Consumer<BookmarkService>(
                         builder: (context, bookmarkService, child) {
                           final isBookmarked = bookmarkService.isBookmarked(_wordOfTheDay!);
-                          return IconButton(
-                            icon: Icon(
-                              isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                              color: Colors.white,
-                              size: 24,
+                          return GestureDetector(
+                            onTap: () => bookmarkService.toggleBookmark(_wordOfTheDay!),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                                color: isBookmarked ? Colors.yellowAccent : Colors.white,
+                                size: 24,
+                              ),
                             ),
-                            onPressed: () {
-                              bookmarkService.toggleBookmark(_wordOfTheDay!);
-                            },
                           );
                         },
                       ),

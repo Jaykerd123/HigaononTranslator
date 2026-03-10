@@ -56,49 +56,43 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
 
     final normalizedInput = _normalizeString(inputText);
 
-    // Search for direct English word/sentence match
-    final foundWord = _words.firstWhere(
-      (word) => _normalizeString(word.english) == normalizedInput ||
-                _normalizeString(word.exampleEnglish) == normalizedInput,
-      orElse: () => Word(
-          higaonon: '',
-          english: '',
-          tagalog: '',
-          partOfSpeech: '',
-          exampleHigaonon: 'No direct translation found',
-          exampleEnglish: ''),
-    );
+    // 1. Try to find a direct word match first
+    try {
+      final wordMatch = _words.firstWhere(
+        (word) => _normalizeString(word.english) == normalizedInput,
+      );
+      setState(() {
+        _translationResult = wordMatch.higaonon;
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
+        _flutterTts.speak(wordMatch.higaonon);
+      });
+      return;
+    } catch (e) {
+      // Word match not found, continue to sentence match
+    }
+
+    // 2. Try to find a sentence match
+    try {
+      final sentenceMatch = _words.firstWhere(
+        (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
+      );
+      setState(() {
+        _translationResult = sentenceMatch.exampleHigaonon;
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
+        _flutterTts.speak(sentenceMatch.exampleHigaonon);
+      });
+      return;
+    } catch (e) {
+      // Sentence match not found
+    }
 
     setState(() {
-      if (foundWord.higaonon.isNotEmpty) {
-        _translationResult = foundWord.higaonon;
-        Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundWord);
-        _flutterTts.speak(foundWord.higaonon);
-      } else {
-        // Fallback for sentence translation if a direct word isn't found
-        final foundSentence = _words.firstWhere(
-            (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
-            orElse: () => Word(
-                higaonon: '',
-                english: '',
-                tagalog: '',
-                partOfSpeech: '',
-                exampleHigaonon: 'No translation found for sentence',
-                exampleEnglish: '')
-        );
-        if (foundSentence.higaonon.isNotEmpty) {
-           _translationResult = foundSentence.higaonon;
-           Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
-           _flutterTts.speak(foundSentence.higaonon);
-        } else {
-          _translationResult = 'No translation found for: "$inputText"';
-        }
-      }
+      _translationResult = 'No translation found for: "$inputText"';
     });
   }
 
   void _copyToClipboard() {
-    if (_translationResult.isNotEmpty && _translationResult != 'No translation found for sentence' && _translationResult != 'No translation found for: "${_textInputController.text}"' && _translationResult != 'Please enter text to translate.') {
+    if (_translationResult.isNotEmpty && !_translationResult.startsWith('No translation found') && _translationResult != 'Please enter text to translate.') {
       Clipboard.setData(ClipboardData(text: _translationResult));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Translation copied to clipboard!')),
@@ -181,7 +175,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
                         style: theme.textTheme.bodyLarge,
                       ),
                     ),
-                    if (_translationResult.isNotEmpty && _translationResult != 'No translation found for sentence' && _translationResult != 'No translation found for: "${_textInputController.text}"' && _translationResult != 'Please enter text to translate.')
+                    if (_translationResult.isNotEmpty && !_translationResult.startsWith('No translation found') && _translationResult != 'Please enter text to translate.')
                       IconButton(
                         icon: Icon(Icons.copy, color: theme.colorScheme.secondary),
                         onPressed: _copyToClipboard,

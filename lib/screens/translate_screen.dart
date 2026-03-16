@@ -108,26 +108,40 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
   void _translateVoiceInput() {
     if (_lastWords.isNotEmpty) {
-      final normalizedLastWords = _normalizeString(_lastWords);
-      final foundSentence = _words.firstWhere(
-        (word) => _normalizeString(word.exampleEnglish) == normalizedLastWords,
-        orElse: () => Word(
-            higaonon: '',
-            english: '',
-            tagalog: '',
-            partOfSpeech: '',
-            exampleHigaonon: 'No translation found for sentence',
-            exampleEnglish: ''),
-      );
-      setState(() {
-        _voiceTranslationResult = foundSentence.exampleHigaonon;
-        _voiceTranslationFound = foundSentence.higaonon.isNotEmpty;
-      });
+      final normalizedInput = _normalizeString(_lastWords);
 
-      if (foundSentence.higaonon.isNotEmpty) {
-        Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
-        Provider.of<TtsService>(context, listen: false).speak(foundSentence.exampleHigaonon);
-      }
+      // 1. Try word match
+      try {
+        final wordMatch = _words.firstWhere(
+          (word) => _normalizeString(word.english) == normalizedInput,
+        );
+        setState(() {
+          _voiceTranslationResult = wordMatch.higaonon;
+          _voiceTranslationFound = true;
+        });
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
+        Provider.of<TtsService>(context, listen: false).speak(wordMatch.higaonon);
+        return;
+      } catch (e) {}
+
+      // 2. Try sentence match
+      try {
+        final sentenceMatch = _words.firstWhere(
+          (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
+        );
+        setState(() {
+          _voiceTranslationResult = sentenceMatch.exampleHigaonon;
+          _voiceTranslationFound = true;
+        });
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
+        Provider.of<TtsService>(context, listen: false).speak(sentenceMatch.exampleHigaonon);
+        return;
+      } catch (e) {}
+
+      setState(() {
+        _voiceTranslationResult = 'No translation found';
+        _voiceTranslationFound = false;
+      });
     }
   }
 
@@ -166,6 +180,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
   }
 
   void _translateText() {
+    // Hide the keyboard
+    FocusScope.of(context).unfocus();
+
     final inputText = _textInputController.text;
     if (inputText.isEmpty) {
       setState(() {
@@ -176,47 +193,39 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
     final normalizedInput = _normalizeString(inputText);
 
-    final foundWord = _words.firstWhere(
-      (word) => _normalizeString(word.english) == normalizedInput ||
-                _normalizeString(word.exampleEnglish) == normalizedInput,
-      orElse: () => Word(
-          higaonon: '',
-          english: '',
-          tagalog: '',
-          partOfSpeech: '',
-          exampleHigaonon: 'No direct translation found',
-          exampleEnglish: ''),
-    );
+    // 1. Try word match
+    try {
+      final wordMatch = _words.firstWhere(
+        (word) => _normalizeString(word.english) == normalizedInput,
+      );
+      setState(() {
+        _textTranslationResult = wordMatch.higaonon;
+      });
+      Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
+      Provider.of<TtsService>(context, listen: false).speak(wordMatch.higaonon);
+      return;
+    } catch (e) {}
+
+    // 2. Try sentence match
+    try {
+      final sentenceMatch = _words.firstWhere(
+        (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
+      );
+      setState(() {
+        _textTranslationResult = sentenceMatch.exampleHigaonon;
+      });
+      Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
+      Provider.of<TtsService>(context, listen: false).speak(sentenceMatch.exampleHigaonon);
+      return;
+    } catch (e) {}
 
     setState(() {
-      if (foundWord.higaonon.isNotEmpty) {
-        _textTranslationResult = foundWord.higaonon;
-        Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundWord);
-        Provider.of<TtsService>(context, listen: false).speak(foundWord.higaonon);
-      } else {
-        final foundSentence = _words.firstWhere(
-            (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
-            orElse: () => Word(
-                higaonon: '',
-                english: '',
-                tagalog: '',
-                partOfSpeech: '',
-                exampleHigaonon: 'No translation found for sentence',
-                exampleEnglish: '')
-        );
-        if (foundSentence.higaonon.isNotEmpty) {
-           _textTranslationResult = foundSentence.higaonon;
-           Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
-           Provider.of<TtsService>(context, listen: false).speak(foundSentence.higaonon);
-        } else {
-          _textTranslationResult = 'No translation found for: "$inputText"';
-        }
-      }
+      _textTranslationResult = 'No translation found for: "$inputText"';
     });
   }
 
   void _copyToClipboard() {
-    if (_textTranslationResult.isNotEmpty) {
+    if (_textTranslationResult.isNotEmpty && !_textTranslationResult.startsWith('No translation found')) {
       Clipboard.setData(ClipboardData(text: _textTranslationResult));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Translation copied to clipboard!')),
@@ -412,7 +421,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
           ),
           const SizedBox(height: 16),
           if (_textTranslationResult.isNotEmpty)
-             _buildResultCard(theme, _textInputController.text, _textTranslationResult, true),
+             _buildResultCard(theme, _textInputController.text, _textTranslationResult, !_textTranslationResult.startsWith('No translation found') && !_textTranslationResult.startsWith('Please enter')),
           const SizedBox(height: 16),
         ],
       ),
@@ -446,10 +455,11 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
                   icon: const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
                   onPressed: () => Provider.of<TtsService>(context, listen: false).speak(result),
                 ),
-              IconButton(
-                icon: const Icon(Icons.copy_rounded, color: Colors.grey, size: 20),
-                onPressed: _copyToClipboard,
-              ),
+              if (showSpeaker)
+                IconButton(
+                  icon: const Icon(Icons.copy_rounded, color: Colors.grey, size: 20),
+                  onPressed: _copyToClipboard,
+                ),
             ],
           ),
         ],

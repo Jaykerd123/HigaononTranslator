@@ -39,6 +39,9 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
   }
 
   void _translateText() {
+    // Hide the keyboard
+    FocusScope.of(context).unfocus();
+
     final inputText = _textInputController.text;
     if (inputText.isEmpty) {
       setState(() {
@@ -49,6 +52,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
 
     final normalizedInput = _normalizeString(inputText);
 
+<<<<<<< HEAD
     final foundWord = _words.firstWhere(
       (word) => _normalizeString(word.english) == normalizedInput ||
                 _normalizeString(word.exampleEnglish) == normalizedInput,
@@ -85,11 +89,45 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
           _translationResult = 'No translation found for: "$inputText"';
         }
       }
+=======
+    // 1. Try to find a direct word match first
+    try {
+      final wordMatch = _words.firstWhere(
+        (word) => _normalizeString(word.english) == normalizedInput,
+      );
+      setState(() {
+        _translationResult = wordMatch.higaonon;
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
+        _flutterTts.speak(wordMatch.higaonon);
+      });
+      return;
+    } catch (e) {
+      // Word match not found, continue to sentence match
+    }
+
+    // 2. Try to find a sentence match
+    try {
+      final sentenceMatch = _words.firstWhere(
+        (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
+      );
+      setState(() {
+        _translationResult = sentenceMatch.exampleHigaonon;
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
+        _flutterTts.speak(sentenceMatch.exampleHigaonon);
+      });
+      return;
+    } catch (e) {
+      // Sentence match not found
+    }
+
+    setState(() {
+      _translationResult = 'No translation found for: "$inputText"';
+>>>>>>> cb23a018c2822c08a4784565bb3cf6ff843dff81
     });
   }
 
   void _copyToClipboard() {
-    if (_translationResult.isNotEmpty && _translationResult != 'No translation found for sentence' && _translationResult != 'No translation found for: "${_textInputController.text}"' && _translationResult != 'Please enter text to translate.') {
+    if (_translationResult.isNotEmpty && !_translationResult.startsWith('No translation found') && _translationResult != 'Please enter text to translate.') {
       Clipboard.setData(ClipboardData(text: _translationResult));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Translation copied to clipboard!')),
@@ -171,7 +209,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
                         style: theme.textTheme.bodyLarge,
                       ),
                     ),
-                    if (_translationResult.isNotEmpty && _translationResult != 'No translation found for sentence' && _translationResult != 'No translation found for: "${_textInputController.text}"' && _translationResult != 'Please enter text to translate.')
+                    if (_translationResult.isNotEmpty && !_translationResult.startsWith('No translation found') && _translationResult != 'Please enter text to translate.')
                       IconButton(
                         icon: Icon(Icons.volume_up, color: theme.colorScheme.secondary),
                         onPressed: () => Provider.of<TtsService>(context, listen: false).speak(_translationResult),

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
+import 'package:fireb/screens/services/tts_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:provider/provider.dart';
 
 class DictionaryScreen extends StatefulWidget {
@@ -17,14 +17,12 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   List<Word> _words = [];
   List<Word> _filteredWords = [];
   final TextEditingController _searchController = TextEditingController();
-  late FlutterTts _flutterTts;
 
   @override
   void initState() {
     super.initState();
     _loadDictionary();
     _searchController.addListener(_filterWords);
-    _initializeTts();
   }
 
   Future<void> _loadDictionary() async {
@@ -37,13 +35,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     });
   }
 
-  void _initializeTts() {
-    _flutterTts = FlutterTts();
-  }
-
-  void _speak(Word word) async {
+  void _speak(Word word) {
     Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
-    await _flutterTts.speak(word.higaonon);
+    Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
   }
 
   void _filterWords() {
@@ -60,7 +54,6 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    _flutterTts.stop();
     super.dispose();
   }
 

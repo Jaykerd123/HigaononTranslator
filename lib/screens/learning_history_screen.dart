@@ -1,9 +1,7 @@
-import 'dart:math';
-
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
+import 'package:fireb/screens/services/tts_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:provider/provider.dart';
 
 class LearningHistoryScreen extends StatefulWidget {
@@ -14,27 +12,14 @@ class LearningHistoryScreen extends StatefulWidget {
 }
 
 class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
-  late FlutterTts _flutterTts;
-
   @override
   void initState() {
     super.initState();
-    _initializeTts();
   }
 
-  void _initializeTts() {
-    _flutterTts = FlutterTts();
-  }
-
-  void _speak(Word word) async {
+  void _speak(Word word) {
     Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
-    await _flutterTts.speak(word.higaonon);
-  }
-
-  @override
-  void dispose() {
-    _flutterTts.stop();
-    super.dispose();
+    Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
   }
 
   @override

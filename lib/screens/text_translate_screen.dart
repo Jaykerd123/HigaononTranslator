@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:fireb/models/word.dart';
 import 'package:fireb/screens/services/history_service.dart';
+import 'package:fireb/screens/services/tts_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:provider/provider.dart';
 
 class TextTranslateScreen extends StatefulWidget {
@@ -17,18 +17,11 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
   final TextEditingController _textInputController = TextEditingController();
   String _translationResult = '';
   List<Word> _words = [];
-  late FlutterTts _flutterTts;
 
   @override
   void initState() {
     super.initState();
-    _initializeTts();
     _loadDictionary();
-  }
-
-  void _initializeTts() async {
-    _flutterTts = FlutterTts();
-    await _flutterTts.setLanguage("ceb-PH");
   }
 
   Future<void> _loadDictionary() async {
@@ -56,7 +49,6 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
 
     final normalizedInput = _normalizeString(inputText);
 
-    // Search for direct English word/sentence match
     final foundWord = _words.firstWhere(
       (word) => _normalizeString(word.english) == normalizedInput ||
                 _normalizeString(word.exampleEnglish) == normalizedInput,
@@ -73,9 +65,8 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
       if (foundWord.higaonon.isNotEmpty) {
         _translationResult = foundWord.higaonon;
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundWord);
-        _flutterTts.speak(foundWord.higaonon);
+        Provider.of<TtsService>(context, listen: false).speak(foundWord.higaonon);
       } else {
-        // Fallback for sentence translation if a direct word isn't found
         final foundSentence = _words.firstWhere(
             (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
             orElse: () => Word(
@@ -89,7 +80,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
         if (foundSentence.higaonon.isNotEmpty) {
            _translationResult = foundSentence.higaonon;
            Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
-           _flutterTts.speak(foundSentence.higaonon);
+           Provider.of<TtsService>(context, listen: false).speak(foundSentence.higaonon);
         } else {
           _translationResult = 'No translation found for: "$inputText"';
         }
@@ -109,7 +100,6 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
   @override
   void dispose() {
     _textInputController.dispose();
-    _flutterTts.stop();
     super.dispose();
   }
 
@@ -128,8 +118,8 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
             Expanded(
               child: TextField(
                 controller: _textInputController,
-                maxLines: null, // Allows multiple lines
-                expands: true, // Makes the TextField take available height
+                maxLines: null,
+                expands: true,
                 textAlignVertical: TextAlignVertical.top,
                 decoration: InputDecoration(
                   hintText: 'Enter text to translate...',
@@ -181,6 +171,11 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
                         style: theme.textTheme.bodyLarge,
                       ),
                     ),
+                    if (_translationResult.isNotEmpty && _translationResult != 'No translation found for sentence' && _translationResult != 'No translation found for: "${_textInputController.text}"' && _translationResult != 'Please enter text to translate.')
+                      IconButton(
+                        icon: Icon(Icons.volume_up, color: theme.colorScheme.secondary),
+                        onPressed: () => Provider.of<TtsService>(context, listen: false).speak(_translationResult),
+                      ),
                     if (_translationResult.isNotEmpty && _translationResult != 'No translation found for sentence' && _translationResult != 'No translation found for: "${_textInputController.text}"' && _translationResult != 'Please enter text to translate.')
                       IconButton(
                         icon: Icon(Icons.copy, color: theme.colorScheme.secondary),

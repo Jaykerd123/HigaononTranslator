@@ -3,80 +3,91 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class TtsService {
   // Use Meta's MMS TTS via Hugging Face Inference API
-  // You can get a free API token at https://huggingface.co/settings/tokens
   static const String _hfToken = String.fromEnvironment('HF_TOKEN', defaultValue: ''); 
-  // Updated to include /hf-inference/ which is required by the new router
-  static const String _modelUrl = 'https://router.huggingface.co/hf-inference/models/facebook/mms-tts-ceb';
+  
+  // Try the direct model URL which sometimes bypasses router issues if correctly prefixed
+  static const String _modelUrl = 'https://api-inference.huggingface.co/models/facebook/mms-tts-ceb';
+  // Fallback URL if the above is strictly blocked
+  static const String _routerUrl = 'https://router.huggingface.co/hf-inference/models/facebook/mms-tts-ceb';
 
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final FlutterTts _flutterTts = FlutterTts();
 
   TtsService() {
-    print('[TtsService] Initialized with Meta MMS (Bisaya) approach.');
-    print('[TtsService] Model URL: $_modelUrl');
-    if (_hfToken.isEmpty) {
-      print('[TtsService] WARNING: No Hugging Face Token (HF_TOKEN) provided. API may be rate limited or return 401.');
-    } else {
-      print('[TtsService] HF_TOKEN is provided (starts with: ${_hfToken.substring(0, 4)}...)');
-    }
+    print('[TtsService] Initialized.');
+    _initLocalTts();
+  }
+
+  Future<void> _initLocalTts() async {
+    await _flutterTts.setLanguage("fil-PH"); // Fallback to Filipino/Tagalog if Cebuano isn't available
+    await _flutterTts.setSpeechRate(0.5);
+    await _flutterTts.setVolume(1.0);
+    await _flutterTts.setPitch(1.0);
   }
 
   Future<void> speak(String text) async {
-    if (text.isEmpty) {
-      print('[TtsService] speak() called with empty text.');
-      return;
+    if (text.isEmpty) return;
+
+    // 1. Try Hugging Face Meta MMS (High Quality Bisaya)
+    bool success = await _speakHuggingFace(text, _modelUrl);
+    
+    // 2. If direct fails, try router URL
+    if (!success) {
+      print('[TtsService] Direct API failed, trying Router URL...');
+      success = await _speakHuggingFace(text, _routerUrl);
     }
 
+    // 3. Fallback to Local TTS (Lower Quality/Tagalog)
+    if (!success) {
+      print('[TtsService] All API calls failed. Falling back to Local TTS.');
+      await _flutterTts.speak(text);
+    }
+  }
+
+  Future<bool> _speakHuggingFace(String text, String url) async {
     try {
-      print('[TtsService] Requesting Meta MMS (Bisaya) for: "$text"');
+      print('[TtsService] Requesting HF API: $url');
       
       final response = await http.post(
-        Uri.parse(_modelUrl),
+        Uri.parse(url),
         headers: {
           if (_hfToken.isNotEmpty) 'Authorization': 'Bearer $_hfToken',
           'Content-Type': 'application/json',
+          'x-use-cache': 'false', // Ensure we don't get stale errors
         },
         body: '{"inputs": "${text.replaceAll('"', '\\\\"')}"}',
-      ).timeout(const Duration(seconds: 15));
-
-      print('[TtsService] Response Status: ${response.statusCode}');
-      print('[TtsService] Response Content-Type: ${response.headers['content-type']}');
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        final Uint8List audioBytes = response.bodyBytes;
-        
-        // Check if the response is actually JSON (which usually means an error despite 200)
         if (response.headers['content-type']?.contains('application/json') ?? false) {
-           print('[TtsService] Unexpected JSON response: ${response.body}');
-           return;
+           print('[TtsService] API returned JSON instead of audio: ${response.body}');
+           return false;
         }
 
+        final Uint8List audioBytes = response.bodyBytes;
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/tts_mms_bisaya.flac');
+        final file = File('${tempDir.path}/tts_audio.flac');
         await file.writeAsBytes(audioBytes);
 
-        print('[TtsService] SUCCESS: Playing audio (${audioBytes.length} bytes)');
+        print('[TtsService] SUCCESS: Playing API audio (${audioBytes.length} bytes)');
         await _audioPlayer.play(DeviceFileSource(file.path));
+        return true;
       } else {
-        print('[TtsService] HTTP Error ${response.statusCode}');
-        print('[TtsService] Error Body: ${response.body.length > 500 ? response.body.substring(0, 500) + "..." : response.body}');
-        
-        if (response.statusCode == 401) {
-          print('[TtsService] HINT: 401 usually means your HF_TOKEN is invalid or the model requires authentication.');
-        } else if (response.statusCode == 429) {
-          print('[TtsService] HINT: 429 means you are being rate limited. Try adding a HF_TOKEN.');
-        } else if (response.statusCode == 503) {
-          print('[TtsService] HINT: 503 means the model is currently loading on Hugging Face. Try again in a minute.');
-        }
+        print('[TtsService] API Error ${response.statusCode}: ${response.body.length > 100 ? response.body.substring(0, 100) : response.body}');
+        return false;
       }
     } catch (e) {
-      print('[TtsService] Exception in speak: $e');
+      print('[TtsService] API Exception: $e');
+      return false;
     }
   }
 
   void dispose() {
     _audioPlayer.dispose();
+    _flutterTts.stop();
   }
 }

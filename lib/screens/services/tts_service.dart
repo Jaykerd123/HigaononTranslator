@@ -8,7 +8,7 @@ class TtsService {
   // Use Meta's MMS TTS via Hugging Face Inference API
   // You can get a free API token at https://huggingface.co/settings/tokens
   static const String _hfToken = String.fromEnvironment('HF_TOKEN', defaultValue: ''); 
-  static const String _modelUrl = 'https://api-inference.huggingface.co/models/facebook/mms-tts-ceb';
+  static const String _modelUrl = 'https://router.huggingface.co/models/facebook/mms-tts-ceb';
 
   final AudioPlayer _audioPlayer = AudioPlayer();
 

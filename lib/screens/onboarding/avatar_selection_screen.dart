@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fireb/screens/services/database.dart';
+import 'package:Higa/screens/services/database.dart';
 import 'package:provider/provider.dart';
-import 'package:fireb/models/user.dart';
+import 'package:Higa/models/user.dart';
 
 class AvatarSelectionScreen extends StatefulWidget {
   const AvatarSelectionScreen({super.key});
@@ -89,3 +89,4 @@ class _AvatarSelectionScreenState extends State<AvatarSelectionScreen> {
     );
   }
 }
+

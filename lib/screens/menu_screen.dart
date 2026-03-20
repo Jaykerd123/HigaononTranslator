@@ -1,15 +1,15 @@
 import 'dart:io';
 
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/about_screen.dart';
-import 'package:fireb/screens/dictionary_screen.dart';
-import 'package:fireb/screens/learning_history_screen.dart';
-import 'package:fireb/screens/onboarding/avatar_selection_screen.dart';
-import 'package:fireb/screens/profile_screen.dart';
-import 'package:fireb/screens/services/auth.dart';
-import 'package:fireb/screens/services/database.dart';
-import 'package:fireb/screens/settings_screen.dart';
-import 'package:fireb/screens/your_progress_screen.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/about_screen.dart';
+import 'package:Higa/screens/dictionary_screen.dart';
+import 'package:Higa/screens/learning_history_screen.dart';
+import 'package:Higa/screens/onboarding/avatar_selection_screen.dart';
+import 'package:Higa/screens/profile_screen.dart';
+import 'package:Higa/screens/services/auth.dart';
+import 'package:Higa/screens/services/database.dart';
+import 'package:Higa/screens/settings_screen.dart';
+import 'package:Higa/screens/your_progress_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -259,3 +259,4 @@ class _MenuData {
   final Color color;
   _MenuData(this.icon, this.title, this.subtitle, this.onTap, this.color);
 }
+

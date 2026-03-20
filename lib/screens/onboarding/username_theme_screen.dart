@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/services/database.dart';
-import 'package:fireb/shared/loading.dart'; // For LoadingSpinner
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/services/database.dart';
+import 'package:Higa/shared/loading.dart'; // For LoadingSpinner
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -29,9 +29,14 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
   final GlobalKey<FormState> _usernameFormKey = GlobalKey<FormState>();
 
   final List<String> _defaultAvatars = [
-    'assets/avatars/avatar1.png',
-    'assets/avatars/avatar2.png',
-    'assets/avatars/avatar3.png',
+    'assets/avatar/anby.webp',
+    'assets/avatar/billy.webp',
+    'assets/avatar/corin.webp',
+    'assets/avatar/harumasa.webp',
+    'assets/avatar/lighter.webp',
+    'assets/avatar/miyabi.webp',
+    'assets/avatar/nekomata.webp',
+    'assets/avatar/nicole.webp',
   ];
 
   @override
@@ -52,23 +57,41 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
             .ref()
             .child('user_profile_images')
             .child('$uid.jpg');
-        await storageRef.putFile(_pickedImageFile!);
-        _finalProfileImageUrl = await storageRef.getDownloadURL();
+        await storageRef.putFile(_pickedImageFile!).timeout(const Duration(seconds: 15));
+        _finalProfileImageUrl = await storageRef.getDownloadURL().timeout(const Duration(seconds: 15));
         print('Image uploaded to Firebase: $_finalProfileImageUrl');
+        
+        // Clear _pickedImageFile so we don't upload again if we go back and forth
+        // This also prevents infinite loop where _goToNextPage keeps triggering re-uploads
+        _pickedImageFile = null;
       } else if (_finalProfileImageUrl == null) {
         // If no custom image and no default selected yet, maybe select a default or force selection
         // For now, let's default to the first avatar if nothing is selected.
         _finalProfileImageUrl = _defaultAvatars[0];
         print('No avatar selected, defaulting to: $_finalProfileImageUrl');
       }
-      _goToNextPage();
+      
+      // Navigate to the next page instead of calling _goToNextPage() recursively
+      if (mounted) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeIn,
+        );
+      }
     } catch (e) {
       print('Error uploading image: $e');
       // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload image: $e')),
+        );
+      }
     } finally {
-      setState(() {
-        _isUploadingImage = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+      }
     }
   }
 
@@ -112,10 +135,7 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
   Widget build(BuildContext context) {
     final user = Provider.of<CustomUser?>(context);
 
-    if (_isUploadingImage) {
-      return const LoadingSpinner(); // Show loading during image upload
-    }
-
+    // Do not return LoadingSpinner directly here to avoid dismounting PageView
     List<Widget> pages = [
       _AvatarSelectionPage(
         currentPickedImage: _pickedImageFile,
@@ -152,61 +172,72 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
       appBar: AppBar(
         title: const Text('Setup Your Profile'),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPageIndex = index;
-                });
-              },
-              children: pages,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_currentPageIndex > 0)
-                  ElevatedButton(
-                    onPressed: _goToPreviousPage,
-                    child: const Text('Back'),
-                  ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_currentPageIndex == pages.length - 1) {
-                      if (user != null) {
-                        // Ensure an avatar is selected or default to the first one if none is selected
-                        final avatarToSave = _finalProfileImageUrl ?? _defaultAvatars[0];
-
-                        // Update user data in Firestore
-                        await DatabaseService(uid: user.uid).updateUserData(
-                          profileImageUrl: avatarToSave,
-                          name: _usernameController.text.trim(),
-                          isDarkMode: _isDarkMode,
-                          onboardingCompleted: true, // Mark onboarding as complete
-                        );
-
-                        // Set onboarding completed flag in SharedPreferences
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('onboarding_completed', true);
-
-                        // Navigate to home and remove all previous routes
-                        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-                      }
-                    } else {
-                      _goToNextPage();
-                    }
+          Column(
+            children: [
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPageIndex = index;
+                    });
                   },
-                  child: Text(_currentPageIndex == pages.length - 1 ? 'Finish' : 'Next'),
+                  children: pages,
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (_currentPageIndex > 0)
+                      ElevatedButton(
+                        onPressed: _goToPreviousPage,
+                        child: const Text('Back'),
+                      ),
+                    const Spacer(),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (_currentPageIndex == pages.length - 1) {
+                          if (user != null) {
+                            // Ensure an avatar is selected or default to the first one if none is selected
+                            final avatarToSave = _finalProfileImageUrl ?? _defaultAvatars[0];
+
+                            // Update user data in Firestore
+                            await DatabaseService(uid: user.uid).updateUserData(
+                              profileImageUrl: avatarToSave,
+                              name: _usernameController.text.trim(),
+                              isDarkMode: _isDarkMode,
+                              onboardingCompleted: true, // Mark onboarding as complete
+                            );
+
+                            // Set onboarding completed flag in SharedPreferences
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool('onboarding_completed', true);
+
+                            // Navigate to home and remove all previous routes
+                            Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                          }
+                        } else {
+                          _goToNextPage();
+                        }
+                      },
+                      child: Text(_currentPageIndex == pages.length - 1 ? 'Finish' : 'Next'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+          if (_isUploadingImage)
+            Container(
+              color: Colors.black54, // Semi-transparent overlay
+              child: const Center(
+                child: LoadingSpinner(),
+              ),
+            ),
         ],
       ),
     );
@@ -432,3 +463,4 @@ class _DarkModeEnablePage extends StatelessWidget {
     );
   }
 }
+

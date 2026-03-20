@@ -1,7 +1,7 @@
-import 'package:fireb/models/user.dart';
-import 'package:fireb/shared/loading.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/shared/loading.dart';
 import 'package:flutter/material.dart';
-import 'package:fireb/shared/constants.dart';
+import 'package:Higa/shared/constants.dart';
 import 'package:provider/provider.dart';
 
 import '../services/database.dart';
@@ -99,3 +99,4 @@ class _SettingsFormState extends State<SettingsForm> {
         });
   }
 }
+

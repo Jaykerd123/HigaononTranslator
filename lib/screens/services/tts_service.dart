@@ -7,7 +7,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 class TtsService {
   // Use Meta's MMS TTS via Hugging Face Inference API
-  static const String _hfToken = String.fromEnvironment('HF_TOKEN', defaultValue: ''); 
+  static const String _hfToken = String.fromEnvironment('HF_TOKEN', defaultValue: '');
   
   // Try the direct model URL which sometimes bypasses router issues if correctly prefixed
   static const String _modelUrl = 'https://api-inference.huggingface.co/models/facebook/mms-tts-ceb';
@@ -91,3 +91,4 @@ class TtsService {
     _flutterTts.stop();
   }
 }
+

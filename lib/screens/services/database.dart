@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fireb/models/brew.dart';
+import 'package:Higa/models/brew.dart';
 
 import '../../models/user.dart';
 
@@ -86,3 +86,4 @@ class DatabaseService{
   }
 
 }
+

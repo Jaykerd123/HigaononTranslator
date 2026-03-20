@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:fireb/models/word.dart';
-import 'package:fireb/screens/services/history_service.dart';
-import 'package:fireb/screens/services/tts_service.dart';
+import 'package:Higa/models/word.dart';
+import 'package:Higa/screens/services/history_service.dart';
+import 'package:Higa/screens/services/tts_service.dart';
+import 'package:Higa/screens/services/translation_fallback_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -106,9 +107,14 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     return text.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), '');
   }
 
-  void _translateVoiceInput() {
+  Future<void> _translateVoiceInput() async {
     if (_lastWords.isNotEmpty) {
       final normalizedInput = _normalizeString(_lastWords);
+
+      setState(() {
+        _voiceTranslationResult = 'Translating...';
+        _voiceTranslationFound = false;
+      });
 
       // 1. Try word match
       try {
@@ -138,10 +144,21 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         return;
       } catch (e) {}
 
-      setState(() {
-        _voiceTranslationResult = 'No translation found';
-        _voiceTranslationFound = false;
-      });
+      // 3. Try fallback using Google Translate
+      final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(_lastWords);
+
+      if (mounted) {
+        setState(() {
+          if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
+            _voiceTranslationResult = fallbackTranslation;
+            _voiceTranslationFound = true;
+            Provider.of<TtsService>(context, listen: false).speak(fallbackTranslation);
+          } else {
+            _voiceTranslationResult = 'No translation found';
+            _voiceTranslationFound = false;
+          }
+        });
+      }
     }
   }
 
@@ -179,7 +196,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
   }
 
-  void _translateText() {
+  Future<void> _translateText() async {
     // Hide the keyboard
     FocusScope.of(context).unfocus();
 
@@ -190,6 +207,10 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       });
       return;
     }
+
+    setState(() {
+      _textTranslationResult = 'Translating...';
+    });
 
     final normalizedInput = _normalizeString(inputText);
 
@@ -219,9 +240,19 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       return;
     } catch (e) {}
 
-    setState(() {
-      _textTranslationResult = 'No translation found for: "$inputText"';
-    });
+    // 3. Try fallback using Google Translate
+    final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
+
+    if (mounted) {
+      setState(() {
+        if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
+          _textTranslationResult = fallbackTranslation;
+          Provider.of<TtsService>(context, listen: false).speak(fallbackTranslation);
+        } else {
+          _textTranslationResult = 'No translation found for: "$inputText"';
+        }
+      });
+    }
   }
 
   void _copyToClipboard() {
@@ -492,3 +523,4 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     );
   }
 }
+

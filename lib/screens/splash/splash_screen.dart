@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:fireb/screens/wrapper.dart';
+import 'package:Higa/screens/wrapper.dart';
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,25 +20,31 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _startAnimation() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Initial pause before starting animations
+    await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
     setState(() {
       _logoMoved = true;
     });
     
-    await Future.delayed(const Duration(milliseconds: 250));
+    // Delay before showing the greeting text
+    await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     setState(() {
       _textVisible = true;
     });
     
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Final pause to let the user read the text (about 2 seconds)
+    await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (BuildContext context) => const Wrapper(),
-      ),
-    );
+    
+    if (context.mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (BuildContext context) => const Wrapper(),
+        ),
+      );
+    }
   }
 
   @override
@@ -76,3 +82,4 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+

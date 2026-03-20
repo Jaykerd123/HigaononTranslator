@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:fireb/models/word.dart';
+import 'package:Higa/models/word.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -86,3 +86,4 @@ class BookmarkService with ChangeNotifier {
     return _bookmarks.any((w) => w.higaonon == word.higaonon);
   }
 }
+

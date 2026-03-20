@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'package:fireb/models/word.dart';
-import 'package:fireb/screens/services/history_service.dart';
-import 'package:fireb/screens/services/tts_service.dart';
+import 'package:Higa/models/word.dart';
+import 'package:Higa/screens/services/history_service.dart';
+import 'package:Higa/screens/services/tts_service.dart';
+import 'package:Higa/screens/services/translation_fallback_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -38,7 +39,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     return text.toLowerCase().trim().replaceAll(RegExp(r'[^\w\s]'), '');
   }
 
-  void _translateText() {
+  Future<void> _translateText() async {
     // Hide the keyboard
     FocusScope.of(context).unfocus();
 
@@ -50,46 +51,12 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
       return;
     }
 
+    setState(() {
+      _translationResult = 'Translating...';
+    });
+
     final normalizedInput = _normalizeString(inputText);
 
-<<<<<<< HEAD
-    final foundWord = _words.firstWhere(
-      (word) => _normalizeString(word.english) == normalizedInput ||
-                _normalizeString(word.exampleEnglish) == normalizedInput,
-      orElse: () => Word(
-          higaonon: '',
-          english: '',
-          tagalog: '',
-          partOfSpeech: '',
-          exampleHigaonon: 'No direct translation found',
-          exampleEnglish: ''),
-    );
-
-    setState(() {
-      if (foundWord.higaonon.isNotEmpty) {
-        _translationResult = foundWord.higaonon;
-        Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundWord);
-        Provider.of<TtsService>(context, listen: false).speak(foundWord.higaonon);
-      } else {
-        final foundSentence = _words.firstWhere(
-            (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
-            orElse: () => Word(
-                higaonon: '',
-                english: '',
-                tagalog: '',
-                partOfSpeech: '',
-                exampleHigaonon: 'No translation found for sentence',
-                exampleEnglish: '')
-        );
-        if (foundSentence.higaonon.isNotEmpty) {
-           _translationResult = foundSentence.higaonon;
-           Provider.of<HistoryService>(context, listen: false).addWordToHistory(foundSentence);
-           Provider.of<TtsService>(context, listen: false).speak(foundSentence.higaonon);
-        } else {
-          _translationResult = 'No translation found for: "$inputText"';
-        }
-      }
-=======
     // 1. Try to find a direct word match first
     try {
       final wordMatch = _words.firstWhere(
@@ -98,7 +65,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
       setState(() {
         _translationResult = wordMatch.higaonon;
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
-        _flutterTts.speak(wordMatch.higaonon);
+        Provider.of<TtsService>(context, listen: false).speak(wordMatch.higaonon);
       });
       return;
     } catch (e) {
@@ -113,17 +80,26 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
       setState(() {
         _translationResult = sentenceMatch.exampleHigaonon;
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
-        _flutterTts.speak(sentenceMatch.exampleHigaonon);
+        Provider.of<TtsService>(context, listen: false).speak(sentenceMatch.exampleHigaonon);
       });
       return;
     } catch (e) {
       // Sentence match not found
     }
 
-    setState(() {
-      _translationResult = 'No translation found for: "$inputText"';
->>>>>>> cb23a018c2822c08a4784565bb3cf6ff843dff81
-    });
+    // 3. Try fallback using Google Translate
+    final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
+
+    if (mounted) {
+      setState(() {
+        if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
+          _translationResult = fallbackTranslation;
+          Provider.of<TtsService>(context, listen: false).speak(fallbackTranslation);
+        } else {
+          _translationResult = 'No translation found for: "$inputText"';
+        }
+      });
+    }
   }
 
   void _copyToClipboard() {
@@ -229,3 +205,4 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     );
   }
 }
+

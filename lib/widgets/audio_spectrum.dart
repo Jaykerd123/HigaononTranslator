@@ -30,3 +30,4 @@ class _AudioSpectrumState extends State<AudioSpectrum> {
     );
   }
 }
+

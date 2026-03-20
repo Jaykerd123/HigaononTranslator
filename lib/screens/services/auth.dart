@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/services/database.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/services/database.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
@@ -31,27 +31,40 @@ class AuthService {
   }
 
   // sign in with email and password
-  Future<CustomUser?> signInWithEmailAndPassword(String email, String password) async {
+  Future<dynamic> signInWithEmailAndPassword(String email, String password) async {
     try{
       UserCredential result = await _auth.signInWithEmailAndPassword(email: email, password: password);
       User? user = result.user;
+      
+      if (user != null && !user.emailVerified) {
+        await _auth.signOut();
+        return "Please verify your email address. Check your inbox to continue.";
+      }
+      
       return _userFromFirebaseUser(user);
-    } catch(e){
+    } on FirebaseAuthException catch(e){
+      return e.message;
+    } catch(e) {
       return null;
     }
   }
 
-  Future<CustomUser?> registerWithEmailAndPassword(String email, String password) async {
+  Future<dynamic> registerWithEmailAndPassword(String email, String password) async {
     try{
       UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       User? user = result.user;
 
       // Create a new document for the user with the uid
       if (user != null) {
+        await user.sendEmailVerification();
         await DatabaseService(uid: user.uid).updateUserData(name: 'new member', sugar: '0', strength: 100, onboardingCompleted: false, isDarkMode: false, );
+        await _auth.signOut();
+        return "success";
       }
 
       return _userFromFirebaseUser(user);
+    } on FirebaseAuthException catch(e){
+      return e.message;
     } catch(e){
       return null;
     }
@@ -103,3 +116,4 @@ class AuthService {
   }
 
 }
+

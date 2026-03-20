@@ -1,6 +1,6 @@
-import 'package:fireb/models/word.dart';
-import 'package:fireb/screens/services/history_service.dart';
-import 'package:fireb/screens/services/tts_service.dart';
+import 'package:Higa/models/word.dart';
+import 'package:Higa/screens/services/history_service.dart';
+import 'package:Higa/screens/services/tts_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -72,3 +72,4 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
     );
   }
 }
+

@@ -1,8 +1,8 @@
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/authenticate/initial_page.dart';
-import 'package:fireb/screens/home/home.dart';
-import 'package:fireb/screens/onboarding/username_theme_screen.dart';
-import 'package:fireb/screens/services/database.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/authenticate/initial_page.dart';
+import 'package:Higa/screens/home/home.dart';
+import 'package:Higa/screens/onboarding/username_theme_screen.dart';
+import 'package:Higa/screens/services/database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -90,3 +90,4 @@ class _WrapperState extends State<Wrapper> {
     }
   }
 }
+

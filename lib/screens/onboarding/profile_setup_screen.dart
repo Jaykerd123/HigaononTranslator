@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/services/database.dart';
-import 'package:fireb/shared/loading.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/services/database.dart';
+import 'package:Higa/shared/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -228,3 +228,4 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 }
+

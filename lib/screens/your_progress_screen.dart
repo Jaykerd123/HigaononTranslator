@@ -1,4 +1,4 @@
-import 'package:fireb/screens/services/history_service.dart';
+import 'package:Higa/screens/services/history_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/progress_card.dart';
@@ -64,3 +64,4 @@ class _YourProgressScreenState extends State<YourProgressScreen> {
     );
   }
 }
+

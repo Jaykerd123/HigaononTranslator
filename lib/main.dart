@@ -1,12 +1,12 @@
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/home/home.dart';
-import 'package:fireb/screens/services/auth.dart';
-import 'package:fireb/screens/services/database.dart';
-import 'package:fireb/screens/services/history_service.dart';
-import 'package:fireb/screens/services/bookmark_service.dart';
-import 'package:fireb/screens/services/tts_service.dart';
-import 'package:fireb/screens/wrapper.dart'; // Import the Wrapper
-import 'package:fireb/screens/splash/splash_screen.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/home/home.dart';
+import 'package:Higa/screens/services/auth.dart';
+import 'package:Higa/screens/services/database.dart';
+import 'package:Higa/screens/services/history_service.dart';
+import 'package:Higa/screens/services/bookmark_service.dart';
+import 'package:Higa/screens/services/tts_service.dart';
+import 'package:Higa/screens/wrapper.dart'; // Import the Wrapper
+import 'package:Higa/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -87,3 +87,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+

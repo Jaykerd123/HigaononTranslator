@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fireb/models/brew.dart';
+import 'package:Higa/models/brew.dart';
 
 class BrewTile extends StatelessWidget {
   final Brew brew;
@@ -25,3 +25,4 @@ class BrewTile extends StatelessWidget {
     );
   }
 }
+

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fireb/models/brew.dart';
-import 'package:fireb/screens/home/brew_tile.dart';
+import 'package:Higa/models/brew.dart';
+import 'package:Higa/screens/home/brew_tile.dart';
 
 class UserList extends StatefulWidget {
   const UserList({super.key});
@@ -24,3 +24,4 @@ class _UserListState extends State<UserList> {
     );
   }
 }
+

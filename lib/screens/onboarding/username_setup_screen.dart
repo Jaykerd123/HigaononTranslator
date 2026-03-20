@@ -1,6 +1,6 @@
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/services/database.dart';
-import 'package:fireb/shared/constants.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/services/database.dart';
+import 'package:Higa/shared/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -134,3 +134,4 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
     );
   }
 }
+

@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/onboarding/avatar_selection_screen.dart';
-import 'package:fireb/screens/services/database.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/onboarding/avatar_selection_screen.dart';
+import 'package:Higa/screens/services/database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';

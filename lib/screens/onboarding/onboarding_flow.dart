@@ -1,8 +1,8 @@
-import 'package:fireb/models/user.dart';
-import 'package:fireb/screens/onboarding/profile_setup_screen.dart';
-import 'package:fireb/screens/onboarding/theme_preference_screen.dart';
-import 'package:fireb/screens/onboarding/username_setup_screen.dart';
-import 'package:fireb/screens/services/database.dart';
+import 'package:Higa/models/user.dart';
+import 'package:Higa/screens/onboarding/profile_setup_screen.dart';
+import 'package:Higa/screens/onboarding/theme_preference_screen.dart';
+import 'package:Higa/screens/onboarding/username_setup_screen.dart';
+import 'package:Higa/screens/services/database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -75,3 +75,4 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     );
   }
 }
+

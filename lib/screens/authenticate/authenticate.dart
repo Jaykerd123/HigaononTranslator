@@ -1,5 +1,5 @@
-import 'package:fireb/screens/authenticate/sign_up.dart';
-import 'package:fireb/screens/authenticate/login_page.dart';
+import 'package:Higa/screens/authenticate/sign_up.dart';
+import 'package:Higa/screens/authenticate/login_page.dart';
 import 'package:flutter/material.dart';
 
 class Authenticate extends StatefulWidget {
@@ -26,3 +26,4 @@ class _AuthenticateState extends State<Authenticate> {
     }
   }
 }
+

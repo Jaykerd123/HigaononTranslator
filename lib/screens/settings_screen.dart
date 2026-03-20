@@ -4,6 +4,7 @@ import 'package:Higa/models/user.dart';
 import 'package:Higa/screens/services/database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,6 +19,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoplayEnabled = true;
   bool _dailyReminderEnabled = false;
   bool _offlineModeEnabled = false;
+  
+  // Enhanced notification settings
+  bool _dailyWordNotification = true;
+  bool _streakReminderNotification = true;
+  bool _achievementNotification = true;
+  bool _bookmarkReminderNotification = false;
+  TimeOfDay _dailyReminderTime = const TimeOfDay(hour: 9, minute: 0);
 
   ImageProvider _getAvatarImage(String? avatarUrl) {
     if (avatarUrl == null || avatarUrl.isEmpty) {
@@ -28,6 +36,206 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else {
       return FileImage(File(avatarUrl));
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSettings();
+  }
+
+  Future<void> _loadNotificationSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _dailyWordNotification = prefs.getBool('daily_word_notification') ?? true;
+      _streakReminderNotification = prefs.getBool('streak_reminder_notification') ?? true;
+      _achievementNotification = prefs.getBool('achievement_notification') ?? true;
+      _bookmarkReminderNotification = prefs.getBool('bookmark_reminder_notification') ?? false;
+      _dailyReminderEnabled = prefs.getBool('daily_reminder_enabled') ?? false;
+      
+      final hour = prefs.getInt('daily_reminder_hour') ?? 9;
+      final minute = prefs.getInt('daily_reminder_minute') ?? 0;
+      _dailyReminderTime = TimeOfDay(hour: hour, minute: minute);
+    });
+  }
+
+  Future<void> _saveNotificationSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('daily_word_notification', _dailyWordNotification);
+    await prefs.setBool('streak_reminder_notification', _streakReminderNotification);
+    await prefs.setBool('achievement_notification', _achievementNotification);
+    await prefs.setBool('bookmark_reminder_notification', _bookmarkReminderNotification);
+    await prefs.setBool('daily_reminder_enabled', _dailyReminderEnabled);
+    await prefs.setInt('daily_reminder_hour', _dailyReminderTime.hour);
+    await prefs.setInt('daily_reminder_minute', _dailyReminderTime.minute);
+  }
+
+  void _showNotificationSettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildNotificationSettingsSheet(),
+    );
+  }
+
+  Widget _buildNotificationSettingsSheet() {
+    final theme = Theme.of(context);
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.8,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (context, scrollController) => Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.notifications_active_rounded, color: Colors.redAccent),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Notification Settings',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      _buildNotificationSection(
+                        'Daily Learning',
+                        [
+                          SwitchListTile(
+                            title: const Text('Word of the Day'),
+                            subtitle: const Text('Get daily Higaonon words'),
+                            value: _dailyWordNotification,
+                            onChanged: (value) {
+                              setState(() => _dailyWordNotification = value);
+                              setModalState(() {});
+                              _saveNotificationSettings();
+                            },
+                            secondary: const Icon(Icons.today_rounded),
+                          ),
+                          SwitchListTile(
+                            title: const Text('Practice Reminder'),
+                            subtitle: const Text('Daily practice notifications'),
+                            value: _dailyReminderEnabled,
+                            onChanged: (value) {
+                              setState(() => _dailyReminderEnabled = value);
+                              setModalState(() {});
+                              _saveNotificationSettings();
+                            },
+                            secondary: const Icon(Icons.schedule_rounded),
+                          ),
+                          ListTile(
+                            enabled: _dailyReminderEnabled,
+                            leading: const Icon(Icons.access_time_rounded),
+                            title: const Text('Reminder Time'),
+                            subtitle: Text(_dailyReminderTime.format(context)),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: _dailyReminderTime,
+                              );
+                              if (time != null) {
+                                setState(() => _dailyReminderTime = time);
+                                setModalState(() {});
+                                _saveNotificationSettings();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _buildNotificationSection(
+                        'Achievements',
+                        [
+                          SwitchListTile(
+                            title: const Text('Learning Streaks'),
+                            subtitle: const Text('Notify about streak milestones'),
+                            value: _streakReminderNotification,
+                            onChanged: (value) {
+                              setState(() => _streakReminderNotification = value);
+                              setModalState(() {});
+                              _saveNotificationSettings();
+                            },
+                            secondary: const Icon(Icons.local_fire_department_rounded),
+                          ),
+                          SwitchListTile(
+                            title: const Text('Achievements'),
+                            subtitle: const Text('Celebrate your progress'),
+                            value: _achievementNotification,
+                            onChanged: (value) {
+                              setState(() => _achievementNotification = value);
+                              setModalState(() {});
+                              _saveNotificationSettings();
+                            },
+                            secondary: const Icon(Icons.emoji_events_rounded),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _buildNotificationSection(
+                        'Reminders',
+                        [
+                          SwitchListTile(
+                            title: const Text('Bookmark Review'),
+                            subtitle: const Text('Remind to review saved words'),
+                            value: _bookmarkReminderNotification,
+                            onChanged: (value) {
+                              setState(() => _bookmarkReminderNotification = value);
+                              setModalState(() {});
+                              _saveNotificationSettings();
+                            },
+                            secondary: const Icon(Icons.bookmark_rounded),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.redAccent,
+            ),
+          ),
+        ),
+        ...children,
+        const SizedBox(height: 20),
+      ],
+    );
   }
 
   @override
@@ -92,14 +300,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Divider(),
               SwitchListTile(
                 title: const Text('Notifications'),
-                subtitle: const Text('Enable push notifications'),
+                subtitle: Text(_notificationsEnabled ? 'Customize notifications' : 'All notifications disabled'),
                 value: _notificationsEnabled,
                 onChanged: (bool value) {
                   setState(() {
                     _notificationsEnabled = value;
                   });
+                  if (value) {
+                    _showNotificationSettings();
+                  }
                 },
                 secondary: const Icon(Icons.notifications_outlined),
+                trailing: _notificationsEnabled 
+                    ? const Icon(Icons.arrow_forward_ios, size: 16)
+                    : null,
+                onTap: _notificationsEnabled ? _showNotificationSettings : null,
               ),
               SwitchListTile(
                 title: const Text('Sound Effect'),

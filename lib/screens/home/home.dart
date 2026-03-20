@@ -132,6 +132,10 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
     super.initState();
     _showAllHistory = widget.initialShowAllHistory;
     _loadWordOfTheDay();
+    // Load bookmarks when home screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<BookmarkService>(context, listen: false).loadBookmarksFromFirestore();
+    });
   }
 
   Future<void> _loadWordOfTheDay() async {
@@ -346,32 +350,52 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
   }
 
   Widget _buildSavedBookmarksSection(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24.0),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const BookmarkedWordsScreen()),
-          );
-        },
-        child: Row(
-          children: [
-            const Icon(Icons.bookmark_rounded, color: Colors.redAccent),
-            const SizedBox(width: 8),
-            Text(
-              'Saved Bookmarks',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: theme.textTheme.bodyLarge?.color,
-              ),
+    return Consumer<BookmarkService>(
+      builder: (context, bookmarkService, child) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 24.0),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BookmarkedWordsScreen()),
+              );
+            },
+            child: Row(
+              children: [
+                const Icon(Icons.bookmark_rounded, color: Colors.redAccent),
+                const SizedBox(width: 8),
+                Text(
+                  'Saved Bookmarks',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: theme.textTheme.bodyLarge?.color,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${bookmarkService.bookmarks.length}',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Icon(Icons.chevron_right_rounded, color: theme.disabledColor),
+              ],
             ),
-            const Spacer(),
-            Icon(Icons.chevron_right_rounded, color: theme.disabledColor),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

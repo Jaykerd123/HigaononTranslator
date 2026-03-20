@@ -9,7 +9,7 @@ import 'package:firebase_storage/firebase_storage.dart'; // For Firebase Storage
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UsernameThemeScreen extends StatefulWidget {
-  const UsernameThemeScreen({super.key}); // Removed avatar parameter
+  const UsernameThemeScreen({super.key});
 
   @override
   State<UsernameThemeScreen> createState() => _UsernameThemeScreenState();
@@ -21,8 +21,8 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
   final _usernameController = TextEditingController();
   bool _isDarkMode = false;
 
-  File? _pickedImageFile; // For a custom image picked from gallery/camera
-  String? _finalProfileImageUrl; // For the URL from Firebase Storage or asset path
+  File? _pickedImageFile;
+  String? _finalProfileImageUrl;
 
   final GlobalKey<FormState> _usernameFormKey = GlobalKey<FormState>();
 
@@ -45,7 +45,6 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
   }
 
   void _uploadImageAndProceed(String uid) {
-    // Navigate immediately to avoid blocking the user
     if (mounted) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -55,7 +54,6 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
 
     try {
       if (_pickedImageFile != null) {
-        // Just use the local file path instead of Firebase Storage, as requested
         _finalProfileImageUrl = _pickedImageFile!.path;
         print('Using local image path: $_finalProfileImageUrl');
       }
@@ -66,28 +64,30 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
       }
     } finally {
       _pickedImageFile = null;
-      if (_finalProfileImageUrl == null) {
-        _finalProfileImageUrl = _defaultAvatars[0];
+      if (_finalProfileImageUrl == null && _pickedImageFile == null) {
+        // If neither custom nor selection, don't force it to 0 if it already has one?
+        // Actually we do force a default if both are empty natively
+        if (_finalProfileImageUrl == null) {
+          _finalProfileImageUrl = _defaultAvatars[0];
+        }
       }
     }
   }
 
   void _goToNextPage() {
-    if (_currentPageIndex == 0) { // On avatar selection page
+    if (_currentPageIndex == 0) {
       final user = Provider.of<CustomUser?>(context, listen: false);
       if (user != null) {
-        // If a custom image is picked, upload it first
         if (_pickedImageFile != null) {
           _uploadImageAndProceed(user.uid);
-          return; // Don't proceed until upload is done
+          return;
         } else if (_finalProfileImageUrl == null) {
-          // If no custom image and no default selected, default to first avatar
           _finalProfileImageUrl = _defaultAvatars[0];
         }
       }
-    } else if (_currentPageIndex == 1) { // On Username Input Page
+    } else if (_currentPageIndex == 1) {
       if (!_usernameFormKey.currentState!.validate()) {
-        return; // Don't proceed if validation fails
+        return;
       }
     }
 
@@ -108,11 +108,72 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
     }
   }
 
+  Widget _buildStepper() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0, bottom: 24.0, left: 32.0, right: 32.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStepIconAndLabel(1, 'Avatar', _currentPageIndex >= 0),
+          _buildLine(_currentPageIndex >= 1),
+          _buildStepIconAndLabel(2, 'Username', _currentPageIndex >= 1),
+          _buildLine(_currentPageIndex >= 2),
+          _buildStepIconAndLabel(3, 'Theme', _currentPageIndex >= 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepIconAndLabel(int stepNum, String title, bool isActive) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive ? const Color(0xFFF73B46) : const Color(0xFFE5E7EB),
+          ),
+          child: Center(
+            child: Text(
+              '$stepNum',
+              style: TextStyle(
+                color: isActive ? Colors.white : const Color(0xFF6B7280),
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          title,
+          style: TextStyle(
+            color: isActive ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLine(bool isActive) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 22.0),
+        child: Container(
+          height: 2,
+          color: isActive ? const Color(0xFFF73B46) : const Color(0xFFE5E7EB),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<CustomUser?>(context);
 
-    // Do not return LoadingSpinner directly here to avoid dismounting PageView
     List<Widget> pages = [
       _AvatarSelectionPage(
         currentPickedImage: _pickedImageFile,
@@ -121,13 +182,13 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
         onImagePicked: (file) {
           setState(() {
             _pickedImageFile = file;
-            _finalProfileImageUrl = null; // Clear default if custom is picked
+            _finalProfileImageUrl = null;
           });
         },
         onDefaultAvatarSelected: (avatarPath) {
           setState(() {
             _finalProfileImageUrl = avatarPath;
-            _pickedImageFile = null; // Clear custom if default is selected
+            _pickedImageFile = null;
           });
         },
       ),
@@ -146,71 +207,88 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Setup Your Profile'),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPageIndex = index;
-                });
-              },
-              children: pages,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Row(
               children: [
                 if (_currentPageIndex > 0)
-                  ElevatedButton(
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black87),
                     onPressed: _goToPreviousPage,
-                    child: const Text('Back'),
-                  ),
+                  )
+                else
+                  const SizedBox(width: 48, height: 48), // Spacer to offset back button
                 const Spacer(),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_currentPageIndex == pages.length - 1) {
-                      if (user != null) {
-                        // Ensure an avatar is selected or default to the first one if none is selected
-                        final avatarToSave = _finalProfileImageUrl ?? _defaultAvatars[0];
-
-                        // Update user data in Firestore
-                        await DatabaseService(uid: user.uid).updateUserData(
-                          profileImageUrl: avatarToSave,
-                          name: _usernameController.text.trim(),
-                          isDarkMode: _isDarkMode,
-                          onboardingCompleted: true, // Mark onboarding as complete
-                        );
-
-                        // Set onboarding completed flag in SharedPreferences
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('onboarding_completed', true);
-
-                        // Navigate to home and remove all previous routes
-                        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-                      }
-                    } else {
-                      _goToNextPage();
-                    }
-                  },
-                  child: Text(_currentPageIndex == pages.length - 1 ? 'Finish' : 'Next'),
-                ),
               ],
             ),
-          ),
-        ],
+            _buildStepper(),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(), // user uses buttons to navigate
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPageIndex = index;
+                  });
+                },
+                children: pages,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (_currentPageIndex == pages.length - 1) {
+                    if (user != null) {
+                      final avatarToSave = _finalProfileImageUrl ?? _defaultAvatars[0];
+
+                      await DatabaseService(uid: user.uid).updateUserData(
+                        profileImageUrl: avatarToSave,
+                        name: _usernameController.text.trim(),
+                        isDarkMode: _isDarkMode,
+                        onboardingCompleted: true,
+                      );
+
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('onboarding_completed', true);
+
+                      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                    }
+                  } else {
+                    _goToNextPage();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF73B46),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _currentPageIndex == pages.length - 1 ? 'Finish' : 'Continue',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// Avatar Selection Page - Refactored from _ChooseProfilePage
 class _AvatarSelectionPage extends StatefulWidget {
   final File? currentPickedImage;
   final String? currentSelectedAvatarUrl;
@@ -239,97 +317,109 @@ class _AvatarSelectionPageState extends State<_AvatarSelectionPage> {
     }
   }
 
-  void _selectDefaultAvatar(String avatarPath) {
-    widget.onDefaultAvatarSelected(avatarPath);
-  }
-
   @override
   Widget build(BuildContext context) {
-    ImageProvider<Object>? backgroundImage;
-
-    if (widget.currentPickedImage != null) {
-      backgroundImage = FileImage(widget.currentPickedImage!); // Use custom picked image
-    } else if (widget.currentSelectedAvatarUrl != null) {
-      if (widget.currentSelectedAvatarUrl!.startsWith('assets')) {
-        backgroundImage = AssetImage(widget.currentSelectedAvatarUrl!); // Use default asset
-      } else if (Uri.tryParse(widget.currentSelectedAvatarUrl!)?.hasAbsolutePath == true) {
-        backgroundImage = NetworkImage(widget.currentSelectedAvatarUrl!); // Use uploaded URL
-      }
-    }
-
-    return Center(
+    return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: 16),
             const Text(
-              'Choose Your Profile Picture',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              'Choose Your Avatar',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF111827),
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: () => _pickImage(ImageSource.gallery), // Tapping avatar picks from gallery
-              child: CircleAvatar(
-                radius: 80,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: backgroundImage,
-                child: backgroundImage == null
-                    ? Icon(
-                        Icons.camera_alt,
-                        size: 50,
-                        color: Colors.grey[600],
-                      )
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton.icon(
-                  onPressed: () => _pickImage(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Take Photo'),
-                ),
-                const SizedBox(width: 10),
-                TextButton.icon(
-                  onPressed: () => _pickImage(ImageSource.gallery),
-                  icon: const Icon(Icons.image),
-                  label: const Text('Choose from Gallery'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 8),
             const Text(
-              'Or choose a default avatar:',
-              style: TextStyle(fontSize: 16),
+              'Pick an avatar or upload your own',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B7280),
+              ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 80,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: widget.defaultAvatars.length,
-                itemBuilder: (context, index) {
-                  final avatarPath = widget.defaultAvatars[index];
-                  return GestureDetector(
-                    onTap: () => _selectDefaultAvatar(avatarPath),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: CircleAvatar(
-                        radius: 30,
-                        backgroundImage: AssetImage(avatarPath),
-                        backgroundColor: widget.currentSelectedAvatarUrl == avatarPath
-                            ? Colors.red.withOpacity(0.5) // Highlight selected default avatar
-                            : Colors.transparent,
+            const SizedBox(height: 32),
+
+            if (widget.currentPickedImage != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFF73B46), width: 4),
+                  image: DecorationImage(
+                    image: FileImage(widget.currentPickedImage!),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: widget.defaultAvatars.length,
+              itemBuilder: (context, index) {
+                final avatarPath = widget.defaultAvatars[index];
+                final isSelected = widget.currentSelectedAvatarUrl == avatarPath && widget.currentPickedImage == null;
+
+                return GestureDetector(
+                  onTap: () => widget.onDefaultAvatarSelected(avatarPath),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFFF73B46) : const Color(0xFFE5E7EB),
+                        width: isSelected ? 3 : 1.5,
+                      ),
+                      boxShadow: [
+                        if (isSelected)
+                          BoxShadow(
+                            color: const Color(0xFFF73B46).withOpacity(0.2),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          )
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Image.asset(avatarPath, fit: BoxFit.contain),
                       ),
                     ),
-                  );
-                },
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 32),
+            OutlinedButton.icon(
+              onPressed: () => _pickImage(ImageSource.gallery),
+              icon: const Icon(Icons.camera_alt_outlined, color: Colors.black87),
+              label: const Text(
+                'Upload Custom Photo',
+                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 56),
+                side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -337,7 +427,6 @@ class _AvatarSelectionPageState extends State<_AvatarSelectionPage> {
   }
 }
 
-// Username Input Page - remains largely the same
 class _UsernameInputPage extends StatelessWidget {
   final TextEditingController controller;
   final GlobalKey<FormState> formKey;
@@ -348,7 +437,7 @@ class _UsernameInputPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Form(
           key: formKey,
           child: Column(
@@ -356,17 +445,28 @@ class _UsernameInputPage extends StatelessWidget {
             children: [
               const Text(
                 'What\'s Your Name?',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: controller,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Username',
                   hintText: 'e.g., JohnDoe',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person_outline),
+                  labelStyle: const TextStyle(color: Color(0xFF6B7280)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFF73B46), width: 2),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF9CA3AF)),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -375,11 +475,11 @@ class _UsernameInputPage extends StatelessWidget {
                   return null;
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               const Text(
                 'This username will be displayed to others.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: Color(0xFF6B7280)),
               ),
             ],
           ),
@@ -389,7 +489,6 @@ class _UsernameInputPage extends StatelessWidget {
   }
 }
 
-// Dark Mode Enable Page - remains largely the same
 class _DarkModeEnablePage extends StatelessWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onToggle;
@@ -400,28 +499,35 @@ class _DarkModeEnablePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
               'Choose Your Theme',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            SwitchListTile(
-              title: const Text('Enable Dark Mode'),
-              value: isDarkMode,
-              onChanged: onToggle,
-              secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
-              contentPadding: EdgeInsets.zero,
+            const SizedBox(height: 24),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SwitchListTile(
+                title: const Text('Enable Dark Mode', style: TextStyle(fontWeight: FontWeight.w600)),
+                value: isDarkMode,
+                onChanged: onToggle,
+                activeColor: const Color(0xFFF73B46),
+                secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode, color: isDarkMode ? const Color(0xFFF73B46) : const Color(0xFF9CA3AF)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             const Text(
               'You can always change your theme preference later in settings.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Color(0xFF6B7280)),
             ),
           ],
         ),

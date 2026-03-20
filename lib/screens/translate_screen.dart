@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:Higa/models/word.dart';
 import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
+import 'package:Higa/screens/services/translation_stats_service.dart';
 import 'package:Higa/screens/services/translation_fallback_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -127,6 +128,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         });
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
         Provider.of<TtsService>(context, listen: false).speak(wordMatch.higaonon);
+        print('TranslateScreen: About to increment translation count for voice word match');
+        Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
+        print('TranslateScreen: Translation count incremented for voice word match');
         return;
       } catch (e) {}
 
@@ -141,6 +145,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         });
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
         Provider.of<TtsService>(context, listen: false).speak(sentenceMatch.exampleHigaonon);
+        Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
         return;
       } catch (e) {}
 
@@ -153,6 +158,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
             _voiceTranslationResult = fallbackTranslation;
             _voiceTranslationFound = true;
             Provider.of<TtsService>(context, listen: false).speak(fallbackTranslation);
+            Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
           } else {
             _voiceTranslationResult = 'No translation found';
             _voiceTranslationFound = false;
@@ -224,6 +230,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       });
       Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
       Provider.of<TtsService>(context, listen: false).speak(wordMatch.higaonon);
+      Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
       return;
     } catch (e) {}
 
@@ -237,6 +244,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       });
       Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
       Provider.of<TtsService>(context, listen: false).speak(sentenceMatch.exampleHigaonon);
+      Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
       return;
     } catch (e) {}
 
@@ -248,6 +256,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
           _textTranslationResult = fallbackTranslation;
           Provider.of<TtsService>(context, listen: false).speak(fallbackTranslation);
+          Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
         } else {
           _textTranslationResult = 'No translation found for: "$inputText"';
         }

@@ -5,6 +5,7 @@ import 'package:Higa/screens/services/database.dart';
 import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/bookmark_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
+import 'package:Higa/screens/services/translation_stats_service.dart';
 import 'package:Higa/screens/wrapper.dart'; // Import the Wrapper
 import 'package:Higa/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -60,6 +61,16 @@ class MyApp extends StatelessWidget {
                     bookmarkService.loadBookmarksFromFirestore();
                   }
                   return bookmarkService;
+                },
+              ),
+              ChangeNotifierProvider<TranslationStatsService>(
+                key: ValueKey('translation_stats_${user?.uid}'),
+                create: (context) {
+                  final translationStatsService = TranslationStatsService();
+                  if (user != null) {
+                    translationStatsService.loadTranslationStatsFromFirestore();
+                  }
+                  return translationStatsService;
                 },
               ),
               StreamProvider<UserData?>.value(

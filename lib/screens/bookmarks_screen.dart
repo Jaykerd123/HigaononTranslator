@@ -4,8 +4,22 @@ import 'package:Higa/screens/services/bookmark_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/models/word.dart';
 
-class BookmarkedWordsScreen extends StatelessWidget {
+class BookmarkedWordsScreen extends StatefulWidget {
   const BookmarkedWordsScreen({super.key});
+
+  @override
+  State<BookmarkedWordsScreen> createState() => _BookmarkedWordsScreenState();
+}
+
+class _BookmarkedWordsScreenState extends State<BookmarkedWordsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load bookmarks when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<BookmarkService>(context, listen: false).loadBookmarksFromFirestore();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

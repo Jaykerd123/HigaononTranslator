@@ -92,6 +92,7 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
     }
 
     if (_currentPageIndex < 2) {
+      FocusScope.of(context).unfocus();
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeIn,
@@ -211,6 +212,8 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
             _isDarkMode = value;
           });
         },
+        selectedAvatar: currentSelectedAvatar,
+        username: _usernameController.text,
       ),
     ];
 
@@ -253,7 +256,12 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
                           children: const [
                             Icon(Icons.arrow_back, color: Colors.black87, size: 18),
                             SizedBox(width: 8),
-                            Text('Back', style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('Back', style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -296,12 +304,17 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            _currentPageIndex == pages.length - 1 ? 'Finish' : 'Continue',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _currentPageIndex == pages.length - 1 ? 'Get Started' : 'Continue',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward, size: 18),
+                          const SizedBox(width: 6),
+                          Icon(_currentPageIndex == pages.length - 1 ? Icons.check : Icons.arrow_forward, size: 18),
                         ],
                       ),
                     ),
@@ -580,43 +593,195 @@ class _UsernameInputPage extends StatelessWidget {
 class _DarkModeEnablePage extends StatelessWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onToggle;
+  final String? selectedAvatar;
+  final String username;
 
-  const _DarkModeEnablePage({Key? key, required this.isDarkMode, required this.onToggle}) : super(key: key);
+  const _DarkModeEnablePage({
+    Key? key,
+    required this.isDarkMode,
+    required this.onToggle,
+    this.selectedAvatar,
+    required this.username,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    ImageProvider<Object>? avatarImage;
+    if (selectedAvatar != null) {
+      if (selectedAvatar!.startsWith('assets')) {
+         avatarImage = AssetImage(selectedAvatar!);
+      } else {
+         avatarImage = FileImage(File(selectedAvatar!));
+      }
+    }
+
+    final displayName = username.isNotEmpty ? username[0].toUpperCase() + username.substring(1) : 'User';
+
+    return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Choose Your Theme',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
-              textAlign: TextAlign.center,
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Choose Your Theme',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                textAlign: TextAlign.center,
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            const Center(
+              child: Text(
+                'Select your preferred app appearance',
+                style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 32),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => onToggle(false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                          color: !isDarkMode ? const Color(0xFFF73B46) : const Color(0xFFE5E7EB),
+                          width: !isDarkMode ? 3 : 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.wb_sunny_outlined, color: Colors.amber, size: 28),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text('Light Mode', style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w600, fontSize: 16)),
+                            ],
+                          ),
+                          if (!isDarkMode)
+                            const Positioned(
+                              top: -12,
+                              right: 12,
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundColor: Color(0xFFF73B46),
+                                child: Icon(Icons.check, color: Colors.white, size: 16),
+                              ),
+                            )
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => onToggle(true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827),
+                        border: Border.all(
+                          color: isDarkMode ? const Color(0xFFF73B46) : Colors.transparent,
+                          width: isDarkMode ? 3 : 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF1F2937),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.nightlight_round, color: Colors.lightBlueAccent, size: 26),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text('Dark Mode', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+                            ],
+                          ),
+                          if (isDarkMode)
+                            const Positioned(
+                              top: -12,
+                              right: 12,
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundColor: Color(0xFFF73B46),
+                                child: Icon(Icons.check, color: Colors.white, size: 16),
+                              ),
+                            )
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 32),
+            
             Container(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                color: const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: SwitchListTile(
-                title: const Text('Enable Dark Mode', style: TextStyle(fontWeight: FontWeight.w600)),
-                value: isDarkMode,
-                onChanged: onToggle,
-                activeColor: const Color(0xFFF73B46),
-                secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode, color: isDarkMode ? const Color(0xFFF73B46) : const Color(0xFF9CA3AF)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    child: avatarImage != null 
+                        ? CircleAvatar(radius: 26, backgroundImage: avatarImage, backgroundColor: Colors.transparent)
+                        : const Icon(Icons.person, color: Color(0xFF9CA3AF), size: 30),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayName,
+                          style: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w600, fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '@${username.toLowerCase()}',
+                          style: const TextStyle(color: Color(0xFF4B5563), fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'You can always change your theme preference later in settings.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF6B7280)),
-            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

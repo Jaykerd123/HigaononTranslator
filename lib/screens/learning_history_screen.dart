@@ -15,6 +15,10 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    // Load history when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<HistoryService>(context, listen: false).loadHistoryFromFirestore();
+    });
   }
 
   void _speak(Word word) {

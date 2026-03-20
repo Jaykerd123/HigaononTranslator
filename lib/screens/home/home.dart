@@ -8,6 +8,7 @@ import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/bookmark_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/screens/bookmarks_screen.dart';
+import 'package:Higa/screens/word_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -228,7 +229,17 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
   }
 
   Widget _buildWordOfTheDayCard(ThemeData theme) {
-    return Container(
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: _wordOfTheDay != null ? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WordDetailScreen(word: _wordOfTheDay!),
+          ),
+        );
+      } : null,
+      child: Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -329,6 +340,7 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
                   ),
                 ],
               ),
+      ),
       ),
     );
   }
@@ -452,19 +464,30 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
               ),
             ],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            title: Text(
-              word.higaonon,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(word.english),
-            trailing: CircleAvatar(
-              backgroundColor: Colors.redAccent.withOpacity(0.1),
-              radius: 18,
-              child: IconButton(
-                icon: const Icon(Icons.volume_up_rounded, size: 18, color: Colors.redAccent),
-                onPressed: () => _speak(word),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WordDetailScreen(word: word),
+                ),
+              );
+            },
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              title: Text(
+                word.higaonon,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(word.english),
+              trailing: CircleAvatar(
+                backgroundColor: Colors.redAccent.withOpacity(0.1),
+                radius: 18,
+                child: IconButton(
+                  icon: const Icon(Icons.volume_up_rounded, size: 18, color: Colors.redAccent),
+                  onPressed: () => _speak(word),
+                ),
               ),
             ),
           ),

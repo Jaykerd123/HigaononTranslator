@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:Higa/models/word.dart';
 import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
+import 'package:Higa/screens/services/bookmark_service.dart';
+import 'package:Higa/screens/word_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +19,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   List<Word> _words = [];
   List<Word> _filteredWords = [];
   final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -43,6 +46,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   void _filterWords() {
     final query = _searchController.text.toLowerCase();
     setState(() {
+      _isSearching = query.isNotEmpty;
       _filteredWords = _words.where((word) {
         return word.higaonon.toLowerCase().contains(query) ||
                word.tagalog.toLowerCase().contains(query) ||
@@ -59,111 +63,265 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dictionary'),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Search',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: Colors.redAccent,
+            flexibleSpace: FlexibleSpaceBar(
+              title: const Text(
+                'Dictionary',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.redAccent, Colors.orangeAccent.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
               ),
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredWords.length,
-              itemBuilder: (context, index) {
-                final word = _filteredWords[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              word.higaonon,
-                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.volume_up, color: Colors.blueAccent),
-                              onPressed: () => _speak(word),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${word.partOfSpeech} • ${word.tagalog}',
-                          style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
-                        ),
-                        const Divider(height: 24),
-                        _buildTranslationSection(
-                          language: 'English',
-                          definition: word.english,
-                          example: word.exampleEnglish,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTranslationSection(
-                          language: 'Higaonon Example',
-                          definition: word.exampleHigaonon,
-                          example: '',
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _buildSearchBar(theme),
+            ),
+          ),
+          if (_isSearching && _filteredWords.isEmpty)
+            SliverToBoxAdapter(
+              child: _buildEmptySearchState(theme),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final word = _filteredWords[index];
+                  return _buildWordCard(word, theme);
+                },
+                childCount: _filteredWords.length,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: TextStyle(fontSize: 16, color: theme.textTheme.bodyLarge?.color),
+        decoration: InputDecoration(
+          hintText: 'Search Higaonon, Tagalog, or English...',
+          hintStyle: TextStyle(color: theme.disabledColor),
+          prefixIcon: Icon(Icons.search_rounded, color: Colors.redAccent),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear_rounded, color: Colors.grey),
+                  onPressed: () {
+                    _searchController.clear();
+                    FocusScope.of(context).unfocus();
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptySearchState(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Icon(
+            Icons.search_off_rounded,
+            size: 64,
+            color: theme.disabledColor.withOpacity(0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No words found',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: theme.disabledColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try searching with different keywords',
+            style: TextStyle(
+              fontSize: 14,
+              color: theme.disabledColor,
             ),
           ),
         ],
       ),
     );
   }
-}
 
-Widget _buildTranslationSection({
-  required String language,
-  required String definition,
-  required String example,
-}) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        language,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+  Widget _buildWordCard(Word word, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      const SizedBox(height: 4),
-      Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: Text(
-          definition,
-          style: const TextStyle(fontSize: 16),
-        ),
-      ),
-      if (example.isNotEmpty)
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0, top: 4),
-          child: Text(
-            example,
-            style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: Colors.grey),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => WordDetailScreen(word: word)),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            word.higaonon,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.redAccent,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            word.english,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontStyle: FontStyle.italic,
+                              color: theme.textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        word.partOfSpeech,
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    word.tagalog,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.textTheme.bodySmall?.color,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _speak(word),
+                        icon: const Icon(Icons.volume_up_rounded, size: 18),
+                        label: const Text('Pronounce'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: const BorderSide(color: Colors.redAccent),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Consumer<BookmarkService>(
+                      builder: (context, bookmarkService, child) {
+                        final isBookmarked = bookmarkService.isBookmarked(word);
+                        return IconButton(
+                          onPressed: () => bookmarkService.toggleBookmark(word),
+                          icon: Icon(
+                            isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                            color: isBookmarked ? Colors.redAccent : Colors.grey,
+                            size: 24,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: isBookmarked 
+                                ? Colors.redAccent.withOpacity(0.1) 
+                                : Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-    ],
-  );
+      ),
+    );
+  }
 }
 

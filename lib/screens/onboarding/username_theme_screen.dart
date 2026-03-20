@@ -114,17 +114,17 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStepIconAndLabel(1, 'Avatar', _currentPageIndex >= 0),
+          _buildStepIconAndLabel(1, 'Avatar', _currentPageIndex == 0, _currentPageIndex > 0),
           _buildLine(_currentPageIndex >= 1),
-          _buildStepIconAndLabel(2, 'Username', _currentPageIndex >= 1),
+          _buildStepIconAndLabel(2, 'Username', _currentPageIndex == 1, _currentPageIndex > 1),
           _buildLine(_currentPageIndex >= 2),
-          _buildStepIconAndLabel(3, 'Theme', _currentPageIndex >= 2),
+          _buildStepIconAndLabel(3, 'Theme', _currentPageIndex == 2, _currentPageIndex > 2),
         ],
       ),
     );
   }
 
-  Widget _buildStepIconAndLabel(int stepNum, String title, bool isActive) {
+  Widget _buildStepIconAndLabel(int stepNum, String title, bool isActive, bool isCompleted) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -133,25 +133,28 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
           height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isActive ? const Color(0xFFF73B46) : const Color(0xFFE5E7EB),
+            color: isActive || isCompleted ? const Color(0xFFF73B46) : const Color(0xFFE5E7EB),
           ),
           child: Center(
-            child: Text(
-              '$stepNum',
-              style: TextStyle(
-                color: isActive ? Colors.white : const Color(0xFF6B7280),
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            child: isCompleted
+                ? const Icon(Icons.check, color: Colors.white, size: 24)
+                : Text(
+                    '$stepNum',
+                    style: TextStyle(
+                      color: isActive || isCompleted ? Colors.white : const Color(0xFF6B7280),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 12),
         Text(
           title,
           style: TextStyle(
-            color: isActive ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
+            color: isActive || isCompleted ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
             fontSize: 12,
+            fontWeight: isActive || isCompleted ? FontWeight.bold : FontWeight.w500,
           ),
         ),
       ],
@@ -174,6 +177,10 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
   Widget build(BuildContext context) {
     final user = Provider.of<CustomUser?>(context);
 
+    // Provide the selected avatar down to the Username page
+    final String? currentSelectedAvatar = _finalProfileImageUrl ?? 
+        (_pickedImageFile != null ? _pickedImageFile!.path : _defaultAvatars[0]);
+
     List<Widget> pages = [
       _AvatarSelectionPage(
         currentPickedImage: _pickedImageFile,
@@ -195,6 +202,7 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
       _UsernameInputPage(
         controller: _usernameController,
         formKey: _usernameFormKey,
+        selectedAvatar: currentSelectedAvatar,
       ),
       _DarkModeEnablePage(
         isDarkMode: _isDarkMode,
@@ -211,18 +219,6 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Row(
-              children: [
-                if (_currentPageIndex > 0)
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.black87),
-                    onPressed: _goToPreviousPage,
-                  )
-                else
-                  const SizedBox(width: 48, height: 48), // Spacer to offset back button
-                const Spacer(),
-              ],
-            ),
             _buildStepper(),
             Expanded(
               child: PageView(
@@ -237,49 +233,80 @@ class _UsernameThemeScreenState extends State<UsernameThemeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (_currentPageIndex == pages.length - 1) {
-                    if (user != null) {
-                      final avatarToSave = _finalProfileImageUrl ?? _defaultAvatars[0];
-
-                      await DatabaseService(uid: user.uid).updateUserData(
-                        profileImageUrl: avatarToSave,
-                        name: _usernameController.text.trim(),
-                        isDarkMode: _isDarkMode,
-                        onboardingCompleted: true,
-                      );
-
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('onboarding_completed', true);
-
-                      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
-                    }
-                  } else {
-                    _goToNextPage();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF73B46),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _currentPageIndex == pages.length - 1 ? 'Finish' : 'Continue',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: Row(
+                children: [
+                  if (_currentPageIndex > 0) ...[
+                    Expanded(
+                      flex: 1,
+                      child: OutlinedButton(
+                        onPressed: _goToPreviousPage,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 56),
+                          side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.arrow_back, color: Colors.black87, size: 18),
+                            SizedBox(width: 8),
+                            Text('Back', style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward),
+                    const SizedBox(width: 16),
                   ],
-                ),
+                  Expanded(
+                    flex: 1,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_currentPageIndex == pages.length - 1) {
+                          if (user != null) {
+                            final avatarToSave = _finalProfileImageUrl ?? _defaultAvatars[0];
+
+                            await DatabaseService(uid: user.uid).updateUserData(
+                              profileImageUrl: avatarToSave,
+                              name: _usernameController.text.trim(),
+                              isDarkMode: _isDarkMode,
+                              onboardingCompleted: true,
+                            );
+
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setBool('onboarding_completed', true);
+
+                            Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                          }
+                        } else {
+                          _goToNextPage();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF73B46),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _currentPageIndex == pages.length - 1 ? 'Finish' : 'Continue',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -430,31 +457,92 @@ class _AvatarSelectionPageState extends State<_AvatarSelectionPage> {
 class _UsernameInputPage extends StatelessWidget {
   final TextEditingController controller;
   final GlobalKey<FormState> formKey;
+  final String? selectedAvatar;
 
-  const _UsernameInputPage({Key? key, required this.controller, required this.formKey}) : super(key: key);
+  const _UsernameInputPage({
+    Key? key, 
+    required this.controller, 
+    required this.formKey,
+    this.selectedAvatar,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    ImageProvider<Object>? avatarImage;
+    if (selectedAvatar != null) {
+      if (selectedAvatar!.startsWith('assets')) {
+         avatarImage = AssetImage(selectedAvatar!);
+      } else {
+         avatarImage = FileImage(File(selectedAvatar!));
+      }
+    }
+
+    return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Form(
           key: formKey,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'What\'s Your Name?',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
-                textAlign: TextAlign.center,
-              ),
               const SizedBox(height: 24),
+              const Center(
+                child: Text(
+                  'Set Your Username',
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Center(
+                child: Text(
+                  'Choose a unique username for your profile',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 48),
+
+              if (avatarImage != null)
+                Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                       shape: BoxShape.circle,
+                       boxShadow: [
+                         BoxShadow(
+                           color: Colors.black.withOpacity(0.05),
+                           blurRadius: 10,
+                           spreadRadius: 2,
+                         )
+                       ]
+                    ),
+                    child: CircleAvatar(
+                      radius: 46,
+                      backgroundColor: Colors.white,
+                      child: CircleAvatar(
+                        radius: 44,
+                        backgroundImage: avatarImage,
+                        backgroundColor: Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ),
+              
+              const SizedBox(height: 48),
+              
+              const Text(
+                'Username',
+                style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: controller,
                 decoration: InputDecoration(
-                  labelText: 'Username',
-                  hintText: 'e.g., JohnDoe',
-                  labelStyle: const TextStyle(color: Color(0xFF6B7280)),
+                  hintText: 'michael',
+                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                  prefixText: '@  ',
+                  prefixStyle: const TextStyle(color: Color(0xFF6B7280), fontSize: 16),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
@@ -466,7 +554,7 @@ class _UsernameInputPage extends StatelessWidget {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF9CA3AF)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -477,10 +565,10 @@ class _UsernameInputPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'This username will be displayed to others.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF6B7280)),
+                'Only lowercase letters, numbers, and underscores',
+                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

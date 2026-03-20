@@ -298,22 +298,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
               ),
               const Divider(),
-              SwitchListTile(
+              ListTile(
                 title: const Text('Notifications'),
                 subtitle: Text(_notificationsEnabled ? 'Customize notifications' : 'All notifications disabled'),
-                value: _notificationsEnabled,
-                onChanged: (bool value) {
-                  setState(() {
-                    _notificationsEnabled = value;
-                  });
-                  if (value) {
-                    _showNotificationSettings();
-                  }
-                },
-                secondary: const Icon(Icons.notifications_outlined),
-                trailing: _notificationsEnabled 
-                    ? const Icon(Icons.arrow_forward_ios, size: 16)
-                    : null,
+                leading: const Icon(Icons.notifications_outlined),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Switch(
+                      value: _notificationsEnabled,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _notificationsEnabled = value;
+                        });
+                        if (value) {
+                          _showNotificationSettings();
+                        }
+                      },
+                    ),
+                    if (_notificationsEnabled) ...[
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_ios, size: 16),
+                    ],
+                  ],
+                ),
                 onTap: _notificationsEnabled ? _showNotificationSettings : null,
               ),
               SwitchListTile(

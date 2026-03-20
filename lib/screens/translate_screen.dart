@@ -275,6 +275,8 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
   @override
   void dispose() {
+    // Dismiss keyboard and unfocus any focused text fields
+    FocusScope.of(context).unfocus();
     _searchController.dispose();
     _textInputController.dispose();
     _audioPlayer.dispose();

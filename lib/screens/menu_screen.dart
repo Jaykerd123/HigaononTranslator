@@ -27,6 +27,12 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
   @override
   bool get wantKeepAlive => true;
 
+  void _navigateToScreen(Widget screen) {
+    // Dismiss keyboard before navigating
+    FocusScope.of(context).unfocus();
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+  }
+
   ImageProvider _getAvatarImage(String? avatarUrl) {
     if (_selectedImage != null) {
       return FileImage(File(_selectedImage!.path));
@@ -73,7 +79,7 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
                 title: const Text('Choose Character Avatar'),
                 onTap: () {
                   Navigator.pop(modalContext);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AvatarSelectionScreen()));
+                  _navigateToScreen(const AvatarSelectionScreen());
                 },
               ),
             ],
@@ -168,14 +174,14 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
               child: Column(
                 children: [
                   _buildMenuSection(theme, 'Learning', [
-                    _MenuData(Icons.show_chart_rounded, 'Your Progress', 'Track your growth', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const YourProgressScreen())), Colors.blue),
-                    _MenuData(Icons.book_rounded, 'Dictionary', 'All Higaonon words', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DictionaryScreen())), Colors.green),
-                    _MenuData(Icons.history_rounded, 'Learning History', 'Recently studied', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LearningHistoryScreen())), Colors.orange),
+                    _MenuData(Icons.show_chart_rounded, 'Your Progress', 'Track your growth', () => _navigateToScreen(const YourProgressScreen()), Colors.blue),
+                    _MenuData(Icons.book_rounded, 'Dictionary', 'All Higaonon words', () => _navigateToScreen(const DictionaryScreen()), Colors.green),
+                    _MenuData(Icons.history_rounded, 'Learning History', 'Recently studied', () => _navigateToScreen(const LearningHistoryScreen()), Colors.orange),
                   ]),
                   const SizedBox(height: 24),
                   _buildMenuSection(theme, 'Settings', [
-                    _MenuData(Icons.settings_rounded, 'App Settings', 'Theme and notifications', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())), Colors.blueGrey),
-                    _MenuData(Icons.info_rounded, 'About Higa', 'App and developer info', () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen())), Colors.teal),
+                    _MenuData(Icons.settings_rounded, 'App Settings', 'Theme and notifications', () => _navigateToScreen(const SettingsScreen()), Colors.blueGrey),
+                    _MenuData(Icons.info_rounded, 'About Higa', 'App and developer info', () => _navigateToScreen(const AboutScreen()), Colors.teal),
                   ]),
                   const SizedBox(height: 40),
                   ElevatedButton.icon(

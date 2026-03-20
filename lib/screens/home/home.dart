@@ -39,6 +39,8 @@ class _HomeState extends State<Home> {
   }
 
   void _onItemTapped(int index) {
+    // Dismiss keyboard when switching tabs
+    FocusScope.of(context).unfocus();
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
@@ -356,6 +358,7 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
           padding: const EdgeInsets.only(top: 24.0),
           child: InkWell(
             onTap: () {
+              FocusScope.of(context).unfocus();
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const BookmarkedWordsScreen()),

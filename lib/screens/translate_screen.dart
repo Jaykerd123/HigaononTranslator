@@ -12,6 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:Higa/screens/word_detail_screen.dart';
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
@@ -204,9 +205,27 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     }
   }
 
+  String? _currentlySpeakingText;
+
+  Future<void> _speakWithLoading(String text) async {
+    if (_currentlySpeakingText != null) return;
+    setState(() {
+      _currentlySpeakingText = text;
+    });
+    try {
+      await Provider.of<TtsService>(context, listen: false).speak(text);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _currentlySpeakingText = null;
+        });
+      }
+    }
+  }
+
   void _speak(Word word) {
     Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
-    Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
+    _speakWithLoading(word.higaonon);
   }
 
   Future<void> _translateText() async {
@@ -508,8 +527,10 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
               ),
               if (showSpeaker)
                 IconButton(
-                  icon: const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
-                  onPressed: () => Provider.of<TtsService>(context, listen: false).speak(result),
+                  icon: _currentlySpeakingText == result 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent))
+                      : const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
+                  onPressed: _currentlySpeakingText != null ? null : () => _speakWithLoading(result),
                 ),
               if (showSpeaker)
                 IconButton(
@@ -538,9 +559,19 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
           child: ListTile(
             title: Text(word.higaonon, style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(word.english),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WordDetailScreen(word: word),
+                ),
+              );
+            },
             trailing: IconButton(
-              icon: const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
-              onPressed: () => _speak(word),
+              icon: _currentlySpeakingText == word.higaonon
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent))
+                  : const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
+              onPressed: _currentlySpeakingText != null ? null : () => _speak(word),
             ),
           ),
         );

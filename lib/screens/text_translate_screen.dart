@@ -25,6 +25,24 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     _loadDictionary();
   }
 
+  String? _currentlySpeakingText;
+
+  Future<void> _speakWithLoading(String text) async {
+    if (_currentlySpeakingText != null) return;
+    setState(() {
+      _currentlySpeakingText = text;
+    });
+    try {
+      await Provider.of<TtsService>(context, listen: false).speak(text);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _currentlySpeakingText = null;
+        });
+      }
+    }
+  }
+
   Future<void> _loadDictionary() async {
     final String response = await rootBundle.loadString('assets/dictionary.json');
     final data = await json.decode(response) as List;
@@ -194,8 +212,10 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
                     ),
                     if (_translationResult.isNotEmpty && !_translationResult.startsWith('No translation found') && _translationResult != 'Please enter text to translate.')
                       IconButton(
-                        icon: Icon(Icons.volume_up, color: theme.colorScheme.secondary),
-                        onPressed: () => Provider.of<TtsService>(context, listen: false).speak(_translationResult),
+                        icon: _currentlySpeakingText == _translationResult
+                            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.secondary))
+                            : Icon(Icons.volume_up, color: theme.colorScheme.secondary),
+                        onPressed: _currentlySpeakingText != null ? null : () => _speakWithLoading(_translationResult),
                       ),
                     if (_translationResult.isNotEmpty && _translationResult != 'No translation found for sentence' && _translationResult != 'No translation found for: "${_textInputController.text}"' && _translationResult != 'Please enter text to translate.')
                       IconButton(

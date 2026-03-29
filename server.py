@@ -5,6 +5,7 @@ import torch
 import soundfile as sf
 import io
 import os
+import multiprocessing
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,6 +18,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Maximize processor usage for AI TTS Model
+num_cores = multiprocessing.cpu_count()
+torch.set_num_threads(num_cores)
+print(f"Set PyTorch CPU threads to {num_cores} to speed up TTS generation.")
 
 # TTS Model loading
 try:

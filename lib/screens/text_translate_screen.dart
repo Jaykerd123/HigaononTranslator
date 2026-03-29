@@ -135,6 +135,13 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
                 maxLines: null,
                 expands: true,
                 textAlignVertical: TextAlignVertical.top,
+                onChanged: (value) {
+                  if (_translationResult.isNotEmpty) {
+                    setState(() {
+                      _translationResult = '';
+                    });
+                  }
+                },
                 decoration: InputDecoration(
                   hintText: 'Enter text to translate...',
                   border: OutlineInputBorder(

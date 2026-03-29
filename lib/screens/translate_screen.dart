@@ -448,6 +448,13 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
               child: TextField(
                 controller: _textInputController,
                 maxLines: null,
+                onChanged: (value) {
+                  if (_textTranslationResult.isNotEmpty) {
+                    setState(() {
+                      _textTranslationResult = '';
+                    });
+                  }
+                },
                 decoration: const InputDecoration(
                   hintText: 'Type English sentence here...',
                   border: InputBorder.none,

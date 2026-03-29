@@ -12,6 +12,7 @@ class UserData {
   final String? avatarUrl;
   final bool? isDarkMode;
   final bool onboardingCompleted;
+  final bool? soundEffectsEnabled;
   final List<String>? dictionaryHistory;
 
   UserData({
@@ -22,6 +23,7 @@ class UserData {
     this.avatarUrl,
     this.isDarkMode,
     this.onboardingCompleted = false,
+    this.soundEffectsEnabled,
     this.dictionaryHistory,
   });
 }

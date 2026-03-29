@@ -20,6 +20,7 @@ class DatabaseService{
     String? profileImageUrl, // Maps to 'avatarUrl' in Firestore
     bool? isDarkMode,
     bool? onboardingCompleted,
+    bool? soundEffectsEnabled,
   }) async {
     print('[DatabaseService] updateUserData called for uid: $uid');
     Map<String, dynamic> dataToUpdate = {};
@@ -29,6 +30,7 @@ class DatabaseService{
     if (profileImageUrl != null) dataToUpdate['avatarUrl'] = profileImageUrl;
     if (isDarkMode != null) dataToUpdate['isDarkMode'] = isDarkMode;
     if (onboardingCompleted != null) dataToUpdate['onboardingCompleted'] = onboardingCompleted;
+    if (soundEffectsEnabled != null) dataToUpdate['soundEffectsEnabled'] = soundEffectsEnabled;
 
     if (dataToUpdate.isNotEmpty) {
       print('[DatabaseService] Data to update: $dataToUpdate');
@@ -40,11 +42,19 @@ class DatabaseService{
     }
   }
 
-  // New method to update the theme preference (isDarkMode)
+  // New method to update theme preference (isDarkMode)
   Future<void> updateTheme(bool isDarkMode) async {
     // Use set with merge: true for theme preference as well
     return await usersCollection.doc(uid).set({
       'isDarkMode': isDarkMode,
+    }, SetOptions(merge: true));
+  }
+
+  // New method to update sound effects preference
+  Future<void> updateSoundEffects(bool soundEffectsEnabled) async {
+    print('[DatabaseService] Updating sound effects to: $soundEffectsEnabled');
+    return await usersCollection.doc(uid).set({
+      'soundEffectsEnabled': soundEffectsEnabled,
     }, SetOptions(merge: true));
   }
 
@@ -71,6 +81,7 @@ class DatabaseService{
       avatarUrl: data?['avatarUrl'] ?? '',
       isDarkMode: data?['isDarkMode'] ?? false,
       onboardingCompleted: data?['onboardingCompleted'] ?? false,
+      soundEffectsEnabled: data?['soundEffectsEnabled'],
     );
   }
 

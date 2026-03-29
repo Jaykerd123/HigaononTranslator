@@ -41,6 +41,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    // Load user data first
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userData = Provider.of<UserData?>(context);
+      setState(() {
+        _soundEffectsEnabled = userData?.soundEffectsEnabled ?? false;
+      });
+    });
     _loadNotificationSettings();
   }
 
@@ -324,16 +331,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 onTap: _notificationsEnabled ? _showNotificationSettings : null,
               ),
-              SwitchListTile(
+              ListTile(
                 title: const Text('Sound Effect'),
-                subtitle: const Text('Play audio feedback'),
-                value: _soundEffectsEnabled,
-                onChanged: (bool value) {
-                  setState(() {
-                    _soundEffectsEnabled = value;
-                  });
-                },
-                secondary: const Icon(Icons.volume_up_outlined),
+                subtitle: Text(_soundEffectsEnabled ? 'Audio feedback enabled' : 'Audio feedback disabled'),
+                leading: const Icon(Icons.volume_up_outlined),
+                trailing: Switch(
+                  value: _soundEffectsEnabled,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _soundEffectsEnabled = value;
+                    });
+                    if (user != null) {
+                      DatabaseService(uid: user.uid).updateSoundEffects(value);
+                    }
+                  },
+                ),
               ),
               SwitchListTile(
                 title: const Text('Dark Mode'),

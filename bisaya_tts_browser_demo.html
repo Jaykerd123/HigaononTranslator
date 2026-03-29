@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ceb">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bisaya TTS Audio Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        .phrase {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:active {
+            background: #004085;
+        }
+        .status {
+            color: #666;
+            font-style: italic;
+            margin-left: 10px;
+        }
+        .speaking {
+            color: #007bff;
+            font-weight: bold;
+        }
+        h1 {
+            color: #004085;
+            text-align: center;
+        }
+        .info-box {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid #007bff;
+        }
+        .phrase-text {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #333;
+        }
+        .translation {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 Bisaya (Cebuano) Text-to-Speech</h1>
+    <p style="text-align: center; font-size: 18px; color: #666;">
+        Click the buttons below to hear Bisaya phrases spoken using your browser's built-in TTS.
+    </p>
+    
+    <div class="phrase">
+        <h3>Phrase 1</h3>
+        <div class="phrase-text"><strong>Bisaya:</strong> "Kumusta ka?"</div>
+        <div class="translation">English: How are you?</div>
+        <button onclick="speakText('Kumusta ka?', 1)">🔊 Play Audio</button>
+        <span class="status" id="status1">Click to play</span>
+    </div>
+    
+    <div class="phrase">
+        <h3>Phrase 2</h3>
+        <div class="phrase-text"><strong>Bisaya:</strong> "Maayong adlaw."</div>
+        <div class="translation">English: Good day.</div>
+        <button onclick="speakText('Maayong adlaw.', 2)">🔊 Play Audio</button>
+        <span class="status" id="status2">Click to play</span>
+    </div>
+    
+    <div class="phrase">
+        <h3>Phrase 3</h3>
+        <div class="phrase-text"><strong>Bisaya:</strong> "Salamat kaayo."</div>
+        <div class="translation">English: Thank you very much.</div>
+        <button onclick="speakText('Salamat kaayo.', 3)">🔊 Play Audio</button>
+        <span class="status" id="status3">Click to play</span>
+    </div>
+    
+    <div class="phrase">
+        <h3>Phrase 4</h3>
+        <div class="phrase-text"><strong>Bisaya:</strong> "Unsa imong ngalan?"</div>
+        <div class="translation">English: What is your name?</div>
+        <button onclick="speakText('Unsa imong ngalan?', 4)">🔊 Play Audio</button>
+        <span class="status" id="status4">Click to play</span>
+    </div>
+    
+    <div class="phrase">
+        <h3>Phrase 5</h3>
+        <div class="phrase-text"><strong>Bisaya:</strong> "Nalingaw ko sa pagpangita sa imo."</div>
+        <div class="translation">English: I was happy looking for you.</div>
+        <button onclick="speakText('Nalingaw ko sa pagpangita sa imo.', 5)">🔊 Play Audio</button>
+        <span class="status" id="status5">Click to play</span>
+    </div>
+    
+    <div class="phrase">
+        <h3>Phrase 6</h3>
+        <div class="phrase-text"><strong>Bisaya:</strong> "Gusto ko mogamit sa Bisaya nga pinulongan."</div>
+        <div class="translation">English: I want to use the Bisaya language.</div>
+        <button onclick="speakText('Gusto ko mogamit sa Bisaya nga pinulongan.', 6)">🔊 Play Audio</button>
+        <span class="status" id="status6">Click to play</span>
+    </div>
+    
+    <div class="phrase">
+        <h3>Phrase 7</h3>
+        <div class="phrase-text"><strong>Bisaya:</strong> "Kining awtoromobil kay daghan kwarta."</div>
+        <div class="translation">English: This car is expensive.</div>
+        <button onclick="speakText('Kining awtoromobil kay daghan kwarta.', 7)">🔊 Play Audio</button>
+        <span class="status" id="status7">Click to play</span>
+    </div>
+    
+    <div class="phrase">
+        <h3>Phrase 8</h3>
+        <div class="phrase-text"><strong>Bisaya:</strong> "Mangaon kita karon."</div>
+        <div class="translation">English: Let's eat now.</div>
+        <button onclick="speakText('Mangaon kita karon.', 8)">🔊 Play Audio</button>
+        <span class="status" id="status8">Click to play</span>
+    </div>
+    
+    <script>
+        let currentUtterance = null;
+        
+        function speakText(text, phraseNumber) {
+            const statusElement = document.getElementById(`status${phraseNumber}`);
+            
+            // Cancel any ongoing speech
+            if (currentUtterance) {
+                window.speechSynthesis.cancel();
+            }
+            
+            if ('speechSynthesis' in window) {
+                // Update status
+                statusElement.textContent = '🔊 Speaking...';
+                statusElement.className = 'status speaking';
+                
+                // Create a new speech synthesis utterance
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Configure voice settings
+                utterance.lang = 'tl-PH'; // Filipino (closest to Bisaya)
+                utterance.rate = 0.85; // Slightly slower for clarity
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                
+                // Get available voices
+                const voices = window.speechSynthesis.getVoices();
+                console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
+                
+                // Try to find the best voice for Filipino/Tagalog
+                let selectedVoice = null;
+                
+                // Priority order: Filipino, Tagalog, English (Philippines), English
+                const preferredLangs = ['tl-PH', 'tl', 'fil-PH', 'fil', 'en-PH', 'en-US', 'en'];
+                
+                for (const lang of preferredLangs) {
+                    const voice = voices.find(v => v.lang.startsWith(lang));
+                    if (voice) {
+                        selectedVoice = voice;
+                        console.log(`Selected voice: ${voice.name} (${voice.lang})`);
+                        break;
+                    }
+                }
+                
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                } else {
+                    console.log('Using default voice');
+                }
+                
+                // Event handlers
+                utterance.onstart = function() {
+                    console.log('Speaking:', text);
+                    statusElement.textContent = '🔊 Speaking...';
+                    statusElement.className = 'status speaking';
+                };
+                
+                utterance.onend = function() {
+                    console.log('Finished speaking:', text);
+                    statusElement.textContent = '✅ Finished';
+                    statusElement.className = 'status';
+                    currentUtterance = null;
+                };
+                
+                utterance.onerror = function(event) {
+                    console.error('Speech error:', event.error);
+                    statusElement.textContent = '❌ Error: ' + event.error;
+                    statusElement.className = 'status';
+                    currentUtterance = null;
+                };
+                
+                // Store current utterance
+                currentUtterance = utterance;
+                
+                // Speak the text
+                window.speechSynthesis.speak(utterance);
+                
+            } else {
+                statusElement.textContent = '❌ TTS not supported';
+                statusElement.className = 'status';
+                alert('Speech synthesis is not supported in your browser. Please try Chrome, Safari, or Edge.');
+            }
+        }
+        
+        // Load voices when available
+        window.speechSynthesis.onvoiceschanged = function() {
+            const voices = window.speechSynthesis.getVoices();
+            console.log(`Loaded ${voices.length} voices`);
+            console.log('Available voices:', voices.map(v => `${v.name} (${v.lang})`));
+        };
+        
+        // Initial voice load
+        window.speechSynthesis.getVoices();
+        
+        // Auto-load voices after a short delay
+        setTimeout(() => {
+            window.speechSynthesis.getVoices();
+        }, 100);
+        
+        // Stop all speech when page is hidden
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && currentUtterance) {
+                window.speechSynthesis.cancel();
+            }
+        });
+    </script>
+    
+    <div class="info-box">
+        <h2>📝 About This Demo</h2>
+        <p><strong>🎯 Purpose:</strong> This demonstrates Bisaya (Cebuano) text-to-speech capability using your browser's built-in TTS.</p>
+        
+        <p><strong>🔊 Audio Quality:</strong> Browser TTS provides immediate audio feedback but may not have perfect Bisaya pronunciation. For high-quality Bisaya audio, use the Facebook MMS TTS model.</p>
+        
+        <p><strong>🌍 Language Support:</strong> The demo uses Filipino (Tagalog) TTS voices, which are the closest available to Bisaya in most browsers.</p>
+        
+        <p><strong>💡 Tips:</strong></p>
+        <ul>
+            <li>Use Chrome, Safari, or Edge for best TTS support</li>
+            <li>Click multiple times to replay phrases</li>
+            <li>Adjust your system volume as needed</li>
+        </ul>
+        
+        <p><strong>🚀 For High-Quality Bisaya Audio:</strong></p>
+        <p>Use the Facebook MMS TTS model with the code provided in the Python scripts:</p>
+        <code style="background: #f0f0f0; padding: 5px; border-radius: 3px;">
+            pip install torch transformers scipy<br>
+            python bisaya_tts_demo.py
+        </code>
+    </div>
+</body>
+</html>

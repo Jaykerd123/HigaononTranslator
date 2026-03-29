@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:Higa/models/word.dart';
+import 'package:Higa/models/user.dart';
 import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/screens/services/translation_stats_service.dart';
@@ -66,7 +67,13 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
   void _startListening() async {
     if (!_speechEnabled || _speechToText.isListening) return;
-    await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
+    
+    // Check if sound effects are enabled
+    final userData = Provider.of<UserData?>(context, listen: false);
+    if (userData?.soundEffectsEnabled ?? false) {
+      await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
+    }
+    
     await _speechToText.listen(
       onResult: _onSpeechResult,
       localeId: 'en_US',

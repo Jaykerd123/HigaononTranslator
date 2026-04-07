@@ -17,10 +17,74 @@ class TtsService {
   }
 
   Future<void> _initLocalTts() async {
-    await _flutterTts.setLanguage("fil-PH"); // Fallback to Filipino/Tagalog if Cebuano isn't available
-    await _flutterTts.setSpeechRate(0.5);
-    await _flutterTts.setVolume(1.0);
-    await _flutterTts.setPitch(1.0);
+    try {
+      // Prefer Filipino/Tagalog as the closest available to Bisaya.
+      await _flutterTts.setLanguage("fil-PH");
+      await _flutterTts.setSpeechRate(0.5);
+      await _flutterTts.setVolume(1.0);
+      // Slightly lower pitch to sound more like a male voice.
+      await _flutterTts.setPitch(0.95);
+
+      // Try to pick a male Filipino/Philippines voice when available.
+      final voices = await _flutterTts.getVoices;
+      if (voices is List) {
+        Map<String, String>? selectedVoice;
+
+        // Normalize and filter for Filipino / PH-related voices.
+        final filipinoVoices = voices.where((v) {
+          if (v is Map) {
+            final locale = (v['locale'] ?? v['language'] ?? '').toString().toLowerCase();
+            final name = (v['name'] ?? '').toString().toLowerCase();
+            return locale.contains('ph') ||
+                locale.contains('fil') ||
+                locale.contains('tl') ||
+                name.contains('filipino') ||
+                name.contains('tagalog') ||
+                name.contains('philippines');
+          }
+          return false;
+        }).toList();
+
+        // Heuristic keywords to detect male voices by name.
+        const maleKeywords = [
+          'male',
+          'man',
+          'andro',
+          'andrew',
+          'enrique',
+          'james',
+        ];
+
+        Map? maleVoiceMap;
+        for (final v in filipinoVoices) {
+          if (v is Map) {
+            final name = (v['name'] ?? '').toString().toLowerCase();
+            if (maleKeywords.any((k) => name.contains(k))) {
+              maleVoiceMap = v;
+              break;
+            }
+          }
+        }
+
+        // Prefer detected male Filipino voice; otherwise first Filipino / PH voice.
+        final chosen = maleVoiceMap ?? (filipinoVoices.isNotEmpty ? filipinoVoices.first as Map? : null);
+        if (chosen != null) {
+          selectedVoice = {
+            'name': chosen['name']?.toString() ?? '',
+            'locale': (chosen['locale'] ?? chosen['language'] ?? 'fil-PH').toString(),
+          };
+        }
+
+        if (selectedVoice != null && selectedVoice['name']!.isNotEmpty) {
+          print('[TtsService] Using local TTS voice: ${selectedVoice['name']} (${selectedVoice['locale']})');
+          await _flutterTts.setVoice(selectedVoice);
+        } else {
+          print('[TtsService] No specific Filipino male voice found. Using default local TTS voice.');
+        }
+      }
+    } catch (e) {
+      print('[TtsService] Error initializing local TTS: $e');
+    }
   }
 
   Future<void> speak(String text) async {
@@ -40,7 +104,7 @@ class TtsService {
     // Determine possible URLs depending on whether we are android, web or emulator
     List<String> possibleBaseUrls = ['http://127.0.0.1:8000'];
     if (!kIsWeb && Platform.isAndroid) {
-      possibleBaseUrls = ['http://10.0.2.2:8000', 'http://10.0.0.48:8000', 'http://10.0.0.10:8000'];
+      possibleBaseUrls = ['http://127.0.0.1:8000'];
     }
 
     for (String baseUrl in possibleBaseUrls) {
@@ -54,7 +118,7 @@ class TtsService {
             'Content-Type': 'application/json',
           },
           body: jsonEncode({'text': text}),
-        ).timeout(const Duration(seconds: 4));
+        ).timeout(const Duration(seconds: 20));
 
         if (response.statusCode == 200) {
           final Uint8List audioBytes = response.bodyBytes;

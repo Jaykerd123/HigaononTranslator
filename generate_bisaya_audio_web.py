@@ -98,26 +98,48 @@ def generate_bisaya_audio_online():
                 // Create a new speech synthesis utterance
                 const utterance = new SpeechSynthesisUtterance(text);
                 
-                // Try to set language to Filipino/Tagalog (closest available to Bisaya)
-                utterance.lang = 'tl-PH'; // Filipino
+                // Prefer Filipino/Philippines voices (closest available to Bisaya).
+                // Note: Browser voices depend on your OS and can change over time.
+                utterance.lang = 'tl-PH'; // Filipino / Philippines
                 utterance.rate = 0.9; // Slightly slower for clarity
-                utterance.pitch = 1.0;
+                utterance.pitch = 0.95; // Slightly lower pitch (more "male"-like)
                 utterance.volume = 1.0;
                 
                 // Find available voices
                 const voices = window.speechSynthesis.getVoices();
                 console.log('Available voices:', voices);
                 
-                // Try to find a Filipino or English voice
-                const filipinoVoice = voices.find(voice => 
-                    voice.lang.includes('tl') || voice.lang.includes('fil') || voice.lang.includes('PH')
+                // Heuristic: try to find a *male* Filipino/Philippines voice first
+                const filipinoVoices = voices.filter(voice =>
+                    (voice.lang && (voice.lang.toLowerCase().includes('tl') ||
+                                    voice.lang.toLowerCase().includes('fil') ||
+                                    voice.lang.toLowerCase().includes('ph'))) ||
+                    (voice.name && /filipino|tagalog|philippines/i.test(voice.name))
                 );
                 
-                if (filipinoVoice) {{
-                    utterance.voice = filipinoVoice;
-                    console.log('Using Filipino voice:', filipinoVoice.name);
+                const maleKeywords = ['male', 'man', 'guy', 'microsoft andro', 'andrew', 'enrique', 'james'];
+                
+                const maleFilipinoVoice = filipinoVoices.find(voice =>
+                    maleKeywords.some(keyword => voice.name && voice.name.toLowerCase().includes(keyword))
+                );
+                
+                // Fallbacks: Filipino voice (any gender) → any PH voice → default
+                const anyFilipinoVoice = filipinoVoices[0];
+                const anyPHVoice = voices.find(voice =>
+                    voice.lang && voice.lang.toLowerCase().includes('ph')
+                );
+                
+                if (maleFilipinoVoice) {{
+                    utterance.voice = maleFilipinoVoice;
+                    console.log('Using male Filipino voice:', maleFilipinoVoice.name);
+                }} else if (anyFilipinoVoice) {{
+                    utterance.voice = anyFilipinoVoice;
+                    console.log('Using Filipino voice:', anyFilipinoVoice.name);
+                }} else if (anyPHVoice) {{
+                    utterance.voice = anyPHVoice;
+                    console.log('Using Philippines voice:', anyPHVoice.name);
                 }} else {{
-                    console.log('Filipino voice not found, using default voice');
+                    console.log('Filipino/PH voice not found, using browser default voice');
                 }}
                 
                 utterance.onstart = function() {{

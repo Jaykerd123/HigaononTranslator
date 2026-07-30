@@ -104,7 +104,7 @@ class TtsService {
     // Determine possible URLs depending on whether we are android, web or emulator
     List<String> possibleBaseUrls = ['http://127.0.0.1:8000'];
     if (!kIsWeb && Platform.isAndroid) {
-      possibleBaseUrls = ['http://127.0.0.1:8000'];
+      possibleBaseUrls = ['http://127.0.0.1:8000', 'http://10.242.148.236:8000'];
     }
 
     for (String baseUrl in possibleBaseUrls) {

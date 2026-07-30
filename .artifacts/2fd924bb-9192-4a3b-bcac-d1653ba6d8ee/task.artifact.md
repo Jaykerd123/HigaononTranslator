@@ -1,0 +1,5 @@
+- [x] Add `firebase_core` to `pubspec.yaml`
+- [x] Improve error logging in `lib/screens/services/auth.dart`
+- [x] Run `flutter pub get`
+- [x] Verify build with `flutter analyze`
+- [ ] Run the app

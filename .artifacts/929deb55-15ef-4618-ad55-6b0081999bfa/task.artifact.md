@@ -1,0 +1,4 @@
+- `[x]` Update `tts_service.dart` with laptop IP
+- `[x]` Update `translation_fallback_service.dart` with laptop IP
+- `[x]` Verify changes
+- `[x]` Create walkthrough

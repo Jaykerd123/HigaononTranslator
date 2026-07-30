@@ -8,7 +8,7 @@ class TranslationFallbackService {
   static Future<String?> translateEnglishToBisaya(String text) async {
     List<String> possibleBaseUrls = ['http://127.0.0.1:8000'];
     if (!kIsWeb && Platform.isAndroid) {
-      possibleBaseUrls = ['http://10.0.2.2:8000', 'http://10.0.0.48:8000', 'http://10.0.0.10:8000'];
+      possibleBaseUrls = ['http://127.0.0.1:8000', 'http://10.242.148.236:8000'];
     }
 
     for (String baseUrl in possibleBaseUrls) {

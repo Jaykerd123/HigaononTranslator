@@ -344,13 +344,15 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         children: [
           const Text(
             'Translator',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _searchController,
+            style: const TextStyle(fontSize: 16),
             decoration: InputDecoration(
               hintText: 'Quick dictionary search...',
+              hintStyle: const TextStyle(fontSize: 16),
               prefixIcon: const Icon(Icons.search_rounded, color: Colors.redAccent),
               filled: true,
               fillColor: theme.scaffoldBackgroundColor,
@@ -358,7 +360,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
                 borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
           ),
         ],
@@ -402,6 +404,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
                 style: TextStyle(
                   color: isActive ? Colors.white : Colors.grey,
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -442,7 +445,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         const SizedBox(height: 24),
         Text(
           _speechToText.isListening ? 'Listening...' : 'Tap to Translate Voice',
-          style: TextStyle(fontSize: 18, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+          style: TextStyle(fontSize: 20, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
         ),
         const Spacer(),
         if (_lastWords.isNotEmpty || _voiceTranslationResult.isNotEmpty)
@@ -474,8 +477,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
                     });
                   }
                 },
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Type English sentence here...',
+                  hintStyle: TextStyle(fontSize: 18, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
                   border: InputBorder.none,
                 ),
                 style: const TextStyle(fontSize: 18),
@@ -492,7 +496,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               elevation: 5,
             ),
-            child: const Text('Translate', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: const Text('Translate', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 16),
           if (_textTranslationResult.isNotEmpty)
@@ -515,14 +519,14 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(source, style: TextStyle(color: theme.disabledColor, fontSize: 14)),
+          Text(source, style: TextStyle(color: theme.disabledColor, fontSize: 16)),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: Text(
                   result,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.redAccent),
                 ),
               ),
               if (showSpeaker)

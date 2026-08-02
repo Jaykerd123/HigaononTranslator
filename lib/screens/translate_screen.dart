@@ -411,17 +411,30 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
                               color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Column(
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  item.higaonon.isNotEmpty ? item.higaonon : item.english,
-                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.higaonon.isNotEmpty ? item.higaonon : item.english,
+                                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.english.isNotEmpty ? item.english : item.higaonon,
+                                        style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.secondary),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  item.english.isNotEmpty ? item.english : item.higaonon,
-                                  style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.secondary),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  onPressed: () => Provider.of<TtsService>(context, listen: false).speak(item.higaonon.isNotEmpty ? item.higaonon : item.english),
+                                  icon: const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
+                                  tooltip: 'Play translation',
                                 ),
                               ],
                             ),

@@ -1,38 +1,36 @@
-# Walkthrough - Wi-Fi Connectivity for TTS
+# Walkthrough - Automatic Server Discovery
 
-I have updated the Flutter application to allow connection to the local Python TTS server over Wi-Fi. This ensures that the high-quality Higaonon/Cebuano models are used even when the USB cable is disconnected.
+I have implemented an automatic discovery system so the app can find your laptop on the local network regardless of your IP address. You no longer need to update the IP in the code when you switch Wi-Fi networks.
 
 ## Changes Made
 
-### Services
+### New Discovery Service
 
-#### [tts_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/tts_service.dart)
-Added the laptop's IP address (`10.242.148.236`) to the list of possible base URLs for the TTS service.
-```diff
-     List<String> possibleBaseUrls = ['http://127.0.0.1:8000'];
-     if (!kIsWeb && Platform.isAndroid) {
--      possibleBaseUrls = ['http://127.0.0.1:8000'];
-+      possibleBaseUrls = ['http://127.0.0.1:8000', 'http://10.242.148.236:8000'];
-     }
-```
+#### [NEW] [discovery_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/discovery_service.dart)
+Added a new service that scans the current Wi-Fi subnet (e.g., `10.0.0.1` to `10.0.0.254`) for any device responding on ports `8000` or `8080`. It caches the found IP so it doesn't have to scan every time.
 
-#### [translation_fallback_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/translation_fallback_service.dart)
-Updated the translation service to also include the laptop's IP address.
-```diff
-     List<String> possibleBaseUrls = ['http://127.0.0.1:8000'];
-     if (!kIsWeb && Platform.isAndroid) {
--      possibleBaseUrls = ['http://10.0.2.2:8000', 'http://10.0.0.48:8000', 'http://10.0.0.10:8000'];
-+      possibleBaseUrls = ['http://127.0.0.1:8000', 'http://10.242.148.236:8000'];
-     }
-```
+### Service Updates
 
-## How to Test
+#### [MODIFY] [tts_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/tts_service.dart)
+Modified the TTS service to use the `DiscoveryService`. If the last known IP fails, it triggers a background scan to find the server's new location.
 
-1.  **Start the Server**: On your laptop, run:
-    `uvicorn server:app --host 0.0.0.0 --port 8000`
-2.  **Connect to Wi-Fi**: Ensure your phone and laptop are on the same Wi-Fi network.
-3.  **Unplug Cable**: You can now safely unplug the USB cable.
-4.  **Use the App**: Try translating and playing TTS. The app will now try `127.0.0.1` first (fails if unplugged) and then automatically fallback to `10.242.148.236`, which should succeed over Wi-Fi.
+#### [MODIFY] [translation_fallback_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/translation_fallback_service.dart)
+Updated the translation service to share the same discovered IP address, ensuring both translation and TTS work seamlessly together.
+
+### Android Configuration
+
+#### [MODIFY] [AndroidManifest.xml](file:///C:/Users/yuihi/HigaononTranslator/android/app/src/main/AndroidManifest.xml)
+Added `ACCESS_WIFI_STATE` and `ACCESS_NETWORK_STATE` permissions to allow the app to identify the local network subnet for scanning.
+
+## How it Works
+
+1.  **Start your server**: `uvicorn server:app --host 0.0.0.0 --port 8080`
+2.  **Open the app**: The app will first try the last working IP.
+3.  **Auto-Scan**: If you've switched networks, the app will notice the connection failure and start scanning your subnet.
+4.  **Auto-Recovery**: Within a few seconds, it will find your laptop, save the new IP, and complete your request.
+
+> [!NOTE]
+> The very first time you use the app on a new network, there might be a 2-3 second delay while it "finds" your laptop. After that, it will be instant until you change networks again.
 
 > [!TIP]
-> If it still doesn't work, double-check your **Windows Firewall**. You may need to "Allow an app through firewall" for `python.exe` or simply allow inbound traffic on port `8000`.
+> Make sure your laptop's **Firewall** allows incoming connections on port **8080** (or **8000**), otherwise the app won't be able to "see" the server during its scan.

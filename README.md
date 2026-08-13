@@ -18,7 +18,7 @@ samples, guidance on mobile development, and a full API reference.
 running tts server for physical device
 1st terminal:
 .\.venv_win\Scripts\Activate.ps1
-uvicorn server:app --host 0.0.0.0 --port 8000
+uvicorn server:app --host 0.0.0.0 --port 8080
 
 2nd terminal: 
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:8000 tcp:8000
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:8080 tcp:8080

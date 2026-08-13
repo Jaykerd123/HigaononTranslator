@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'discovery_service.dart';
 
 class TtsService {
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -102,12 +103,20 @@ class TtsService {
 
   Future<bool> _speakFromLocalServer(String text) async {
     // Determine possible URLs depending on whether we are android, web or emulator
-    List<String> possibleBaseUrls = ['http://127.0.0.1:8000'];
-    if (!kIsWeb && Platform.isAndroid) {
-      possibleBaseUrls = ['http://127.0.0.1:8000', 'http://10.242.148.236:8000'];
+    List<String> possibleBaseUrls = [
+      'http://127.0.0.1:8000',
+      'http://127.0.0.1:8080',
+    ];
+
+    // Add discovered URL if available
+    if (DiscoveryService.discoveredBaseUrl != null) {
+      possibleBaseUrls.insert(0, DiscoveryService.discoveredBaseUrl!);
     }
 
-    for (String baseUrl in possibleBaseUrls) {
+    bool triedDiscovery = false;
+
+    for (int i = 0; i < possibleBaseUrls.length; i++) {
+      String baseUrl = possibleBaseUrls[i];
       try {
         final url = Uri.parse('$baseUrl/tts');
         print('[TtsService] Trying Local TTS API: $url');
@@ -118,7 +127,7 @@ class TtsService {
             'Content-Type': 'application/json',
           },
           body: jsonEncode({'text': text}),
-        ).timeout(const Duration(seconds: 20));
+        ).timeout(const Duration(seconds: 5)); // Reduced timeout for faster fallback
 
         if (response.statusCode == 200) {
           final Uint8List audioBytes = response.bodyBytes;
@@ -129,12 +138,20 @@ class TtsService {
           print('[TtsService] SUCCESS via $baseUrl: Playing Server API audio (${audioBytes.length} bytes)');
           await _audioPlayer.play(DeviceFileSource(file.path));
           return true; // Successfully played!
-        } else {
-          print('[TtsService] API Error ${response.statusCode} from $baseUrl');
         }
       } catch (e) {
         print('[TtsService] API Exception from $baseUrl: $e');
-        // Continue to the next URL
+      }
+
+      // If we reached the end and haven't tried discovery yet, try it now
+      if (i == possibleBaseUrls.length - 1 && !triedDiscovery) {
+        print('[TtsService] All known URLs failed. Attempting auto-discovery...');
+        final discovered = await DiscoveryService.discoverServer();
+        if (discovered != null) {
+          possibleBaseUrls.add(discovered);
+          triedDiscovery = true;
+          // Loop will continue to the newly added discovered URL
+        }
       }
     }
     return false;

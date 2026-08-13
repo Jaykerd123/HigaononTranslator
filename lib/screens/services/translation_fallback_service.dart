@@ -2,16 +2,22 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'discovery_service.dart';
 
 class TranslationFallbackService {
   /// Translates text from English to Cebuano (Bisaya) using the local NLP server.
   static Future<String?> translateEnglishToBisaya(String text) async {
-    List<String> possibleBaseUrls = ['http://127.0.0.1:8000'];
-    if (!kIsWeb && Platform.isAndroid) {
-      possibleBaseUrls = ['http://127.0.0.1:8000', 'http://10.242.148.236:8000'];
+    List<String> possibleBaseUrls = [
+      'http://127.0.0.1:8000',
+      'http://127.0.0.1:8080',
+    ];
+    
+    if (DiscoveryService.discoveredBaseUrl != null) {
+      possibleBaseUrls.insert(0, DiscoveryService.discoveredBaseUrl!);
     }
 
-    for (String baseUrl in possibleBaseUrls) {
+    for (int i = 0; i < possibleBaseUrls.length; i++) {
+      String baseUrl = possibleBaseUrls[i];
       try {
         final url = Uri.parse('$baseUrl/translate');
         final response = await http.post(
@@ -28,7 +34,13 @@ class TranslationFallbackService {
         }
       } catch (e) {
         print('TranslationFallbackService Error calling local Python server at $baseUrl: $e');
-        // Continue to the next URL
+      }
+
+      if (i == possibleBaseUrls.length - 1 && DiscoveryService.discoveredBaseUrl == null) {
+        final discovered = await DiscoveryService.discoverServer();
+        if (discovered != null) {
+          possibleBaseUrls.add(discovered);
+        }
       }
     }
     

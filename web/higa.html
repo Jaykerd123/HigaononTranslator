@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Higa — A friendly Higaonon translator app with speech and offline features." />
+  <title>Higa — Higaonon Translator</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#6ee7b7;--muted:#94a3b8;--glass:rgba(255,255,255,0.04)}
+    *{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;color:#e6eef8;background:linear-gradient(180deg,#071023 0%,#071128 60%)}
+    .container{max-width:1100px;margin:48px auto;padding:32px}
+    .hero{display:grid;grid-template-columns:1fr;gap:32px;align-items:start}
+    .brand{display:flex;gap:16px;align-items:center}
+    .logo{width:72px;height:72px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#60a5fa);box-shadow:0 6px 18px rgba(0,0,0,0.5)}
+    .logo svg{width:42px;height:42px}
+    h1{margin:0;font-size:36px;line-height:1.03}
+    p.lead{color:var(--muted);margin-top:8px;font-size:16px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:16px;padding:20px;box-shadow:0 8px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    .download{display:flex;flex-direction:column;gap:16px;align-items:stretch}
+    .btn{background:linear-gradient(90deg,var(--accent),#60a5fa);color:#042029;padding:14px 18px;border-radius:12px;text-decoration:none;font-weight:700;display:inline-flex;gap:10px;align-items:center;justify-content:center}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent);font-weight:600}
+    .screenshot{height:380px;border-radius:12px;background:linear-gradient(180deg,#071233,#05203a);display:flex;align-items:center;justify-content:center;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
+    .features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:20px}
+    .feature{background:var(--glass);padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);display:flex;gap:12px;align-items:flex-start}
+    .ficon{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.03);display:grid;place-items:center}
+    footer{margin-top:40px;color:var(--muted);font-size:13px;text-align:center}
+    @media (max-width:880px){.hero{grid-template-columns:1fr;}.screenshot{height:260px}.container{padding:18px;margin:28px auto}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div>
+        <div class="brand">
+          <div class="logo" aria-hidden>
+            <!-- simple book+sound waves icon -->
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="10" height="14" rx="2" fill="white" fill-opacity="0.95" />
+              <path d="M16 8c1.5 0 2.5-1 2.5-1" stroke="white" stroke-opacity="0.9" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M16 11c2 0 3-1 3-1" stroke="white" stroke-opacity="0.8" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <h1>Higa — Higaonon Translator</h1>
+            <p class="lead">Translate, speak, and learn Higaonon with a modern, privacy-friendly mobile app.</p>
+          </div>
+        </div>
+
+        <div style="margin-top:18px;display:flex;gap:12px;align-items:center">
+          <a class="btn" href="https://drive.google.com/file/d/10S-ptQek26nxqUgQsk-WpEtoeL5ddKuK/view" title="Download Higa">Download Higa (Drive)</a>
+          <a class="btn secondary" href="#features">See Features</a>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <strong>About Higa</strong>
+          <p style="color:var(--muted);margin:8px 0 0 0">Higa helps users translate phrases between Higaonon and English, hear natural speech playback, and save favorite translations for offline use. Built with multilingual TTS and lightweight on-device models.</p>
+        </div>
+
+        <div id="features" class="card" style="margin-top:18px">
+          <strong>Key Features</strong>
+          <div class="features">
+            <div class="feature"><div class="ficon">🔊</div><div><strong>Natural TTS</strong><div style="color:var(--muted)">High-quality Bisaya/Higa speech synthesis for clear playback.</div></div></div>
+            <div class="feature"><div class="ficon">🔁</div><div><strong>Bidirectional Translate</strong><div style="color:var(--muted)">Translate Higaonon ↔ English with contextual support.</div></div></div>
+            <div class="feature"><div class="ficon">📥</div><div><strong>Offline Mode</strong><div style="color:var(--muted)">Save favourite phrases and access without internet.</div></div></div>
+            <div class="feature"><div class="ficon">🎓</div><div><strong>Learn Mode</strong><div style="color:var(--muted)">Flashcards and pronunciation practice to learn faster.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Built for the Higaonon community — privacy-first, low-bandwidth friendly. Want changes? Open an issue or attach assets in the repo.
+    </footer>
+  </div>
+</body>
+</html>

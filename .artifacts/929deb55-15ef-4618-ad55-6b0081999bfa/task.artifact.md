@@ -1,4 +1,6 @@
-- `[x]` Update `tts_service.dart` with laptop IP
-- `[x]` Update `translation_fallback_service.dart` with laptop IP
-- `[x]` Verify changes
+- `[x]` Add `ACCESS_WIFI_STATE` permission to `AndroidManifest.xml`
+- `[x]` Implement `DiscoveryService` in `discovery_service.dart`
+- `[x]` Implement `_discoverServer()` logic in `tts_service.dart`
+- `[x]` Update `translation_fallback_service.dart` to support discovered IP
+- `[x]` Test discovery logic
 - `[x]` Create walkthrough

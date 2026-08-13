@@ -1,28 +1,42 @@
-# Fix TTS Connectivity When Unplugged
+# Automatic Server Discovery (Subnet Scanning)
 
-The goal is to allow the Higaonon Translator app to connect to the local Python server over Wi-Fi using the laptop's local IP address (`10.242.148.236`).
+The goal is to stop hardcoding IP addresses. When the app cannot reach the server at the last known IP, it will automatically scan the current Wi-Fi subnet (e.g., `10.0.0.1` to `10.0.0.255`) to find where the Python server is running.
+
+## Proposed Changes
+
+### 1. Service Enhancement
+
+#### [MODIFY] [tts_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/tts_service.dart)
+- Add a new method `_discoverServer()` that:
+    1. Uses `NetworkInterface.list()` to find the device's local IP.
+    2. Determines the subnet (e.g., `10.0.0.x`).
+    3. Pings ports `8000` and `8080` across the entire subnet in parallel.
+    4. Updates the `possibleBaseUrls` and saves the new IP to `shared_preferences`.
+- Modify `_speakFromLocalServer` to call `_discoverServer()` if all current URLs fail.
+
+#### [MODIFY] [translation_fallback_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/translation_fallback_service.dart)
+- Update to use the same cached IP discovered by the TTS service.
+
+### 2. Permissions
+
+#### [MODIFY] [AndroidManifest.xml](file:///C:/Users/yuihi/HigaononTranslator/android/app/src/main/AndroidManifest.xml)
+- Ensure `ACCESS_WIFI_STATE` and `ACCESS_NETWORK_STATE` are present.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> To connect over Wi-Fi, your laptop and phone **must be on the same Wi-Fi network**.
+> **Discovery Speed**: The scan takes about 2-5 seconds. During this time, the first TTS attempt might feel slightly delayed, but the IP will be saved for all subsequent uses.
 
-> [!CAUTION]
-> Your laptop's **Firewall** must allow incoming connections on port **8000**. You may need to add an exclusion for `python.exe` or `uvicorn`.
+> [!TIP]
+> This method is very robust because it doesn't matter if your laptop's IP changes; the app will just "find" it again on the new network.
 
-## Proposed Changes
-
-### Android Service Layer
-
-#### [MODIFY] [tts_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/tts_service.dart)
-Update `_speakFromLocalServer` to include `http://10.242.148.236:8000` in the `possibleBaseUrls` list.
-
-#### [MODIFY] [translation_fallback_service.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/services/translation_fallback_service.dart)
-Update `translateEnglishToBisaya` to include `http://10.242.148.236:8000` in the `possibleBaseUrls` list.
+## Open Questions
+- Should I add a "Server Found" notification or just let it work silently in the background? (I recommend silent).
 
 ## Verification Plan
 
 ### Manual Verification
-1.  Run the server: `uvicorn server:app --host 0.0.0.0 --port 8000`.
-2.  Unplug the phone and test the TTS.
-3.  Check the Flutter logs for `[TtsService] SUCCESS via http://10.242.148.236:8000`.
+1. Change the laptop's network or restart the router to get a new IP.
+2. Run the server.
+3. Open the app and try TTS.
+4. Verify in logs that it says `[TtsService] Auto-discovered server at: http://...`

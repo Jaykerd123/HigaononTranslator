@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:Higa/models/word.dart';
+import 'package:Higa/models/sentence_match.dart';
 import 'package:Higa/models/user.dart';
 import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
@@ -23,6 +24,7 @@ class TranslateScreen extends StatefulWidget {
 
 class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAliveClientMixin {
   List<Word> _words = [];
+  List<SentenceMatch> _sentenceMatches = [];
   List<Word> _filteredWords = [];
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
@@ -144,41 +146,51 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         _voiceTranslationFound = false;
       });
 
-      // 1. Try word match
-      try {
-        final wordMatch = _words.firstWhere(
-          (word) => _normalizeString(word.english) == normalizedInput,
-        );
-        setState(() {
-          _voiceTranslationResult = wordMatch.higaonon;
-          _voiceTranslationFound = true;
-        });
-        _addTranslationToHistory(_lastWords, wordMatch.higaonon);
-        Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
-        Provider.of<TtsService>(context, listen: false).speak(wordMatch.higaonon);
-        print('TranslateScreen: About to increment translation count for voice word match');
-        Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
-        print('TranslateScreen: Translation count incremented for voice word match');
-        return;
-      } catch (e) {}
+      // 1. Check dictionary.json (Words)
+      for (var word in _words) {
+        if (_normalizeString(word.english) == normalizedInput) {
+          setState(() {
+            _voiceTranslationResult = word.higaonon;
+            _voiceTranslationFound = true;
+          });
+          _handleTranslationSuccess(word, _lastWords, word.higaonon);
+          return;
+        }
+      }
 
-      // 2. Try sentence match
-      try {
-        final sentenceMatch = _words.firstWhere(
-          (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
-        );
-        setState(() {
-          _voiceTranslationResult = sentenceMatch.exampleHigaonon;
-          _voiceTranslationFound = true;
-        });
-        _addTranslationToHistory(_lastWords, sentenceMatch.exampleHigaonon);
-        Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
-        Provider.of<TtsService>(context, listen: false).speak(sentenceMatch.exampleHigaonon);
-        Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
-        return;
-      } catch (e) {}
+      // 2. Check dictionary.json (Sentences)
+      for (var word in _words) {
+        if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+          setState(() {
+            _voiceTranslationResult = word.exampleHigaonon;
+            _voiceTranslationFound = true;
+          });
+          _handleTranslationSuccess(word, _lastWords, word.exampleHigaonon);
+          return;
+        }
+      }
 
-      // 3. Try fallback using Google Translate
+      // 3. Check dictionary-second.json
+      for (var match in _sentenceMatches) {
+        if (_normalizeString(match.english) == normalizedInput) {
+          setState(() {
+            _voiceTranslationResult = match.higaonon;
+            _voiceTranslationFound = true;
+          });
+          final wordObj = Word(
+            higaonon: match.higaonon,
+            tagalog: '',
+            partOfSpeech: '',
+            english: match.english,
+            exampleHigaonon: '',
+            exampleEnglish: '',
+          );
+          _handleTranslationSuccess(wordObj, _lastWords, match.higaonon);
+          return;
+        }
+      }
+
+      // 4. Fallback to AI Model
       final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(_lastWords);
 
       if (mounted) {
@@ -198,14 +210,41 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     }
   }
 
-  Future<void> _loadDictionary() async {
-    final String response = await rootBundle.loadString('assets/dictionary.json');
-    final data = await json.decode(response) as List;
+  void _handleTranslationSuccess(Word word, String source, String result) {
     if (mounted) {
-      setState(() {
-        _words = data.map((word) => Word.fromJson(word)).toList();
-        _words.sort((a, b) => a.higaonon.compareTo(b.higaonon));
-      });
+      _addTranslationToHistory(source, result);
+      Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
+      Provider.of<TtsService>(context, listen: false).speak(result);
+      Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
+    }
+  }
+
+  Future<void> _loadDictionary() async {
+    // Load dictionary.json
+    try {
+      final String response = await rootBundle.loadString('assets/dictionary.json');
+      final data = await json.decode(response) as List;
+      if (mounted) {
+        setState(() {
+          _words = data.map((word) => Word.fromJson(word)).toList();
+          _words.sort((a, b) => a.higaonon.compareTo(b.higaonon));
+        });
+      }
+    } catch (e) {
+      print('Error loading assets/dictionary.json: $e');
+    }
+
+    // Load dictionary-second.json
+    try {
+      final String secondResponse = await rootBundle.loadString('assets/dictionary-second.json');
+      final secondData = await json.decode(secondResponse) as List;
+      if (mounted) {
+        setState(() {
+          _sentenceMatches = secondData.map((s) => SentenceMatch.fromJson(s)).toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading assets/dictionary-second.json: $e');
     }
   }
 
@@ -268,37 +307,48 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
     final normalizedInput = _normalizeString(inputText);
 
-    // 1. Try word match
-    try {
-      final wordMatch = _words.firstWhere(
-        (word) => _normalizeString(word.english) == normalizedInput,
-      );
-      setState(() {
-        _textTranslationResult = wordMatch.higaonon;
-      });
-      _addTranslationToHistory(inputText, wordMatch.higaonon);
-      Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
-      Provider.of<TtsService>(context, listen: false).speak(wordMatch.higaonon);
-      Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
-      return;
-    } catch (e) {}
+    // 1. Check dictionary.json (Words)
+    for (var word in _words) {
+      if (_normalizeString(word.english) == normalizedInput) {
+        setState(() {
+          _textTranslationResult = word.higaonon;
+        });
+        _handleTranslationSuccess(word, inputText, word.higaonon);
+        return;
+      }
+    }
 
-    // 2. Try sentence match
-    try {
-      final sentenceMatch = _words.firstWhere(
-        (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
-      );
-      setState(() {
-        _textTranslationResult = sentenceMatch.exampleHigaonon;
-      });
-      _addTranslationToHistory(inputText, sentenceMatch.exampleHigaonon);
-      Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
-      Provider.of<TtsService>(context, listen: false).speak(sentenceMatch.exampleHigaonon);
-      Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
-      return;
-    } catch (e) {}
+    // 2. Check dictionary.json (Sentences)
+    for (var word in _words) {
+      if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+        setState(() {
+          _textTranslationResult = word.exampleHigaonon;
+        });
+        _handleTranslationSuccess(word, inputText, word.exampleHigaonon);
+        return;
+      }
+    }
 
-    // 3. Try fallback using Google Translate
+    // 3. Check dictionary-second.json
+    for (var match in _sentenceMatches) {
+      if (_normalizeString(match.english) == normalizedInput) {
+        setState(() {
+          _textTranslationResult = match.higaonon;
+        });
+        final wordObj = Word(
+          higaonon: match.higaonon,
+          tagalog: '',
+          partOfSpeech: '',
+          english: match.english,
+          exampleHigaonon: '',
+          exampleEnglish: '',
+        );
+        _handleTranslationSuccess(wordObj, inputText, match.higaonon);
+        return;
+      }
+    }
+
+    // 4. Fallback to AI Model
     final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
 
     if (mounted) {

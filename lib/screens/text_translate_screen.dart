@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:Higa/models/word.dart';
+import 'package:Higa/models/sentence_match.dart';
 import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/screens/services/translation_fallback_service.dart';
@@ -18,6 +19,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
   final TextEditingController _textInputController = TextEditingController();
   String _translationResult = '';
   List<Word> _words = [];
+  List<SentenceMatch> _sentenceMatches = [];
 
   @override
   void initState() {
@@ -44,12 +46,30 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
   }
 
   Future<void> _loadDictionary() async {
-    final String response = await rootBundle.loadString('assets/dictionary.json');
-    final data = await json.decode(response) as List;
-    if (mounted) {
-      setState(() {
-        _words = data.map((word) => Word.fromJson(word)).toList();
-      });
+    // Load dictionary.json
+    try {
+      final String response = await rootBundle.loadString('assets/dictionary.json');
+      final data = await json.decode(response) as List;
+      if (mounted) {
+        setState(() {
+          _words = data.map((word) => Word.fromJson(word)).toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading assets/dictionary.json: $e');
+    }
+
+    // Load dictionary-second.json
+    try {
+      final String secondResponse = await rootBundle.loadString('assets/dictionary-second.json');
+      final secondData = await json.decode(secondResponse) as List;
+      if (mounted) {
+        setState(() {
+          _sentenceMatches = secondData.map((s) => SentenceMatch.fromJson(s)).toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading assets/dictionary-second.json: $e');
     }
   }
 
@@ -75,37 +95,51 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
 
     final normalizedInput = _normalizeString(inputText);
 
-    // 1. Try to find a direct word match first
-    try {
-      final wordMatch = _words.firstWhere(
-        (word) => _normalizeString(word.english) == normalizedInput,
-      );
-      setState(() {
-        _translationResult = wordMatch.higaonon;
-        Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordMatch);
-        Provider.of<TtsService>(context, listen: false).speak(wordMatch.higaonon);
-      });
-      return;
-    } catch (e) {
-      // Word match not found, continue to sentence match
+    // 1. Check dictionary.json (Words)
+    for (var word in _words) {
+      if (_normalizeString(word.english) == normalizedInput) {
+        setState(() {
+          _translationResult = word.higaonon;
+          Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
+          Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
+        });
+        return;
+      }
     }
 
-    // 2. Try to find a sentence match
-    try {
-      final sentenceMatch = _words.firstWhere(
-        (word) => _normalizeString(word.exampleEnglish) == normalizedInput,
-      );
-      setState(() {
-        _translationResult = sentenceMatch.exampleHigaonon;
-        Provider.of<HistoryService>(context, listen: false).addWordToHistory(sentenceMatch);
-        Provider.of<TtsService>(context, listen: false).speak(sentenceMatch.exampleHigaonon);
-      });
-      return;
-    } catch (e) {
-      // Sentence match not found
+    // 2. Check dictionary.json (Sentences)
+    for (var word in _words) {
+      if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+        setState(() {
+          _translationResult = word.exampleHigaonon;
+          Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
+          Provider.of<TtsService>(context, listen: false).speak(word.exampleHigaonon);
+        });
+        return;
+      }
     }
 
-    // 3. Try fallback using Google Translate
+    // 3. Check dictionary-second.json
+    for (var match in _sentenceMatches) {
+      if (_normalizeString(match.english) == normalizedInput) {
+        setState(() {
+          _translationResult = match.higaonon;
+          final wordObj = Word(
+            higaonon: match.higaonon,
+            tagalog: '',
+            partOfSpeech: '',
+            english: match.english,
+            exampleHigaonon: '',
+            exampleEnglish: '',
+          );
+          Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordObj);
+          Provider.of<TtsService>(context, listen: false).speak(match.higaonon);
+        });
+        return;
+      }
+    }
+
+    // 4. Fallback to AI Model
     final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
 
     if (mounted) {

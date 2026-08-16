@@ -49,4 +49,5 @@ flutter:
      - assets/app_logo/
      - assets/social_icons/
      - assets/dictionary.json
+     - assets/dictionary-second.json
      - assets/sounds/

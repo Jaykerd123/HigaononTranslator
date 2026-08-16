@@ -5,44 +5,54 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DiscoveryService {
   static String? _discoveredBaseUrl;
   static bool _isScanning = false;
+  static String? _lastKnownLocalIp;
 
   static String? get discoveredBaseUrl => _discoveredBaseUrl;
 
+  /// Clears the cached server URL (useful when switching networks)
+  static Future<void> clearCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('discovered_server_url');
+    _discoveredBaseUrl = null;
+    _lastKnownLocalIp = null;
+    print('[DiscoveryService] Cache cleared.');
+  }
+
   /// Tries to find the Python server on the local network.
   /// Scans common ports 8000 and 8080 on the current subnet.
-  static Future<String?> discoverServer() async {
+  static Future<String?> discoverServer({bool forceRescan = false}) async {
     if (_isScanning) return null;
     _isScanning = true;
 
     try {
-      // 1. Try to load from cache first
-      final prefs = await SharedPreferences.getInstance();
-      final cachedUrl = prefs.getString('discovered_server_url');
-      if (cachedUrl != null) {
-        if (await _verifyServer(cachedUrl)) {
-          _discoveredBaseUrl = cachedUrl;
-          _isScanning = false;
-          return cachedUrl;
+      // 0. Detect if we've switched networks
+      final currentIp = await _getCurrentLocalIp();
+      if (_lastKnownLocalIp != null && _lastKnownLocalIp != currentIp) {
+        print('[DiscoveryService] Network change detected! Invalidating cache.');
+        await clearCache();
+      }
+      _lastKnownLocalIp = currentIp;
+
+      // 1. Try to load from cache first (unless force rescan)
+      if (!forceRescan) {
+        final prefs = await SharedPreferences.getInstance();
+        final cachedUrl = prefs.getString('discovered_server_url');
+        if (cachedUrl != null) {
+          print('[DiscoveryService] Verifying cached URL: $cachedUrl');
+          if (await _verifyServer(cachedUrl)) {
+            _discoveredBaseUrl = cachedUrl;
+            _isScanning = false;
+            return cachedUrl;
+          } else {
+            print('[DiscoveryService] Cached URL is stale. Clearing and rescanning...');
+            await clearCache();
+          }
         }
       }
 
       // 2. Identify local IP and Subnet
-      String? localIp;
-      final interfaces = await NetworkInterface.list(
-        includeLinkLocal: false,
-        type: InternetAddressType.IPv4,
-      );
-
-      for (var interface in interfaces) {
-        for (var addr in interface.addresses) {
-          if (!addr.isLoopback) {
-            localIp = addr.address;
-            break;
-          }
-        }
-        if (localIp != null) break;
-      }
-
+      String? localIp = currentIp;
+      
       if (localIp == null) {
         _isScanning = false;
         return null;
@@ -72,6 +82,7 @@ class DiscoveryService {
       if (foundUrl != null) {
         print('[DiscoveryService] Successfully discovered server at $foundUrl');
         _discoveredBaseUrl = foundUrl;
+        final prefs = await SharedPreferences.getInstance();
         await prefs.setString('discovered_server_url', foundUrl);
       } else {
         print('[DiscoveryService] No server found on subnet.');
@@ -86,6 +97,27 @@ class DiscoveryService {
     }
   }
 
+  /// Get current local IP address
+  static Future<String?> _getCurrentLocalIp() async {
+    try {
+      final interfaces = await NetworkInterface.list(
+        includeLinkLocal: false,
+        type: InternetAddressType.IPv4,
+      );
+
+      for (var interface in interfaces) {
+        for (var addr in interface.addresses) {
+          if (!addr.isLoopback) {
+            return addr.address;
+          }
+        }
+      }
+    } catch (e) {
+      print('[DiscoveryService] Error getting local IP: $e');
+    }
+    return null;
+  }
+
   static Future<String?> _checkAddress(String host, int port) async {
     final url = 'http://$host:$port';
     if (await _verifyServer(url)) {
@@ -96,10 +128,10 @@ class DiscoveryService {
 
   static Future<bool> _verifyServer(String baseUrl) async {
     try {
-      // We try a simple GET or check the /tts endpoint with a HEAD request if possible, 
-      // but since it's a POST only, we might just try to see if the port is open or use a timeout.
-      // A better way is to add a /health endpoint to server.py, but for now we try the root or docs.
-      final response = await http.get(Uri.parse('$baseUrl/docs')).timeout(const Duration(milliseconds: 500));
+      // Use the new /health endpoint for fast verification
+      final response = await http.get(
+        Uri.parse('$baseUrl/health'),
+      ).timeout(const Duration(milliseconds: 300));
       return response.statusCode == 200;
     } catch (_) {
       return false;

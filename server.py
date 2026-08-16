@@ -19,6 +19,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check endpoint for fast network discovery
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 # Maximize processor usage for AI TTS Model
 num_cores = multiprocessing.cpu_count()
 torch.set_num_threads(num_cores)
@@ -28,6 +33,9 @@ print(f"Set PyTorch CPU threads to {num_cores} to speed up TTS generation.")
 try:
     tts_model = VitsModel.from_pretrained("facebook/mms-tts-ceb")
     tts_tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-ceb")
+    # CRITICAL: Set the language explicitly for proper Bisaya pronunciation
+    tts_tokenizer.set_target_language("ceb")
+    print("✓ TTS model loaded successfully with Cebuano (Bisaya) language mode.")
 except Exception as e:
     print("Could not load TTS model:", e)
 
@@ -52,18 +60,27 @@ def generate_tts(req: TextRequest):
     # Meta MMS-TTS strictly requires lowercase. Uppercase letters turn into <unk>!
     clean_text = req.text.lower()
     
-    # Optional phonetic hotfixes for the AI's "English" accent. 
-    # Since MMS is a multilingual model, it often mispronounces "aw" as the english "ow".
-    # Converting 'aw' to 'au' helps it pronounce it with a cleaner Bisaya vowel.
+    # Apply Bisaya-specific phonetic preprocessing
+    # These rules help the model pronounce Bisaya text more accurately
+    
+    # 1. Handle "aw" diphthong (common in Bisaya)
+    # Converting to "au" helps avoid English "ow" pronunciation
     clean_text = clean_text.replace("aw ", "au ").replace("aw", "au")
+    
+    # 2. Preserve common Bisaya phonetic patterns
+    # The tokenizer should now know it's Cebuano, but we help with edge cases
+    # Remove extra spaces that might confuse the model
+    clean_text = ' '.join(clean_text.split())
 
     # 1. Check if we already generated the audio for this exact text before
     text_hash = hashlib.md5(clean_text.encode('utf-8')).hexdigest()
     if text_hash in tts_cache:
         # Return instantly from server memory
+        print(f"[TTS Cache Hit] Returning cached audio for: {clean_text[:50]}")
         return StreamingResponse(io.BytesIO(tts_cache[text_hash]), media_type="audio/wav")
 
     # 2. If new text, run the heavy AI generation
+    print(f"[TTS Generation] Processing: {clean_text[:100]}")
     inputs = tts_tokenizer(clean_text, return_tensors="pt")
     with torch.no_grad():
         output = tts_model(**inputs).waveform

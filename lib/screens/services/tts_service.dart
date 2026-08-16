@@ -17,6 +17,13 @@ class TtsService {
     _initLocalTts();
   }
 
+  /// Clears cached server discovery and forces a fresh scan next time
+  /// Call this when the user switches networks
+  Future<void> refreshServerConnection() async {
+    await DiscoveryService.clearCache();
+    print('[TtsService] Server connection cache cleared. Will rediscover on next TTS request.');
+  }
+
   Future<void> _initLocalTts() async {
     try {
       // Prefer Filipino/Tagalog as the closest available to Bisaya.
@@ -104,13 +111,17 @@ class TtsService {
   Future<bool> _speakFromLocalServer(String text) async {
     // Determine possible URLs depending on whether we are android, web or emulator
     List<String> possibleBaseUrls = [
+      // Network IP (preferred for phone connectivity)
+      'http://10.0.60.122:8080',
+      // Localhost fallbacks
       'http://127.0.0.1:8000',
       'http://127.0.0.1:8080',
     ];
 
-    // Add discovered URL if available
+    // Add discovered URL if available (highest priority)
     if (DiscoveryService.discoveredBaseUrl != null) {
       possibleBaseUrls.insert(0, DiscoveryService.discoveredBaseUrl!);
+      print('[TtsService] Using discovered server: ${DiscoveryService.discoveredBaseUrl}');
     }
 
     bool triedDiscovery = false;
@@ -127,7 +138,7 @@ class TtsService {
             'Content-Type': 'application/json',
           },
           body: jsonEncode({'text': text}),
-        ).timeout(const Duration(seconds: 5)); // Reduced timeout for faster fallback
+        ).timeout(const Duration(seconds: 3)); // Reduced timeout for faster fallback
 
         if (response.statusCode == 200) {
           final Uint8List audioBytes = response.bodyBytes;
@@ -141,12 +152,17 @@ class TtsService {
         }
       } catch (e) {
         print('[TtsService] API Exception from $baseUrl: $e');
+        // If this was the cached URL that failed, invalidate it
+        if (i == 0 && baseUrl == DiscoveryService.discoveredBaseUrl) {
+          print('[TtsService] Cached server URL failed. Invalidating cache.');
+          await DiscoveryService.clearCache();
+        }
       }
 
       // If we reached the end and haven't tried discovery yet, try it now
       if (i == possibleBaseUrls.length - 1 && !triedDiscovery) {
         print('[TtsService] All known URLs failed. Attempting auto-discovery...');
-        final discovered = await DiscoveryService.discoverServer();
+        final discovered = await DiscoveryService.discoverServer(forceRescan: true);
         if (discovered != null) {
           possibleBaseUrls.add(discovered);
           triedDiscovery = true;

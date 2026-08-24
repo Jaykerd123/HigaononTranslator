@@ -1,0 +1,2 @@
+- `[x]` Add "Frequently Requested Translations" section to `menu_screen.dart`
+- `[x]` Verify UI changes in Menu Screen

@@ -179,6 +179,10 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
                     _MenuData(Icons.history_rounded, 'Learning History', 'Recently studied', () => _navigateToScreen(const LearningHistoryScreen()), Colors.orange),
                   ]),
                   const SizedBox(height: 24),
+                  _buildMenuSection(theme, 'Frequently Requested Translations', [
+                    _MenuData(Icons.star_rounded, 'Coming Soon', 'Popular translations will appear here', () {}, Colors.amber),
+                  ]),
+                  const SizedBox(height: 24),
                   _buildMenuSection(theme, 'Settings', [
                     _MenuData(Icons.settings_rounded, 'App Settings', 'Theme and notifications', () => _navigateToScreen(const SettingsScreen()), Colors.blueGrey),
                     _MenuData(Icons.info_rounded, 'About Higa', 'App and developer info', () => _navigateToScreen(const AboutScreen()), Colors.teal),

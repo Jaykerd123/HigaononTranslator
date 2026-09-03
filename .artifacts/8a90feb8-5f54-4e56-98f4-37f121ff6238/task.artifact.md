@@ -1,6 +1,4 @@
-- `[x]` Add artificial delay to `TranslateScreen` dictionary translations
-    - `[x]` Update `_translateVoiceInput`
-    - `[x]` Update `_translateText`
-- `[x]` Add artificial delay to `TextTranslateScreen` dictionary translations
-    - `[x]` Update `_translateText`
-- `[x]` Verify changes manually (simulated)
+- [x] Implement `_loadFrequentTranslations` in `MenuScreen`
+- [x] Update `MenuScreen` state to store the loaded words
+- [x] Update `MenuScreen` build method to display the words in the "Frequently Requested Translations" section
+- [x] Verify navigation to `WordDetailScreen` works for these items

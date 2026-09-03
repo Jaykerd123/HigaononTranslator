@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:Higa/models/user.dart';
+import 'package:Higa/models/word.dart';
 import 'package:Higa/screens/about_screen.dart';
 import 'package:Higa/screens/dictionary_screen.dart';
 import 'package:Higa/screens/learning_history_screen.dart';
@@ -9,6 +12,7 @@ import 'package:Higa/screens/profile_screen.dart';
 import 'package:Higa/screens/services/auth.dart';
 import 'package:Higa/screens/services/database.dart';
 import 'package:Higa/screens/settings_screen.dart';
+import 'package:Higa/screens/word_detail_screen.dart';
 import 'package:Higa/screens/your_progress_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,9 +27,44 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMixin {
   XFile? _selectedImage;
+  List<Word> _frequentTranslations = [];
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFrequentTranslations();
+  }
+
+  Future<void> _loadFrequentTranslations() async {
+    try {
+      final String response = await DefaultAssetBundle.of(context).loadString('assets/dictionary.json');
+      final List<dynamic> data = List.from(jsonDecode(response));
+      if (data.isNotEmpty) {
+        // Use a daily seed to keep words consistent for the day
+        final now = DateTime.now();
+        final int seed = now.year * 10000 + now.month * 100 + now.day;
+        final random = Random(seed);
+        
+        // Pick 3 unique random words
+        final List<Word> selected = [];
+        final List<int> indices = List.generate(data.length, (i) => i);
+        indices.shuffle(random);
+        
+        for (int i = 0; i < min(3, data.length); i++) {
+          selected.add(Word.fromJson(data[indices[i]]));
+        }
+
+        setState(() {
+          _frequentTranslations = selected;
+        });
+      }
+    } catch (e) {
+      // Handle error
+    }
+  }
 
   void _navigateToScreen(Widget screen) {
     // Dismiss keyboard before navigating
@@ -179,9 +218,17 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
                     _MenuData(Icons.history_rounded, 'Learning History', 'Recently studied', () => _navigateToScreen(const LearningHistoryScreen()), Colors.orange),
                   ]),
                   const SizedBox(height: 24),
-                  _buildMenuSection(theme, 'Frequently Requested Translations', [
-                    _MenuData(Icons.star_rounded, 'Coming Soon', 'Popular translations will appear here', () {}, Colors.amber),
-                  ]),
+                  _buildMenuSection(theme, 'Frequently Requested Translations', 
+                    _frequentTranslations.isEmpty 
+                      ? [_MenuData(Icons.star_rounded, 'Loading...', 'Fetching popular translations', () {}, Colors.amber)]
+                      : _frequentTranslations.map((word) => _MenuData(
+                          Icons.translate_rounded, 
+                          word.english, 
+                          word.higaonon, 
+                          () => _navigateToScreen(WordDetailScreen(word: word)), 
+                          Colors.purple
+                        )).toList()
+                  ),
                   const SizedBox(height: 24),
                   _buildMenuSection(theme, 'Settings', [
                     _MenuData(Icons.settings_rounded, 'App Settings', 'Theme and notifications', () => _navigateToScreen(const SettingsScreen()), Colors.blueGrey),

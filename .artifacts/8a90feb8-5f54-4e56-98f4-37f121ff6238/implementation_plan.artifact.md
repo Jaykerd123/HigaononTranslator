@@ -1,27 +1,32 @@
-# Add Artificial Delay for Dictionary Translations
+# Implementation Plan - Frequently Requested Translations
 
-The user wants to show the "Translating..." state for a few seconds when a translation is found in the dictionary, to make the processing feel more convincing. This should only apply to dictionary translations, as the NLP model already has inherent latency.
+Add a "Frequently Requested Translations" section to the Menu screen that displays random English-to-Higaonon words. These words will change daily, similar to the "Word of the Day" feature on the Home screen.
+
+## User Review Required
+
+> [!NOTE]
+> For now, "frequently requested" will be simulated by picking 3 random words from the dictionary daily. In the future, this could be tied to actual usage statistics if a backend service tracks popular searches.
 
 ## Proposed Changes
 
-### [Translate Screen Component]
+### Learning Feature
 
-#### [MODIFY] [translate_screen.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/translate_screen.dart)
+#### [MODIFY] [menu_screen.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/menu_screen.dart)
 
-- In `_translateVoiceInput`:
-    - If a match is found in any dictionary search (Words, Sentences, or second dictionary), insert `await Future.delayed(const Duration(seconds: 2));` before updating the state with the result and calling `_handleTranslationSuccess`.
-- In `_translateText`:
-    - Similarly, if a match is found, insert `await Future.delayed(const Duration(seconds: 2));` before updating `_textTranslationResult` and calling `_handleTranslationSuccess`.
-
-#### [MODIFY] [text_translate_screen.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/text_translate_screen.dart)
-
-- In `_translateText`:
-    - Insert `await Future.delayed(const Duration(seconds: 2));` before updating `_translationResult` and other success actions when a dictionary match is found.
+- Add imports for `dart:convert`, `dart:math`, `Word` model, and `WordDetailScreen`.
+- Add `List<Word> _frequentTranslations = []` to `_MenuScreenState`.
+- Implement `_loadFrequentTranslations()` to fetch 3 random words from `assets/dictionary.json` using a daily seed.
+- Call `_loadFrequentTranslations()` in `initState()`.
+- Update the `build` method to dynamically generate `_MenuData` items for the "Frequently Requested Translations" section based on the loaded words.
+- Each item will navigate to `WordDetailScreen` for the respective word.
 
 ## Verification Plan
 
+### Automated Tests
+- N/A (UI focused change, but will ensure code compiles and runs).
+
 ### Manual Verification
-- Perform a translation that is known to be in the dictionary (e.g., a simple word like "hello" if it's in there).
-- Observe that "Translating..." is displayed for approximately 2 seconds before the result appears.
-- Perform a translation that is NOT in the dictionary (forcing the AI model).
-- Observe that it still shows "Translating..." but the delay is governed by the model's response time, without an additional artificial 2-second delay (unless the model is extremely fast, which is unlikely).
+- Open the Menu screen.
+- Verify that 3 words are displayed under "Frequently Requested Translations".
+- Verify that tapping a word navigates to its detail screen.
+- Verify that the words remain the same throughout the day and change the next day (can be simulated by changing device date or modifying the seed logic temporarily).

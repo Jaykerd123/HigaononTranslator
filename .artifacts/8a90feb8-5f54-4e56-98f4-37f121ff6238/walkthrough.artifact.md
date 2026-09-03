@@ -1,29 +1,37 @@
-# Walkthrough - Artificial Delay for Dictionary Translations
+# Walkthrough - Frequently Requested Translations
 
-I have added an artificial delay of 2 seconds when a translation is found in the local dictionaries. This ensures that the "Translating..." text is visible to the user, making the translation process feel more deliberate and convincing, as requested.
+I have implemented the "Frequently Requested Translations" section in the Menu screen. This section now dynamically displays 3 random English-to-Higaonon translations that change daily.
 
 ## Changes
 
-### Translate Screen Component
+### Menu Screen Enhancements
 
-#### [TranslateScreen](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/translate_screen.dart)
+#### [menu_screen.dart](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/menu_screen.dart)
 
-- Added `await Future.delayed(const Duration(seconds: 2));` to `_translateVoiceInput` and `_translateText` whenever a match is found in:
-    - `dictionary.json` (Words)
-    - `dictionary.json` (Sentences)
-    - `dictionary-second.json` (Additional sentences)
+- **Daily Word Rotation**: Added logic to load 3 random words from the dictionary using a seed based on the current date. This ensures the "frequently requested" words are consistent for all users throughout the day but change daily.
+- **Dynamic UI**: Replaced the "Coming Soon" placeholder with a dynamic list of translations.
+- **Navigation**: Each translation item is clickable and navigates to the detailed word view, matching the app's existing interaction pattern.
+- **UI Consistency**: Used the existing `_buildMenuSection` and `_buildMenuItem` helpers to ensure the new section perfectly matches the app's design system, using a purple theme for the translation icons.
 
-### Text Translate Screen Component
+```dart
+// Logic to pick 3 unique random words daily
+final now = DateTime.now();
+final int seed = now.year * 10000 + now.month * 100 + now.day;
+final random = Random(seed);
 
-#### [TextTranslateScreen](file:///C:/Users/yuihi/HigaononTranslator/lib/screens/text_translate_screen.dart)
+final List<int> indices = List.generate(data.length, (i) => i);
+indices.shuffle(random);
 
-- Added the same 2-second delay to `_translateText` when a dictionary match is found.
+for (int i = 0; i < min(3, data.length); i++) {
+  selected.add(Word.fromJson(data[indices[i]]));
+}
+```
 
 ## Verification Results
 
-### Manual Verification
-- **Dictionary Translation:** Inputting a word or sentence found in the dictionary now shows "Translating..." for 2 seconds before displaying the result and speaking it.
-- **AI Model Translation:** Inputting text not in the dictionary continues to use the `TranslationFallbackService`. The "Translating..." state remains visible until the service returns, which naturally takes some time, so no additional artificial delay was added here.
+### Automated Tests
+- Ran static analysis on `menu_screen.dart`; no new errors or critical warnings were introduced.
 
-> [!NOTE]
-> The delay is only applied when a match is successfully found in the dictionaries. If no match is found, it proceeds immediately to the AI model fallback.
+### Manual Verification (Simulated)
+- The words are loaded from `assets/dictionary.json`.
+- Tapping a word calls `_navigateToScreen(WordDetailScreen(word: word))`, which is the standard way to show word details in this app.

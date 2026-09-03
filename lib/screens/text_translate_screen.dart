@@ -98,6 +98,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     // 1. Check dictionary.json (Words)
     for (var word in _words) {
       if (_normalizeString(word.english) == normalizedInput) {
+        await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _translationResult = word.higaonon;
           Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
@@ -110,6 +111,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     // 2. Check dictionary.json (Sentences)
     for (var word in _words) {
       if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+        await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _translationResult = word.exampleHigaonon;
           Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
@@ -122,6 +124,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     // 3. Check dictionary-second.json
     for (var match in _sentenceMatches) {
       if (_normalizeString(match.english) == normalizedInput) {
+        await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _translationResult = match.higaonon;
           final wordObj = Word(

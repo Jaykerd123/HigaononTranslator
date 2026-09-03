@@ -149,6 +149,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       // 1. Check dictionary.json (Words)
       for (var word in _words) {
         if (_normalizeString(word.english) == normalizedInput) {
+          await Future.delayed(const Duration(seconds: 2));
           setState(() {
             _voiceTranslationResult = word.higaonon;
             _voiceTranslationFound = true;
@@ -161,6 +162,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       // 2. Check dictionary.json (Sentences)
       for (var word in _words) {
         if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+          await Future.delayed(const Duration(seconds: 2));
           setState(() {
             _voiceTranslationResult = word.exampleHigaonon;
             _voiceTranslationFound = true;
@@ -173,6 +175,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       // 3. Check dictionary-second.json
       for (var match in _sentenceMatches) {
         if (_normalizeString(match.english) == normalizedInput) {
+          await Future.delayed(const Duration(seconds: 2));
           setState(() {
             _voiceTranslationResult = match.higaonon;
             _voiceTranslationFound = true;
@@ -310,6 +313,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 1. Check dictionary.json (Words)
     for (var word in _words) {
       if (_normalizeString(word.english) == normalizedInput) {
+        await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = word.higaonon;
         });
@@ -321,6 +325,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 2. Check dictionary.json (Sentences)
     for (var word in _words) {
       if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+        await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = word.exampleHigaonon;
         });
@@ -332,6 +337,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 3. Check dictionary-second.json
     for (var match in _sentenceMatches) {
       if (_normalizeString(match.english) == normalizedInput) {
+        await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = match.higaonon;
         });

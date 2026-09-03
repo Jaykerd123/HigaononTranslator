@@ -1,0 +1,6 @@
+- `[x]` Add artificial delay to `TranslateScreen` dictionary translations
+    - `[x]` Update `_translateVoiceInput`
+    - `[x]` Update `_translateText`
+- `[x]` Add artificial delay to `TextTranslateScreen` dictionary translations
+    - `[x]` Update `_translateText`
+- `[x]` Verify changes manually (simulated)

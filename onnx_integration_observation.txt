@@ -1,0 +1,133 @@
+# Higaonon Translator - ONNX Integration Observation Report
+
+## 1. Current Translation Flow Trace
+
+Scenario: User enters "Hello, how are you?" and presses Translate.
+
+1.  **User Input**: Text entered into `TextField` or captured via `SpeechToText`.
+2.  **Dart Function**:
+    *   `TextTranslateScreen._translateText()` (in `text_translate_screen.dart`)
+    *   `TranslateScreen._translateText()` or `TranslateScreen._translateVoiceInput()` (in `translate_screen.dart`)
+3.  **Dictionary Lookup**:
+    *   Normalizes input (lowercase, trim, regex removal of non-alphanumeric).
+    *   Iterates through `_words` (from `assets/dictionary.json`) and `_sentenceMatches` (from `assets/dictionary-second.json`).
+    *   If match found: Returns result immediately, updates history, and triggers TTS.
+4.  **Translation Service**:
+    *   If no dictionary match, calls `TranslationFallbackService.translateEnglishToBisaya(inputText)`.
+5.  **HTTP/API Request**:
+    *   `TranslationFallbackService` iterates through `possibleBaseUrls` (Cloudflare tunnel, discovered URL, localhost).
+    *   Sends `POST` to `/translate` with body `{"text": "..."}`.
+6.  **Response**:
+    *   Receives `{"translation": "..."}`.
+7.  **Fallback (Network Failure)**:
+    *   If all custom servers fail, calls `_fallbackToGoogleTranslate(text)` which hits `translate.googleapis.com`.
+8.  **setState()**:
+    *   The calling Screen updates its local state variable (`_translationResult`, `_textTranslationResult`, or `_voiceTranslationResult`).
+9.  **Translation Displayed**:
+    *   The UI rebuilds, showing the text in a `Card` or result area.
+10. **TTS / History**:
+    *   `TtsService.speak()` is called.
+    *   `HistoryService.addWordToHistory()` or `_addTranslationToHistory()` saves the entry.
+
+## 2. Translation Entry Points
+
+*   **`TextTranslateScreen._translateText()`**: Dedicated to the text-only screen. It handles its own dictionary loading and normalization logic.
+*   **`TranslateScreen._translateVoiceInput()`**: Part of the unified screen. Triggered when `SpeechToText` finishes capturing a final result.
+*   **`TranslateScreen._translateText()`**: Part of the unified screen (Text mode tab).
+*   **Shared Backend**: Both screens currently share `TranslationFallbackService.translateEnglishToBisaya` as their network/AI backend, but they unfortunately *duplicate* the dictionary lookup logic.
+
+## 3. Analysis of TranslationFallbackService
+
+*   **Public Methods**: `translateEnglishToBisaya(String text)`.
+*   **Parameters**: Single `String text`.
+*   **Return Values**: `Future<String?>`.
+*   **Communication**: `http.post` for custom server, `http.get` for Google Translate.
+*   **Endpoints**: `/translate` on custom servers; `translate_a/single` for Google.
+*   **Request JSON**: `{"text": text}`.
+*   **Response JSON**: `{"translation": "..."}` for custom; nested array for Google.
+*   **Timeout**: 6 seconds per custom server attempt.
+*   **Discovery Logic**: Uses `DiscoveryService.discoverServer()` if primary URLs fail.
+
+**Categorization**:
+*   **Translation Logic**: The high-level orchestration of which server to try first.
+*   **Network Logic**: `http` requests, headers, and timeout handling.
+*   **Fallback Logic**: The `_fallbackToGoogleTranslate` method.
+*   **Dictionary Logic**: **NOT** in this service; it is currently duplicated in the UI Screens.
+
+## 4. Unchanged Systems
+
+The following MUST remain stable and should not be tightly coupled to the ONNX implementation:
+*   **TTS**: `TtsService` (Provider-based).
+*   **History/Firestore**: `HistoryService` and its interaction with `Word` models.
+*   **UI/UX**: The loading states (`Translating...`), `CircularProgressIndicator` on volume icons, and `SnackBar` for clipboard.
+*   **Authentication**: `AuthService`, `google_sign_in`, etc.
+*   **Navigation**: `menu_screen.dart`, `wrapper.dart`, etc.
+
+## 5. Desired New Architecture
+
+The new `OnnxTranslationService` will replace the `HTTP -> FastAPI` hop with an in-process execution of:
+`Tokenizer -> Encoder -> Decoder (with KV Cache) -> Detokenizer`.
+
+## 6. Model Information Summary
+
+*   **Location**: `assets/higaonon_mobile/`
+*   **Files**: 3 ONNX models (Encoder, Decoder, Decoder+Past) + 5 Tokenizer files.
+*   **Quantization**: INT8 (optimized for mobile).
+*   **Dependencies**: `onnxruntime: ^1.4.1` is already in `pubspec.yaml`.
+
+## 7. Tokenizer Requirements & Compatibility
+
+The MarianMT model uses **SentencePiece** tokenization.
+*   **Requirement**: Dart must be able to load `source.spm` and `target.spm` and perform identical subword segmentation as the Python `sentencepiece` library.
+*   **Potential Problem**: The `onnxruntime` Flutter plugin does *not* include a tokenizer. We will need to implement or import a SentencePiece processor in Dart. If the vocab indices or special token handling (BOS/EOS/PAD) differ from the Python reference, translation will fail or produce gibberish.
+
+## 8. Proposed New Service (OnnxTranslationService)
+
+*   **Interface**: `Future<String> translate(String text)`.
+*   **Lifecycle**: Should be a **Singleton** managed via `Provider` or a static instance initialized at app startup.
+*   **Loading**: Assets must be loaded via `rootBundle` and written to a temporary local file (or byte buffer) because `onnxruntime` typically requires a file path or buffer.
+*   **Memory**: Each session (Encoder, Decoder, DecoderWithPast) uses memory. Sessions must be released when the app is closed.
+*   **Concurrency**: Inference should ideally run in a **Flutter Isolate** to prevent blocking the UI thread during the ~100-500ms generation cycle.
+
+## 9. Migration Strategy
+
+1.  **Phase 1**: Implement `OnnxTranslationService` in isolation.
+2.  **Phase 2**: Add a "Test ONNX" button or hidden debug flag in the UI.
+3.  **Phase 3**: Update `TextTranslateScreen` and `TranslateScreen` to try `OnnxTranslationService` *before* `TranslationFallbackService`.
+4.  **Phase 4**: Once verified on Android/iOS, deprecate the FastAPI backend dependency but keep Google Translate as a "safety net" if the model fails to load.
+
+## 10. Final Assessment
+
+### C. Recommended Integration Point
+Create `lib/screens/services/onnx_translation_service.dart`. In the UI screens, insert a call to this service immediately after the dictionary lookup fails and before `TranslationFallbackService` is invoked.
+
+### D. Files to Modify
+
+**MUST MODIFY**:
+*   `pubspec.yaml`: Ensure all assets are correctly listed.
+*   `lib/screens/text_translate_screen.dart`: Integrate service call.
+*   `lib/screens/translate_screen.dart`: Integrate service call.
+*   `lib/screens/services/onnx_translation_service.dart`: [NEW FILE]
+
+**MAY MODIFY**:
+*   `lib/main.dart`: For early initialization of the ONNX environment.
+
+**DO NOT MODIFY**:
+*   `lib/screens/services/auth.dart`
+*   `lib/screens/services/database.dart`
+*   `lib/models/word.dart`
+
+### E. Potential Problems
+*   **Isolate Overhead**: Data transfer between isolates (sending large hidden state tensors) can be slow.
+*   **Quantization Accuracy**: INT8 might have slight deviations from FP32 Python results; needs verification.
+*   **Asset Loading**: `rootBundle.load` for 150MB might cause a spike in memory during startup.
+*   **Special Tokens**: Marian models often require specific prefixes or suffixes in the tokenizer.
+
+### F. Implementation Plan
+1.  Verify asset accessibility (`test_offline_model.dart`).
+2.  Initialize `OrtEnv` and `OrtSession` for all three models.
+3.  Implement Dart-based SentencePiece tokenization (Crucial Step).
+4.  Implement Encoder inference (input_ids -> hidden_states).
+5.  Implement Autoregressive Decoder loop with Greedy Search and KV Cache.
+6.  Detokenize output and verify against Python reference.
+7.  Integrate into UI with proper loading states.

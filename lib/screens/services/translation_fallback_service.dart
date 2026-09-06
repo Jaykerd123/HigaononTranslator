@@ -5,15 +5,19 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'discovery_service.dart';
 
 class TranslationFallbackService {
+  /// The current primary public API endpoint (Cloudflare Tunnel)
+  static const String publicApiBaseUrl = 'https://pale-astronomy-tongue-ones.trycloudflare.com';
+
   /// Translates text from English to Cebuano (Bisaya) using the local NLP server.
   static Future<String?> translateEnglishToBisaya(String text) async {
     List<String> possibleBaseUrls = [
+      publicApiBaseUrl,
       'http://127.0.0.1:8000',
       'http://127.0.0.1:8080',
     ];
     
     if (DiscoveryService.discoveredBaseUrl != null) {
-      possibleBaseUrls.insert(0, DiscoveryService.discoveredBaseUrl!);
+      possibleBaseUrls.insert(1, DiscoveryService.discoveredBaseUrl!); // Insert after public URL
     }
 
     for (int i = 0; i < possibleBaseUrls.length; i++) {
@@ -24,7 +28,7 @@ class TranslationFallbackService {
           url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'text': text}),
-        ).timeout(const Duration(seconds: 4));
+        ).timeout(const Duration(seconds: 6)); // Increased timeout for tunnel latency
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> data = jsonDecode(response.body);
@@ -33,7 +37,7 @@ class TranslationFallbackService {
           }
         }
       } catch (e) {
-        print('TranslationFallbackService Error calling local Python server at $baseUrl: $e');
+        print('TranslationFallbackService Error calling server at $baseUrl: $e');
       }
 
       if (i == possibleBaseUrls.length - 1 && DiscoveryService.discoveredBaseUrl == null) {

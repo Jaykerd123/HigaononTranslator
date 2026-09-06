@@ -1,0 +1,3 @@
+- `[x]` Update `translation_fallback_service.dart` with Cloudflare endpoint
+- `[x]` Verify translation flow and dictionary priority
+- `[x]` Create walkthrough artifact

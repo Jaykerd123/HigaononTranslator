@@ -1,0 +1,92 @@
+# Higaonon Translator - Current Translation Architecture Report
+
+## 1. TRANSLATION UI
+
+*   **Dart Files**:
+    *   `lib/screens/text_translate_screen.dart`: A dedicated text-only translation page.
+    *   `lib/screens/translate_screen.dart`: A unified screen supporting both voice and text translation, plus a quick dictionary search.
+*   **Source-language text entry**:
+    *   `TextField` using `_textInputController` in both screens.
+    *   `SpeechToText` integration in `TranslateScreen` for voice input (`_lastWords`).
+*   **Translated text display**:
+    *   `TextTranslateScreen`: A `Card` displaying the `_translationResult` variable.
+    *   `TranslateScreen`: A `_buildResultCard` widget displaying `_textTranslationResult` or `_voiceTranslationResult`.
+*   **Trigger**:
+    *   An `ElevatedButton` labeled 'Translate' calling the `_translateText()` function.
+    *   Voice input completion automatically triggers `_translateVoiceInput()`.
+*   **Loading indicators / Error messages**:
+    *   The translation result variables are set to `'Translating...'` during the process.
+    *   `CircularProgressIndicator` is shown in the volume icon if TTS is loading/playing.
+    *   Error messages like `'Please enter text to translate.'` or `'No translation found for: ...'` are displayed directly in the result area.
+
+## 2. CURRENT TRANSLATION FLOW
+
+User enters text or speaks
+→ `TextTranslateScreen._translateText` or `TranslateScreen._translateVoiceInput` / `_translateText`
+→ Local Dictionary Check (checks `assets/dictionary.json` and `assets/dictionary-second.json`)
+→ `TranslationFallbackService.translateEnglishToBisaya(text)` (if no dictionary match)
+→ `http.post` to Remote API (FastAPI backend via Cloudflare Tunnel or Localhost)
+→ If Remote API fails: `TranslationFallbackService._fallbackToGoogleTranslate(text)`
+→ API Response (JSON)
+→ `setState()` updates the UI result variable
+→ `TtsService.speak()` plays the translation
+→ `HistoryService.addWordToHistory()` saves the result
+→ Translated text displayed in the UI
+
+**Files involved**:
+*   `lib/screens/text_translate_screen.dart` (UI & logic)
+*   `lib/screens/translate_screen.dart` (UI & logic)
+*   `lib/screens/services/translation_fallback_service.dart` (API communication)
+*   `lib/screens/services/tts_service.dart` (Text-to-speech)
+*   `lib/screens/services/history_service.dart` (History persistence)
+*   `lib/screens/services/discovery_service.dart` (Server URL discovery)
+
+## 3. CURRENT NLP / MODEL CONNECTION
+
+*   **HTTP requests**: Uses `http.post` for the local/remote FastAPI server and `http.get` for the Google Translate fallback.
+*   **FastAPI / localhost**: The service attempts to connect to `http://127.0.0.1:8000` and `http://127.0.0.1:8080`.
+*   **Port 8000**: Explicitly targeted as a local server port.
+*   **API endpoints**: Uses `/translate`.
+*   **Cloudflare Tunnel**: Uses `https://pale-astronomy-tongue-ones.trycloudflare.com` as the primary remote endpoint.
+*   **Hugging Face / ONNX / MarianMT**: No current implementation in the Dart codebase. The model inference is currently handled entirely by the external server (presumably running the Python code found in the project root like `server.py`).
+*   **Google Translate**: Used as a final fallback via `translate.googleapis.com`.
+
+**Translation vs. Unrelated**:
+*   `TranslationFallbackService`: ONLY for translation.
+*   `DiscoveryService`: Used to find the translation server, but could potentially be used for other services.
+*   `TtsService`: Related (speaks the result) but independent of the translation logic itself.
+
+## 4. STATE MANAGEMENT
+
+*   **Primary System**: `setState()` is used within the Screen widgets to manage the immediate translation state (`_translationResult`, etc.).
+*   **Global Services**: `Provider` is used for `TtsService`, `HistoryService`, `TranslationStatsService`, and `UserData`.
+*   **Storage**:
+    *   Temporary: Local variables in the `State` classes.
+    *   Persistent: `HistoryService` (saving to Firestore/Local storage).
+
+## 5. INPUT/OUTPUT FORMAT
+
+**Local/Remote API (FastAPI)**:
+*   **Input**: `{"text": "Hello, how are you?"}`
+*   **Output**: `{"translation": "Tag-u, kainu kad?"}`
+
+**Google Translate Fallback**:
+*   **Input**: URL-encoded query parameter `q`.
+*   **Output**: A complex nested JSON array from Google's `gtx` endpoint (e.g., `[[["translated text", "source text", ...]]]`).
+
+## 6. FILES I SHOULD MODIFY
+
+**MUST MODIFY**:
+*   `pubspec.yaml`: Add dependencies for `onnxruntime_flutter` and tokenization.
+*   `lib/screens/services/translation_service.dart` (New File): Create this to encapsulate the ONNX model logic.
+*   `lib/screens/text_translate_screen.dart`: Update `_translateText` to use the new offline service.
+*   `lib/screens/translate_screen.dart`: Update `_translateText` and `_translateVoiceInput` to use the new offline service.
+
+**MAY MODIFY**:
+*   `lib/screens/services/translation_fallback_service.dart`: Keep as a backup if the offline model fails or isn't initialized.
+*   `assets/`: Add model files (`.onnx`), tokenizer files (`.spm`, `.json`).
+
+**DO NOT MODIFY**:
+*   `lib/models/word.dart`, `lib/models/sentence_match.dart`: These are standard data models used throughout the app.
+*   `lib/screens/services/tts_service.dart`: Should remain untouched to ensure audio still plays.
+*   `lib/screens/services/auth.dart`: Unrelated to translation.

@@ -1,4 +1,2 @@
-- [x] Implement `_loadFrequentTranslations` in `MenuScreen`
-- [x] Update `MenuScreen` state to store the loaded words
-- [x] Update `MenuScreen` build method to display the words in the "Frequently Requested Translations" section
-- [x] Verify navigation to `WordDetailScreen` works for these items
+- [x] Remove Flutter DEBUG banner in `lib/main.dart`
+- [x] Verify change

@@ -4,6 +4,7 @@ import 'package:Higa/models/sentence_match.dart';
 import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/screens/services/translation_fallback_service.dart';
+import 'package:Higa/screens/services/onnx_translation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -142,7 +143,32 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
       }
     }
 
-    // 4. Fallback to AI Model
+    // 4. Offline ONNX Model
+    try {
+      final onnxTranslation = await OnnxTranslationService().translate(inputText);
+      if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
+        setState(() {
+          _translationResult = onnxTranslation;
+          Provider.of<TtsService>(context, listen: false).speak(onnxTranslation);
+        });
+        // Add to history (create a dummy Word object for compatibility)
+        final wordObj = Word(
+          higaonon: onnxTranslation,
+          tagalog: '',
+          partOfSpeech: 'AI',
+          english: inputText,
+          exampleHigaonon: '',
+          exampleEnglish: '',
+        );
+        Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordObj);
+        return;
+      }
+    } catch (e) {
+      print('ONNX Translation error: $e');
+      // Continue to fallback
+    }
+
+    // 5. Fallback to AI Model (Network)
     final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
 
     if (mounted) {

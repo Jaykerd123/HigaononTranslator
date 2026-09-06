@@ -1,0 +1,21 @@
+# Offline ONNX Translation Integration Task List
+
+- `[x]` Phase 1: Tokenizer Verification
+    - `[x]` Add `dart_sentencepiece_tokenizer` to `pubspec.yaml`
+    - `[x]` Create `lib/screens/services/tokenizer_validation.dart`
+    - `[x]` Validate "I love you." -> `[32, 280, 39, 4, 0]`
+    - `[x]` Validate other 4 reference sentences
+- `[x]` Phase 2: ONNX Service Implementation
+    - `[x]` Implement `OnnxTranslationService` initialization (lazy loading)
+    - `[x]` Implement Encoder inference
+    - `[x]` Implement Initial Decoder inference
+    - `[x]` Implement DecoderWithPast loop with KV Cache
+    - `[x]` Implement Detokenization
+- `[/]` Phase 3: Integration & Testing
+    - `[x]` Add "Test ONNX" utility/debug path
+    - `[x]` Integrate into `text_translate_screen.dart`
+    - `[x]` Integrate into `translate_screen.dart`
+    - `[ ]` Verify offline translation on Android
+- `[ ]` Phase 4: Final Verification & Cleanup
+    - `[ ]` Perform final comparison against Python reference
+    - `[ ]` Document performance and memory usage

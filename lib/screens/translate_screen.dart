@@ -7,6 +7,7 @@ import 'package:Higa/screens/services/history_service.dart';
 import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/screens/services/translation_stats_service.dart';
 import 'package:Higa/screens/services/translation_fallback_service.dart';
+import 'package:Higa/screens/services/onnx_translation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -193,7 +194,30 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         }
       }
 
-      // 4. Fallback to AI Model
+      // 4. Offline ONNX Model
+      try {
+        final onnxTranslation = await OnnxTranslationService().translate(_lastWords);
+        if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
+          setState(() {
+            _voiceTranslationResult = onnxTranslation;
+            _voiceTranslationFound = true;
+          });
+          final wordObj = Word(
+            higaonon: onnxTranslation,
+            tagalog: '',
+            partOfSpeech: 'AI',
+            english: _lastWords,
+            exampleHigaonon: '',
+            exampleEnglish: '',
+          );
+          _handleTranslationSuccess(wordObj, _lastWords, onnxTranslation);
+          return;
+        }
+      } catch (e) {
+        print('ONNX Voice Translation error: $e');
+      }
+
+      // 5. Fallback to AI Model
       final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(_lastWords);
 
       if (mounted) {
@@ -354,7 +378,29 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       }
     }
 
-    // 4. Fallback to AI Model
+    // 4. Offline ONNX Model
+    try {
+      final onnxTranslation = await OnnxTranslationService().translate(inputText);
+      if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
+        setState(() {
+          _textTranslationResult = onnxTranslation;
+        });
+        final wordObj = Word(
+          higaonon: onnxTranslation,
+          tagalog: '',
+          partOfSpeech: 'AI',
+          english: inputText,
+          exampleHigaonon: '',
+          exampleEnglish: '',
+        );
+        _handleTranslationSuccess(wordObj, inputText, onnxTranslation);
+        return;
+      }
+    } catch (e) {
+      print('ONNX Text Translation error: $e');
+    }
+
+    // 5. Fallback to AI Model
     final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
 
     if (mounted) {

@@ -95,16 +95,21 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     });
 
     final normalizedInput = _normalizeString(inputText);
+    print("DEBUG: USER INPUT = '$inputText'");
+    print("DEBUG: NORMALIZED INPUT = '$normalizedInput'");
 
     // 1. Check dictionary.json (Words)
     for (var word in _words) {
       if (_normalizeString(word.english) == normalizedInput) {
+        print("DEBUG: MATCH FOUND IN dictionary.json (Words): ${word.higaonon}");
+        print("DEBUG: RESULT AFTER DICTIONARY = '${word.higaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _translationResult = word.higaonon;
           Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
           Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
         });
+        print("DEBUG: FINAL RESULT BEFORE UI = '${word.higaonon}'");
         return;
       }
     }
@@ -112,12 +117,15 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     // 2. Check dictionary.json (Sentences)
     for (var word in _words) {
       if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+        print("DEBUG: MATCH FOUND IN dictionary.json (Sentences): ${word.exampleHigaonon}");
+        print("DEBUG: RESULT AFTER DICTIONARY = '${word.exampleHigaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _translationResult = word.exampleHigaonon;
           Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
           Provider.of<TtsService>(context, listen: false).speak(word.exampleHigaonon);
         });
+        print("DEBUG: FINAL RESULT BEFORE UI = '${word.exampleHigaonon}'");
         return;
       }
     }
@@ -125,6 +133,8 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     // 3. Check dictionary-second.json
     for (var match in _sentenceMatches) {
       if (_normalizeString(match.english) == normalizedInput) {
+        print("DEBUG: MATCH FOUND IN dictionary-second.json: ${match.higaonon}");
+        print("DEBUG: RESULT AFTER DICTIONARY = '${match.higaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _translationResult = match.higaonon;
@@ -139,14 +149,18 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
           Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordObj);
           Provider.of<TtsService>(context, listen: false).speak(match.higaonon);
         });
+        print("DEBUG: FINAL RESULT BEFORE UI = '${match.higaonon}'");
         return;
       }
     }
 
     // 4. Offline ONNX Model
     try {
+      print("DEBUG: CALLING ONNX...");
       final onnxTranslation = await OnnxTranslationService().translate(inputText);
+      print("DEBUG: ONNX RESULT = '$onnxTranslation'");
       if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
+        print("DEBUG: RESULT AFTER ONNX = '$onnxTranslation'");
         setState(() {
           _translationResult = onnxTranslation;
           Provider.of<TtsService>(context, listen: false).speak(onnxTranslation);
@@ -161,6 +175,7 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
           exampleEnglish: '',
         );
         Provider.of<HistoryService>(context, listen: false).addWordToHistory(wordObj);
+        print("DEBUG: FINAL RESULT BEFORE UI = '$onnxTranslation'");
         return;
       }
     } catch (e) {
@@ -169,7 +184,10 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
     }
 
     // 5. Fallback to AI Model (Network)
+    print("DEBUG: CALLING FALLBACK SERVICE...");
     final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
+    print("DEBUG: FALLBACK RESULT = '$fallbackTranslation'");
+    print("DEBUG: RESULT AFTER FALLBACK = '$fallbackTranslation'");
 
     if (mounted) {
       setState(() {
@@ -180,7 +198,9 @@ class _TextTranslateScreenState extends State<TextTranslateScreen> {
           _translationResult = 'No translation found for: "$inputText"';
         }
       });
+      print("DEBUG: FINAL RESULT BEFORE UI = '$_translationResult'");
     }
+
   }
 
   void _copyToClipboard() {

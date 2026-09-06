@@ -1,8 +1,5 @@
-- `[x]` Implement strict tokenization in `OnnxTranslationService.dart`
-- `[x]` Implement name-based KV-cache management in `OnnxTranslationService.dart`
-    - `[x]` Add debug prints for tokenizer pieces, input IDs, and cache counts
-    - `[x]` Separate `decoderCache` and `encoderCache`
-    - `[x]` Map outputs `present.*` to `past_key_values.*`
-- `[x]` Update `test/onnx_validation_test.dart` with reference sentences
-- `[x]` Execute validation tests and verify Flutter outputs against Python references
-- `[x]` Create walkthrough artifact with results and debug logs
+- `[ ]` Add debug logging to `lib/screens/translate_screen.dart`
+- `[ ]` Add debug logging to `lib/screens/text_translate_screen.dart`
+- `[ ]` Add debug logging to `lib/screens/services/onnx_translation_service.dart`
+- `[ ]` Verify translation flow for "Where are you going."
+- `[ ]` Implement fix for `dictionary-second.json` match and stale models

@@ -196,8 +196,11 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
       // 4. Offline ONNX Model
       try {
+        print("DEBUG: VOICE: CALLING ONNX...");
         final onnxTranslation = await OnnxTranslationService().translate(_lastWords);
+        print("DEBUG: VOICE: ONNX RESULT = '$onnxTranslation'");
         if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
+          print("DEBUG: VOICE: RESULT AFTER ONNX = '$onnxTranslation'");
           setState(() {
             _voiceTranslationResult = onnxTranslation;
             _voiceTranslationFound = true;
@@ -211,6 +214,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
             exampleEnglish: '',
           );
           _handleTranslationSuccess(wordObj, _lastWords, onnxTranslation);
+          print("DEBUG: VOICE: FINAL RESULT BEFORE UI = '$onnxTranslation'");
           return;
         }
       } catch (e) {
@@ -218,7 +222,10 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       }
 
       // 5. Fallback to AI Model
+      print("DEBUG: VOICE: CALLING FALLBACK SERVICE...");
       final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(_lastWords);
+      print("DEBUG: VOICE: FALLBACK RESULT = '$fallbackTranslation'");
+      print("DEBUG: VOICE: RESULT AFTER FALLBACK = '$fallbackTranslation'");
 
       if (mounted) {
         setState(() {
@@ -233,7 +240,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
             _voiceTranslationFound = false;
           }
         });
+        print("DEBUG: VOICE: FINAL RESULT BEFORE UI = '$_voiceTranslationResult'");
       }
+
     }
   }
 
@@ -333,15 +342,20 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     });
 
     final normalizedInput = _normalizeString(inputText);
+    print("DEBUG: TEXT: USER INPUT = '$inputText'");
+    print("DEBUG: TEXT: NORMALIZED INPUT = '$normalizedInput'");
 
     // 1. Check dictionary.json (Words)
     for (var word in _words) {
       if (_normalizeString(word.english) == normalizedInput) {
+        print("DEBUG: TEXT: MATCH FOUND IN dictionary.json (Words): ${word.higaonon}");
+        print("DEBUG: TEXT: RESULT AFTER DICTIONARY = '${word.higaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = word.higaonon;
         });
         _handleTranslationSuccess(word, inputText, word.higaonon);
+        print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '${word.higaonon}'");
         return;
       }
     }
@@ -349,11 +363,14 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 2. Check dictionary.json (Sentences)
     for (var word in _words) {
       if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+        print("DEBUG: TEXT: MATCH FOUND IN dictionary.json (Sentences): ${word.exampleHigaonon}");
+        print("DEBUG: TEXT: RESULT AFTER DICTIONARY = '${word.exampleHigaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = word.exampleHigaonon;
         });
         _handleTranslationSuccess(word, inputText, word.exampleHigaonon);
+        print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '${word.exampleHigaonon}'");
         return;
       }
     }
@@ -361,6 +378,8 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 3. Check dictionary-second.json
     for (var match in _sentenceMatches) {
       if (_normalizeString(match.english) == normalizedInput) {
+        print("DEBUG: TEXT: MATCH FOUND IN dictionary-second.json: ${match.higaonon}");
+        print("DEBUG: TEXT: RESULT AFTER DICTIONARY = '${match.higaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = match.higaonon;
@@ -374,14 +393,18 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
           exampleEnglish: '',
         );
         _handleTranslationSuccess(wordObj, inputText, match.higaonon);
+        print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '${match.higaonon}'");
         return;
       }
     }
 
     // 4. Offline ONNX Model
     try {
+      print("DEBUG: TEXT: CALLING ONNX...");
       final onnxTranslation = await OnnxTranslationService().translate(inputText);
+      print("DEBUG: TEXT: ONNX RESULT = '$onnxTranslation'");
       if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
+        print("DEBUG: TEXT: RESULT AFTER ONNX = '$onnxTranslation'");
         setState(() {
           _textTranslationResult = onnxTranslation;
         });
@@ -394,6 +417,7 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
           exampleEnglish: '',
         );
         _handleTranslationSuccess(wordObj, inputText, onnxTranslation);
+        print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '$onnxTranslation'");
         return;
       }
     } catch (e) {
@@ -401,7 +425,10 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     }
 
     // 5. Fallback to AI Model
+    print("DEBUG: TEXT: CALLING FALLBACK SERVICE...");
     final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
+    print("DEBUG: TEXT: FALLBACK RESULT = '$fallbackTranslation'");
+    print("DEBUG: TEXT: RESULT AFTER FALLBACK = '$fallbackTranslation'");
 
     if (mounted) {
       setState(() {
@@ -414,7 +441,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
           _textTranslationResult = 'No translation found for: "$inputText"';
         }
       });
+      print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '$_textTranslationResult'");
     }
+
   }
 
   void _copyToClipboard() {

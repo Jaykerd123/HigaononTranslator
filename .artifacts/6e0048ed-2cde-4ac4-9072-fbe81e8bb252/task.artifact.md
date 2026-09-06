@@ -4,5 +4,5 @@
     - `[x]` Separate `decoderCache` and `encoderCache`
     - `[x]` Map outputs `present.*` to `past_key_values.*`
 - `[x]` Update `test/onnx_validation_test.dart` with reference sentences
-- `[ ]` Execute validation tests and verify Flutter outputs against Python references
-- `[ ]` Create walkthrough artifact with results and debug logs
+- `[x]` Execute validation tests and verify Flutter outputs against Python references
+- `[x]` Create walkthrough artifact with results and debug logs

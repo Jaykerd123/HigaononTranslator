@@ -201,8 +201,16 @@ class OnnxTranslationService {
         };
 
         // Add both caches to inputs
-        decoderCache.forEach((key, value) => loopInputs[key] = value);
-        encoderCache.forEach((key, value) => loopInputs[key] = value);
+        decoderCache.forEach((key, value) {
+          loopInputs[key] = value;
+          // Only print once for verification
+          if (step == 0) print('Mapping decoder cache: $key');
+        });
+        encoderCache.forEach((key, value) {
+          loopInputs[key] = value;
+          // Only print once for verification
+          if (step == 0) print('Mapping encoder cache: $key');
+        });
 
         final loopOutputs = await _decoderWithPastSession!.run(OrtRunOptions(), loopInputs);
         final loopLogits = loopOutputs[0] as OrtValueTensor;
@@ -226,6 +234,10 @@ class OnnxTranslationService {
         }
         
         decoderCache = nextDecoderCache;
+        if (step == 0) {
+           print('Updated decoder cache count: ${decoderCache.length}');
+           print('Encoder cache preserved count: ${encoderCache.length}');
+        }
 
         loopInputIds.release();
         loopLogits.release();

@@ -632,28 +632,42 @@ print(
 'Translation: $result',
 );
 
-print(
-'======================================',
-);
+  print(
+    '======================================',
+  );
 
-// ============================================================
-// 9. CLEANUP
-// ============================================================
+  print('DEBUG: BEFORE CLEANUP');
 
-inputIdsTensor.release();
-attentionMask.release();
-encoderHiddenStates.release();
-decoderInputIds.release();
-logits.release();
+  try {
+    inputIdsTensor.release();
+    print('DEBUG: released inputIdsTensor');
 
-for (
-final tensor
-in tensorsToRelease
-) {
-tensor.release();
-}
+    attentionMask.release();
+    print('DEBUG: released attentionMask');
 
-return result;
+    encoderHiddenStates.release();
+    print('DEBUG: released encoderHiddenStates');
+
+    decoderInputIds.release();
+    print('DEBUG: released decoderInputIds');
+
+    logits.release();
+    print('DEBUG: released logits');
+
+    for (int i = 0; i < tensorsToRelease.length; i++) {
+      tensorsToRelease[i].release();
+      print('DEBUG: released cache tensor $i');
+    }
+
+    print('DEBUG: CLEANUP COMPLETE');
+  } catch (e, stackTrace) {
+    print('DEBUG: CLEANUP ERROR: $e');
+    print(stackTrace);
+  }
+
+  print('DEBUG: RETURNING RESULT = $result');
+
+  return result;
 } catch (e, stackTrace) {
 print(
 'ONNX Translation failed: $e',

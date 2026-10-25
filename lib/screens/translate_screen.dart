@@ -536,10 +536,17 @@ class _TranslateScreenState extends State<TranslateScreen>
   void _showHistorySheet() {
     _loadTranslationHistory();
     final selectedHistoryIds = <String>{};
+    var isSelectionMode = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      sheetAnimationStyle: const AnimationStyle(
+        duration: Duration(milliseconds: 450),
+        reverseDuration: Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      ),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
@@ -615,13 +622,22 @@ class _TranslateScreenState extends State<TranslateScreen>
                             ),
                           ),
                           const Spacer(),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close_rounded),
-                          ),
+                          if (isSelectionMode)
+                            TextButton(
+                              onPressed: () => setSheetState(() {
+                                isSelectionMode = false;
+                                selectedHistoryIds.clear();
+                              }),
+                              child: const Text('Cancel'),
+                            )
+                          else
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close_rounded),
+                            ),
                         ],
                       ),
-                      if (historyItems.isNotEmpty)
+                      if (isSelectionMode && historyItems.isNotEmpty)
                         Row(
                           children: [
                             Checkbox(
@@ -668,79 +684,96 @@ class _TranslateScreenState extends State<TranslateScreen>
                                 const SizedBox(height: 10),
                             itemBuilder: (context, index) {
                               final item = historyItems[index];
-                              return Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Checkbox(
-                                      value: selectedHistoryIds.contains(
-                                        item.higaonon,
-                                      ),
-                                      onChanged: (selected) =>
-                                          setSheetState(() {
-                                            if (selected ?? false) {
-                                              selectedHistoryIds.add(
-                                                item.higaonon,
-                                              );
-                                            } else {
-                                              selectedHistoryIds.remove(
-                                                item.higaonon,
-                                              );
-                                            }
-                                          }),
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.higaonon.isNotEmpty
-                                                ? item.higaonon
-                                                : item.english,
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w600,
+                              return GestureDetector(
+                                onLongPress: () => setSheetState(() {
+                                  isSelectionMode = true;
+                                  selectedHistoryIds.add(item.higaonon);
+                                }),
+                                onTap: isSelectionMode
+                                    ? () => setSheetState(() {
+                                        if (!selectedHistoryIds.remove(
+                                          item.higaonon,
+                                        )) {
+                                          selectedHistoryIds.add(item.higaonon);
+                                        }
+                                      })
+                                    : null,
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).cardColor,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      if (isSelectionMode)
+                                        Checkbox(
+                                          value: selectedHistoryIds.contains(
+                                            item.higaonon,
+                                          ),
+                                          onChanged: (selected) =>
+                                              setSheetState(() {
+                                                if (selected ?? false) {
+                                                  selectedHistoryIds.add(
+                                                    item.higaonon,
+                                                  );
+                                                } else {
+                                                  selectedHistoryIds.remove(
+                                                    item.higaonon,
+                                                  );
+                                                }
+                                              }),
+                                        ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.higaonon.isNotEmpty
+                                                  ? item.higaonon
+                                                  : item.english,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            item.english.isNotEmpty
-                                                ? item.english
-                                                : item.higaonon,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.secondary,
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              item.english.isNotEmpty
+                                                  ? item.english
+                                                  : item.higaonon,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.secondary,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    IconButton(
-                                      onPressed: () =>
-                                          Provider.of<TtsService>(
-                                            context,
-                                            listen: false,
-                                          ).speak(
-                                            item.higaonon.isNotEmpty
-                                                ? item.higaonon
-                                                : item.english,
-                                          ),
-                                      icon: const Icon(
-                                        Icons.volume_up_rounded,
-                                        color: Colors.redAccent,
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        onPressed: () =>
+                                            Provider.of<TtsService>(
+                                              context,
+                                              listen: false,
+                                            ).speak(
+                                              item.higaonon.isNotEmpty
+                                                  ? item.higaonon
+                                                  : item.english,
+                                            ),
+                                        icon: const Icon(
+                                          Icons.volume_up_rounded,
+                                          color: Colors.redAccent,
+                                        ),
+                                        tooltip: 'Play translation',
                                       ),
-                                      tooltip: 'Play translation',
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             },

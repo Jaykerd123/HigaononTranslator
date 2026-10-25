@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
               duration: const Duration(seconds: 1),
               curve: Curves.easeInOut,
               margin: EdgeInsets.only(bottom: _logoMoved ? 100.0 : 0.0),
-              child: Image.asset('assets/app_logo/logo_black.png', height: 150),
+              child: Image.asset('assets/app_logo/logo_black.png', height: 200),
             ),
             AnimatedOpacity(
               duration: const Duration(seconds: 1),

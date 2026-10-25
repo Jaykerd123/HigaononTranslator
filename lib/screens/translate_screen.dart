@@ -23,7 +23,8 @@ class TranslateScreen extends StatefulWidget {
   State<TranslateScreen> createState() => _TranslateScreenState();
 }
 
-class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAliveClientMixin {
+class _TranslateScreenState extends State<TranslateScreen>
+    with AutomaticKeepAliveClientMixin {
   List<Word> _words = [];
   List<SentenceMatch> _sentenceMatches = [];
   List<Word> _filteredWords = [];
@@ -72,13 +73,13 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
   void _startListening() async {
     if (!_speechEnabled || _speechToText.isListening) return;
-    
+
     // Check if sound effects are enabled
     final userData = Provider.of<UserData?>(context, listen: false);
     if (userData?.soundEffectsEnabled ?? false) {
       await _audioPlayer.play(AssetSource('sounds/mic_on.mp3'));
     }
-    
+
     await _speechToText.listen(
       onResult: _onSpeechResult,
       localeId: 'en_US',
@@ -122,7 +123,10 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
   Future<void> _loadTranslationHistory() async {
     if (!mounted) return;
-    Provider.of<HistoryService>(context, listen: false).loadHistoryFromFirestore();
+    Provider.of<HistoryService>(
+      context,
+      listen: false,
+    ).loadHistoryFromFirestore();
   }
 
   void _addTranslationToHistory(String sourceText, String translatedText) {
@@ -197,7 +201,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       // 4. Offline ONNX Model
       try {
         print("DEBUG: VOICE: CALLING ONNX...");
-        final onnxTranslation = await OnnxTranslationService().translate(_lastWords);
+        final onnxTranslation = await OnnxTranslationService().translate(
+          _lastWords,
+        );
         print("DEBUG: VOICE: ONNX RESULT = '$onnxTranslation'");
         if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
           print("DEBUG: VOICE: RESULT AFTER ONNX = '$onnxTranslation'");
@@ -223,7 +229,8 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
       // 5. Fallback to AI Model
       print("DEBUG: VOICE: CALLING FALLBACK SERVICE...");
-      final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(_lastWords);
+      final fallbackTranslation =
+          await TranslationFallbackService.translateEnglishToBisaya(_lastWords);
       print("DEBUG: VOICE: FALLBACK RESULT = '$fallbackTranslation'");
       print("DEBUG: VOICE: RESULT AFTER FALLBACK = '$fallbackTranslation'");
 
@@ -232,33 +239,48 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
           if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
             _voiceTranslationResult = fallbackTranslation;
             _voiceTranslationFound = true;
-            Provider.of<TtsService>(context, listen: false).speak(fallbackTranslation);
-            Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
+            Provider.of<TtsService>(
+              context,
+              listen: false,
+            ).speak(fallbackTranslation);
+            Provider.of<TranslationStatsService>(
+              context,
+              listen: false,
+            ).incrementTranslationCount();
             _addTranslationToHistory(_lastWords, fallbackTranslation);
           } else {
             _voiceTranslationResult = 'No translation found';
             _voiceTranslationFound = false;
           }
         });
-        print("DEBUG: VOICE: FINAL RESULT BEFORE UI = '$_voiceTranslationResult'");
+        print(
+          "DEBUG: VOICE: FINAL RESULT BEFORE UI = '$_voiceTranslationResult'",
+        );
       }
-
     }
   }
 
   void _handleTranslationSuccess(Word word, String source, String result) {
     if (mounted) {
       _addTranslationToHistory(source, result);
-      Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
+      Provider.of<HistoryService>(
+        context,
+        listen: false,
+      ).addWordToHistory(word);
       Provider.of<TtsService>(context, listen: false).speak(result);
-      Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
+      Provider.of<TranslationStatsService>(
+        context,
+        listen: false,
+      ).incrementTranslationCount();
     }
   }
 
   Future<void> _loadDictionary() async {
     // Load dictionary.json
     try {
-      final String response = await rootBundle.loadString('assets/dictionary.json');
+      final String response = await rootBundle.loadString(
+        'assets/dictionary.json',
+      );
       final data = await json.decode(response) as List;
       if (mounted) {
         setState(() {
@@ -272,11 +294,15 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
     // Load dictionary-second.json
     try {
-      final String secondResponse = await rootBundle.loadString('assets/dictionary-second.json');
+      final String secondResponse = await rootBundle.loadString(
+        'assets/dictionary-second.json',
+      );
       final secondData = await json.decode(secondResponse) as List;
       if (mounted) {
         setState(() {
-          _sentenceMatches = secondData.map((s) => SentenceMatch.fromJson(s)).toList();
+          _sentenceMatches = secondData
+              .map((s) => SentenceMatch.fromJson(s))
+              .toList();
         });
       }
     } catch (e) {
@@ -291,8 +317,8 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         _filteredWords = _words.where((word) {
           final query = _searchController.text.toLowerCase();
           return word.higaonon.toLowerCase().contains(query) ||
-                 word.tagalog.toLowerCase().contains(query) ||
-                 word.english.toLowerCase().contains(query);
+              word.tagalog.toLowerCase().contains(query) ||
+              word.english.toLowerCase().contains(query);
         }).toList();
       });
     } else {
@@ -348,7 +374,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 1. Check dictionary.json (Words)
     for (var word in _words) {
       if (_normalizeString(word.english) == normalizedInput) {
-        print("DEBUG: TEXT: MATCH FOUND IN dictionary.json (Words): ${word.higaonon}");
+        print(
+          "DEBUG: TEXT: MATCH FOUND IN dictionary.json (Words): ${word.higaonon}",
+        );
         print("DEBUG: TEXT: RESULT AFTER DICTIONARY = '${word.higaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
@@ -363,14 +391,20 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 2. Check dictionary.json (Sentences)
     for (var word in _words) {
       if (_normalizeString(word.exampleEnglish) == normalizedInput) {
-        print("DEBUG: TEXT: MATCH FOUND IN dictionary.json (Sentences): ${word.exampleHigaonon}");
-        print("DEBUG: TEXT: RESULT AFTER DICTIONARY = '${word.exampleHigaonon}'");
+        print(
+          "DEBUG: TEXT: MATCH FOUND IN dictionary.json (Sentences): ${word.exampleHigaonon}",
+        );
+        print(
+          "DEBUG: TEXT: RESULT AFTER DICTIONARY = '${word.exampleHigaonon}'",
+        );
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = word.exampleHigaonon;
         });
         _handleTranslationSuccess(word, inputText, word.exampleHigaonon);
-        print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '${word.exampleHigaonon}'");
+        print(
+          "DEBUG: TEXT: FINAL RESULT BEFORE UI = '${word.exampleHigaonon}'",
+        );
         return;
       }
     }
@@ -378,7 +412,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 3. Check dictionary-second.json
     for (var match in _sentenceMatches) {
       if (_normalizeString(match.english) == normalizedInput) {
-        print("DEBUG: TEXT: MATCH FOUND IN dictionary-second.json: ${match.higaonon}");
+        print(
+          "DEBUG: TEXT: MATCH FOUND IN dictionary-second.json: ${match.higaonon}",
+        );
         print("DEBUG: TEXT: RESULT AFTER DICTIONARY = '${match.higaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
@@ -401,7 +437,9 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     // 4. Offline ONNX Model
     try {
       print("DEBUG: TEXT: CALLING ONNX...");
-      final onnxTranslation = await OnnxTranslationService().translate(inputText);
+      final onnxTranslation = await OnnxTranslationService().translate(
+        inputText,
+      );
       print("DEBUG: TEXT: ONNX RESULT = '$onnxTranslation'");
       if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
         print("DEBUG: TEXT: RESULT AFTER ONNX = '$onnxTranslation'");
@@ -426,7 +464,8 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
     // 5. Fallback to AI Model
     print("DEBUG: TEXT: CALLING FALLBACK SERVICE...");
-    final fallbackTranslation = await TranslationFallbackService.translateEnglishToBisaya(inputText);
+    final fallbackTranslation =
+        await TranslationFallbackService.translateEnglishToBisaya(inputText);
     print("DEBUG: TEXT: FALLBACK RESULT = '$fallbackTranslation'");
     print("DEBUG: TEXT: RESULT AFTER FALLBACK = '$fallbackTranslation'");
 
@@ -434,8 +473,14 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       setState(() {
         if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
           _textTranslationResult = fallbackTranslation;
-          Provider.of<TtsService>(context, listen: false).speak(fallbackTranslation);
-          Provider.of<TranslationStatsService>(context, listen: false).incrementTranslationCount();
+          Provider.of<TtsService>(
+            context,
+            listen: false,
+          ).speak(fallbackTranslation);
+          Provider.of<TranslationStatsService>(
+            context,
+            listen: false,
+          ).incrementTranslationCount();
           _addTranslationToHistory(inputText, fallbackTranslation);
         } else {
           _textTranslationResult = 'No translation found for: "$inputText"';
@@ -443,11 +488,11 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       });
       print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '$_textTranslationResult'");
     }
-
   }
 
   void _copyToClipboard() {
-    if (_textTranslationResult.isNotEmpty && !_textTranslationResult.startsWith('No translation found')) {
+    if (_textTranslationResult.isNotEmpty &&
+        !_textTranslationResult.startsWith('No translation found')) {
       Clipboard.setData(ClipboardData(text: _textTranslationResult));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Translation copied to clipboard!')),
@@ -477,9 +522,11 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
           _buildAppBar(theme),
           _buildModeSelector(theme),
           Expanded(
-            child: _isSearching 
-                ? _buildSearchResults(theme) 
-                : (_isVoiceMode ? _buildVoiceTranslationBody(theme) : _buildTextTranslationBody(theme)),
+            child: _isSearching
+                ? _buildSearchResults(theme)
+                : (_isVoiceMode
+                      ? _buildVoiceTranslationBody(theme)
+                      : _buildTextTranslationBody(theme)),
           ),
         ],
       ),
@@ -488,10 +535,14 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
   void _showHistorySheet() {
     _loadTranslationHistory();
+    final selectedHistoryIds = <String>{};
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -499,82 +550,206 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         return Consumer<HistoryService>(
           builder: (context, historyService, child) {
             final historyItems = historyService.history;
+            final allSelected =
+                historyItems.isNotEmpty &&
+                historyItems.every(
+                  (item) => selectedHistoryIds.contains(item.higaonon),
+                );
 
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            return StatefulBuilder(
+              builder: (context, setSheetState) {
+                Future<void> deleteSelectedHistory() async {
+                  if (selectedHistoryIds.isEmpty) return;
+                  final count = selectedHistoryIds.length;
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: Text(
+                        count == 1
+                            ? 'Delete history item?'
+                            : 'Delete $count history items?',
+                      ),
+                      content: const Text(
+                        'This will permanently delete the selected history from your account.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed != true) return;
+
+                  try {
+                    await historyService.deleteHistoryItems(selectedHistoryIds);
+                    selectedHistoryIds.clear();
+                  } catch (error) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(
+                        content: Text('Could not delete history: $error'),
+                      ),
+                    );
+                  }
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Translation History',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      Row(
+                        children: [
+                          const Text(
+                            'Translation History',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
                       ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
+                      if (historyItems.isNotEmpty)
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: allSelected,
+                              onChanged: (selected) => setSheetState(() {
+                                if (selected ?? false) {
+                                  selectedHistoryIds.addAll(
+                                    historyItems.map((item) => item.higaonon),
+                                  );
+                                } else {
+                                  selectedHistoryIds.clear();
+                                }
+                              }),
+                            ),
+                            const Text('Select all'),
+                            const Spacer(),
+                            IconButton(
+                              tooltip: 'Delete selected history',
+                              onPressed: selectedHistoryIds.isEmpty
+                                  ? null
+                                  : deleteSelectedHistory,
+                              icon: const Icon(Icons.delete_outline_rounded),
+                            ),
+                          ],
+                        ),
+                      const SizedBox(height: 8),
+                      if (historyItems.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Text(
+                            'No translated voice or text history yet.',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Theme.of(context).disabledColor,
+                            ),
+                          ),
+                        )
+                      else
+                        Flexible(
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: historyItems.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final item = historyItems[index];
+                              return Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Checkbox(
+                                      value: selectedHistoryIds.contains(
+                                        item.higaonon,
+                                      ),
+                                      onChanged: (selected) =>
+                                          setSheetState(() {
+                                            if (selected ?? false) {
+                                              selectedHistoryIds.add(
+                                                item.higaonon,
+                                              );
+                                            } else {
+                                              selectedHistoryIds.remove(
+                                                item.higaonon,
+                                              );
+                                            }
+                                          }),
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.higaonon.isNotEmpty
+                                                ? item.higaonon
+                                                : item.english,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.english.isNotEmpty
+                                                ? item.english
+                                                : item.higaonon,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.secondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      onPressed: () =>
+                                          Provider.of<TtsService>(
+                                            context,
+                                            listen: false,
+                                          ).speak(
+                                            item.higaonon.isNotEmpty
+                                                ? item.higaonon
+                                                : item.english,
+                                          ),
+                                      icon: const Icon(
+                                        Icons.volume_up_rounded,
+                                        color: Colors.redAccent,
+                                      ),
+                                      tooltip: 'Play translation',
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  if (historyItems.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Text(
-                        'No translated voice or text history yet.',
-                        style: TextStyle(fontSize: 16, color: Theme.of(context).disabledColor),
-                      ),
-                    )
-                  else
-                    Flexible(
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: historyItems.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final item = historyItems[index];
-                          return Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.higaonon.isNotEmpty ? item.higaonon : item.english,
-                                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        item.english.isNotEmpty ? item.english : item.higaonon,
-                                        style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.secondary),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () => Provider.of<TtsService>(context, listen: false).speak(item.higaonon.isNotEmpty ? item.higaonon : item.english),
-                                  icon: const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
-                                  tooltip: 'Play translation',
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -584,12 +759,21 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
 
   Widget _buildAppBar(ThemeData theme) {
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, left: 16, right: 16, bottom: 16),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 16,
+        right: 16,
+        bottom: 16,
+      ),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
         ],
       ),
       child: Column(
@@ -604,7 +788,11 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
               ),
               IconButton(
                 onPressed: _showHistorySheet,
-                icon: const Icon(Icons.history_rounded, color: Colors.redAccent, size: 24),
+                icon: const Icon(
+                  Icons.history_rounded,
+                  color: Colors.redAccent,
+                  size: 24,
+                ),
                 tooltip: 'Translation history',
               ),
             ],
@@ -616,14 +804,20 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
             decoration: InputDecoration(
               hintText: 'Quick dictionary search...',
               hintStyle: const TextStyle(fontSize: 16),
-              prefixIcon: const Icon(Icons.search_rounded, color: Colors.redAccent),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Colors.redAccent,
+              ),
               filled: true,
               fillColor: theme.scaffoldBackgroundColor,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
+              ),
             ),
           ),
         ],
@@ -636,15 +830,33 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
-          _buildModeTab('Voice', Icons.mic_rounded, _isVoiceMode, () => setState(() => _isVoiceMode = true), theme),
+          _buildModeTab(
+            'Voice',
+            Icons.mic_rounded,
+            _isVoiceMode,
+            () => setState(() => _isVoiceMode = true),
+            theme,
+          ),
           const SizedBox(width: 12),
-          _buildModeTab('Text', Icons.text_fields_rounded, !_isVoiceMode, () => setState(() => _isVoiceMode = false), theme),
+          _buildModeTab(
+            'Text',
+            Icons.text_fields_rounded,
+            !_isVoiceMode,
+            () => setState(() => _isVoiceMode = false),
+            theme,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildModeTab(String label, IconData icon, bool isActive, VoidCallback onTap, ThemeData theme) {
+  Widget _buildModeTab(
+    String label,
+    IconData icon,
+    bool isActive,
+    VoidCallback onTap,
+    ThemeData theme,
+  ) {
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -655,12 +867,24 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
           decoration: BoxDecoration(
             color: isActive ? Colors.redAccent : theme.cardColor,
             borderRadius: BorderRadius.circular(15),
-            boxShadow: isActive ? [BoxShadow(color: Colors.redAccent.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: Colors.redAccent.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 20),
+              Icon(
+                icon,
+                color: isActive ? Colors.white : Colors.grey,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 label,
@@ -683,24 +907,36 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       children: [
         const Spacer(),
         GestureDetector(
-          onTap: _speechToText.isNotListening ? _startListening : _stopListening,
+          onTap: _speechToText.isNotListening
+              ? _startListening
+              : _stopListening,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             padding: const EdgeInsets.all(30),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _speechToText.isListening ? Colors.redAccent : theme.cardColor,
+              color: _speechToText.isListening
+                  ? Colors.redAccent
+                  : theme.cardColor,
               boxShadow: [
                 BoxShadow(
-                  color: (_speechToText.isListening ? Colors.redAccent : Colors.grey).withOpacity(0.2),
+                  color:
+                      (_speechToText.isListening
+                              ? Colors.redAccent
+                              : Colors.grey)
+                          .withOpacity(0.2),
                   blurRadius: 20,
                   spreadRadius: 10,
                 ),
               ],
             ),
             child: Icon(
-              _speechToText.isNotListening ? Icons.mic_rounded : Icons.stop_rounded,
-              color: _speechToText.isListening ? Colors.white : Colors.redAccent,
+              _speechToText.isNotListening
+                  ? Icons.mic_rounded
+                  : Icons.stop_rounded,
+              color: _speechToText.isListening
+                  ? Colors.white
+                  : Colors.redAccent,
               size: 50,
             ),
           ),
@@ -708,11 +944,19 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
         const SizedBox(height: 24),
         Text(
           _speechToText.isListening ? 'Listening...' : 'Tap to Translate Voice',
-          style: TextStyle(fontSize: 20, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+          style: TextStyle(
+            fontSize: 20,
+            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+          ),
         ),
         const Spacer(),
         if (_lastWords.isNotEmpty || _voiceTranslationResult.isNotEmpty)
-          _buildResultCard(theme, _lastWords, _voiceTranslationResult, _voiceTranslationFound),
+          _buildResultCard(
+            theme,
+            _lastWords,
+            _voiceTranslationResult,
+            _voiceTranslationFound,
+          ),
         const SizedBox(height: 24),
       ],
     );
@@ -742,7 +986,10 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
                 },
                 decoration: InputDecoration(
                   hintText: 'Type English sentence here...',
-                  hintStyle: TextStyle(fontSize: 18, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                  hintStyle: TextStyle(
+                    fontSize: 18,
+                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                  ),
                   border: InputBorder.none,
                 ),
                 style: const TextStyle(fontSize: 18),
@@ -756,21 +1003,37 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 56),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               elevation: 5,
             ),
-            child: const Text('Translate', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Translate',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 16),
           if (_textTranslationResult.isNotEmpty)
-             _buildResultCard(theme, _textInputController.text, _textTranslationResult, !_textTranslationResult.startsWith('No translation found') && !_textTranslationResult.startsWith('Please enter')),
+            _buildResultCard(
+              theme,
+              _textInputController.text,
+              _textTranslationResult,
+              !_textTranslationResult.startsWith('No translation found') &&
+                  !_textTranslationResult.startsWith('Please enter'),
+            ),
           const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildResultCard(ThemeData theme, String source, String result, bool showSpeaker) {
+  Widget _buildResultCard(
+    ThemeData theme,
+    String source,
+    String result,
+    bool showSpeaker,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -782,26 +1045,49 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(source, style: TextStyle(color: theme.disabledColor, fontSize: 16)),
+          Text(
+            source,
+            style: TextStyle(color: theme.disabledColor, fontSize: 16),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: Text(
                   result,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.redAccent,
+                  ),
                 ),
               ),
               if (showSpeaker)
                 IconButton(
-                  icon: _currentlySpeakingText == result 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent))
-                      : const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
-                  onPressed: _currentlySpeakingText != null ? null : () => _speakWithLoading(result),
+                  icon: _currentlySpeakingText == result
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.redAccent,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.volume_up_rounded,
+                          color: Colors.redAccent,
+                        ),
+                  onPressed: _currentlySpeakingText != null
+                      ? null
+                      : () => _speakWithLoading(result),
                 ),
               if (showSpeaker)
                 IconButton(
-                  icon: const Icon(Icons.copy_rounded, color: Colors.grey, size: 20),
+                  icon: const Icon(
+                    Icons.copy_rounded,
+                    color: Colors.grey,
+                    size: 20,
+                  ),
                   onPressed: _copyToClipboard,
                 ),
             ],
@@ -824,7 +1110,10 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
             borderRadius: BorderRadius.circular(20),
           ),
           child: ListTile(
-            title: Text(word.higaonon, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              word.higaonon,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: Text(word.english),
             onTap: () {
               Navigator.push(
@@ -836,9 +1125,21 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
             },
             trailing: IconButton(
               icon: _currentlySpeakingText == word.higaonon
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.redAccent))
-                  : const Icon(Icons.volume_up_rounded, color: Colors.redAccent),
-              onPressed: _currentlySpeakingText != null ? null : () => _speak(word),
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.redAccent,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.volume_up_rounded,
+                      color: Colors.redAccent,
+                    ),
+              onPressed: _currentlySpeakingText != null
+                  ? null
+                  : () => _speak(word),
             ),
           ),
         );
@@ -846,4 +1147,3 @@ class _TranslateScreenState extends State<TranslateScreen> with AutomaticKeepAli
     );
   }
 }
-

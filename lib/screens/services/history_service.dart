@@ -42,11 +42,14 @@ class HistoryService with ChangeNotifier {
   void addWordToHistory(Word word) async {
     final user = _auth.currentUser;
     if (user == null) {
-      print('HistoryService: Cannot add word to history, user is not logged in.');
+      print(
+        'HistoryService: Cannot add word to history, user is not logged in.',
+      );
       return;
     }
-
-    print('HistoryService: Adding word ${word.higaonon} to history for user ${user.uid}.');
+    print(
+      'HistoryService: Adding word ${word.higaonon} to history for user ${user.uid}.',
+    );
     // Remove the word if it already exists to avoid duplicates and move it to the top.
     _history.removeWhere((w) => w.higaonon == word.higaonon);
     _history.insert(0, word);
@@ -61,12 +64,39 @@ class HistoryService with ChangeNotifier {
           .collection('users')
           .doc(user.uid)
           .collection('history')
-          .doc(word.higaonon) // Using higaonon as document ID for easy lookup/replacement
+          .doc(
+            word.higaonon,
+          ) // Using higaonon as document ID for easy lookup/replacement
           .set(wordData);
       print('HistoryService: Successfully saved word to Firestore.');
     } catch (e) {
       print('HistoryService: Error saving word to history: $e');
     }
   }
-}
 
+  Future<void> deleteHistoryItems(Iterable<String> higaononWords) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('Cannot delete history, user is not logged in.');
+    }
+
+    final ids = higaononWords.toSet().toList();
+    if (ids.isEmpty) return;
+
+    final historyCollection = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('history');
+
+    for (var offset = 0; offset < ids.length; offset += 500) {
+      final batch = _firestore.batch();
+      for (final id in ids.skip(offset).take(500)) {
+        batch.delete(historyCollection.doc(id));
+      }
+      await batch.commit();
+    }
+
+    _history.removeWhere((word) => ids.contains(word.higaonon));
+    notifyListeners();
+  }
+}

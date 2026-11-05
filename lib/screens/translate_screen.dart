@@ -8,6 +8,7 @@ import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/screens/services/translation_stats_service.dart';
 import 'package:Higa/screens/services/translation_fallback_service.dart';
 import 'package:Higa/screens/services/onnx_translation_service.dart';
+import 'package:Higa/screens/gemini_assistant_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -803,7 +804,7 @@ class _TranslateScreenState extends State<TranslateScreen>
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -818,6 +819,21 @@ class _TranslateScreenState extends State<TranslateScreen>
                   'Translator',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
+              ),
+              IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const GeminiAssistantScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.auto_awesome,
+                  color: Colors.deepPurple,
+                  size: 24,
+                ),
+                tooltip: 'Higaonon AI assistant',
               ),
               IconButton(
                 onPressed: _showHistorySheet,
@@ -903,7 +919,7 @@ class _TranslateScreenState extends State<TranslateScreen>
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.3),
+                      color: Colors.redAccent.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -957,7 +973,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                       (_speechToText.isListening
                               ? Colors.redAccent
                               : Colors.grey)
-                          .withOpacity(0.2),
+                          .withValues(alpha: 0.2),
                   blurRadius: 20,
                   spreadRadius: 10,
                 ),
@@ -979,7 +995,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           _speechToText.isListening ? 'Listening...' : 'Tap to Translate Voice',
           style: TextStyle(
             fontSize: 20,
-            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         const Spacer(),
@@ -1021,7 +1037,9 @@ class _TranslateScreenState extends State<TranslateScreen>
                   hintText: 'Type English sentence here...',
                   hintStyle: TextStyle(
                     fontSize: 18,
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                    color: theme.textTheme.bodyMedium?.color?.withValues(
+                      alpha: 0.6,
+                    ),
                   ),
                   border: InputBorder.none,
                 ),
@@ -1073,7 +1091,7 @@ class _TranslateScreenState extends State<TranslateScreen>
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.1)),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

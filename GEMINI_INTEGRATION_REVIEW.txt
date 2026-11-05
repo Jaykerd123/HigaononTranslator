@@ -1,0 +1,254 @@
+HIGAONONTRANSLATOR - GEMINI INTEGRATION CODE REVIEW
+Read-only review of the current workspace
+
+Scope
+-----
+The repository code and current worktree were inspected without running or
+modifying application code. The only requested output created by this review
+is this report file. References below use repository-relative paths and line
+numbers from the reviewed workspace.
+
+1. Summary of Changes
+---------------------
+The Flutter implementation adds a separate chat screen and service for the
+Hugging Face Gradio function named ask_higaonon_assistant. It submits a
+question as one Gradio input, receives an event_id, reads the corresponding
+server-sent event (SSE) stream, and displays the completed response.
+
+The implementation follows the expected Gradio call/event-stream shape and
+was successfully exercised against the live endpoint during the prior
+integration work: a POST returned an event_id and the Flutter service
+received an SSE complete response. That confirms connectivity and response
+parsing, not the linguistic correctness of the assistant answer.
+
+Important scope finding: the assistant does not invoke the repository's
+cleaned_dataset.csv retrieval endpoint. That retrieval is a separate local
+FastAPI feature and is not part of the assistant's question flow.
+
+2. Files Created and Modified
+-----------------------------
+Created for the Gemini integration:
+
+* lib/screens/services/gemini_assistant_service.dart
+  Implements the HTTP Gradio request, event ID handling, SSE parsing,
+  response extraction, timeout/error reporting, and optional HTTP client
+  ownership. Main sections: _endpoint (line 22), ask (line 30),
+  _readEventStream (line 115), _extractAnswer (line 176).
+
+* lib/screens/gemini_assistant_screen.dart
+  Implements the standalone chat UI, user input, loading indicator,
+  response bubbles, and error banner. Main sections: _submitQuestion
+  (line 20), response loading indicator (around line 125), and error display
+  (around line 136).
+
+* test/gemini_assistant_service_test.dart
+  Contains mocked tests for the POST/SSE request flow, Gradio error events,
+  and empty-question validation. These tests do not contact the live service.
+
+Existing files modified for the Gemini integration:
+
+* lib/screens/translate_screen.dart
+  Imports GeminiAssistantScreen and adds a sparkle-button navigation entry
+  in the Translator header (around lines 826-835). Translation behavior is
+  not routed through the assistant.
+
+* README.md
+  Adds a Gemini assistant section (around lines 39-44). The earlier
+  Translation reference retrieval section was already present before the
+  Gemini integration.
+
+The worktree already contained other modifications before the Gemini
+integration work. They are not attributed to this integration: lib/main.dart;
+lib/screens/authenticate/initial_page.dart; lib/screens/authenticate/login_page.dart;
+lib/screens/authenticate/sign_up.dart; lib/screens/bookmarks_screen.dart;
+lib/screens/dictionary_screen.dart; lib/screens/home/home.dart;
+lib/screens/learning_history_screen.dart; lib/screens/menu_screen.dart;
+lib/screens/onboarding/onboarding_flow.dart;
+lib/screens/onboarding/profile_setup_screen.dart;
+lib/screens/onboarding/theme_preference_screen.dart;
+lib/screens/onboarding/username_setup_screen.dart;
+lib/screens/onboarding/username_theme_screen.dart;
+lib/screens/profile_screen.dart;
+lib/screens/services/onnx_translation_service.dart;
+lib/screens/services/translation_fallback_service.dart;
+lib/screens/settings_screen.dart; lib/screens/translate_screen.dart;
+lib/screens/word_detail_screen.dart; server.py; assets/cleaned_dataset.csv;
+test_translation_retrieval.py; and translation_retrieval.py.
+
+The existing translate_screen.dart also had unrelated worktree changes. The
+diff includes Color.withOpacity-to-withValues replacements in that file,
+which are presentation/API modernization changes and not translation logic.
+
+No dependency was added. pubspec.yaml already declares http: ^1.2.1 (line 28).
+No Gemini provider was added to lib/main.dart, and the existing navigation
+system was not replaced.
+
+3. Gemini Integration Details
+-----------------------------
+Exact endpoint:
+https://jaykerd-higaonon-tts.hf.space/gradio_api/call/ask_higaonon_assistant
+
+The endpoint constant is in
+lib/screens/services/gemini_assistant_service.dart:22.
+
+Request flow:
+1. GeminiAssistantScreen._submitQuestion (gemini_assistant_screen.dart:20)
+   trims the question and calls GeminiAssistantService.ask.
+2. ask (gemini_assistant_service.dart:30) POSTs JSON with Content-Type
+   application/json and Accept application/json. The body is:
+   {"data":["the question"]}
+3. The service expects an HTTP 200 response containing a JSON object with
+   event_id.
+4. It GETs the same Gradio endpoint with /{event_id} appended and sends
+   Accept: text/event-stream and Cache-Control: no-cache.
+5. _readEventStream reads lines, ignores non-terminal events such as
+   heartbeat, handles event: error, and parses event: complete data.
+   _extractAnswer recursively extracts text from strings, lists, and common
+   response map fields.
+6. The screen appends the answer as an assistant message. Errors are shown
+   in an error banner and a progress indicator is shown while waiting.
+
+Gradio format assessment: the implemented POST body, event_id lookup, stream
+URL, and SSE completion parsing match the Gradio API call pattern. In the
+prior live test, POST returned an event_id and the stream returned
+event: complete with a JSON array containing answer text; the current parser
+handles that shape.
+
+Model configuration: no Gemini model name, model version, Google Generative
+AI SDK, Gemini API key, or direct Google API endpoint appears in the Flutter
+integration or the inspected repository code. Flutter calls a function on
+the Hugging Face Space. The model selection/configuration is therefore
+external to this repository and cannot be identified or confirmed by this
+review. The UI's use of the name "Gemini" alone does not establish which
+model the Space is configured to run.
+
+4. Dataset Retrieval Process
+----------------------------
+cleaned_dataset.csv is loaded by the local Python backend, not by Flutter:
+
+* server.py:89-93 constructs ReferenceRetrievalIndex at server startup from
+  dictionary.json, dictionary-second.json, and assets/cleaned_dataset.csv.
+* translation_retrieval.py:242 reads the CSV as UTF-8 with BOM support using
+  csv.DictReader and requires english and higaonon columns.
+* translation_retrieval.py:190-191 stores valid CSV rows as references.
+* server.py:166-171 exposes POST /retrieve, which calls
+  reference_index.retrieve(req.text).
+* translation_retrieval.py:292 onward performs retrieval: normalized exact
+  matches are returned first; otherwise English tokens are ranked with a
+  BM25-style lexical score, up to eight matches.
+
+This retrieval is not connected to Gemini. The Flutter assistant service
+only sends the original question to ask_higaonon_assistant; it does not call
+/retrieve, append retrieved examples, or submit CSV rows as context. The CSV
+is also not declared as a Flutter asset in pubspec.yaml. Therefore it is
+incorrect to say the assistant currently performs retrieval-augmented
+question answering from cleaned_dataset.csv.
+
+5. Existing Translation Functionality Status
+--------------------------------------------
+No translation algorithm change is present in the Gemini integration. The
+existing Translate screen still has separate voice and text flows:
+
+* _translateVoiceInput (translate_screen.dart:146 onward) searches
+  dictionary.json words/examples and dictionary-second.json, then invokes
+  OnnxTranslationService, then TranslationFallbackService.
+* _translateText (translate_screen.dart:355 onward) follows the same
+  dictionary -> ONNX -> fallback order.
+* The dictionaries remain Flutter assets (pubspec.yaml:53-54), and
+  _loadDictionary reads them in translate_screen.dart:283-310.
+* The Python service still has POST /translate (server.py:174 onward), and
+  the Flutter fallback service still calls a backend /translate endpoint
+  before trying Google Translate (translation_fallback_service.dart:11 onward).
+
+Gemini is opened as a separate route and is not inserted into these fallback
+chains. Cosmetic withOpacity/withValues changes in translate_screen.dart do
+not alter translation selection or result processing.
+
+Existing behavior caveat (not caused by Gemini): the fallback is named
+translateEnglishToBisaya and its Google URL explicitly requests Cebuano
+(tl=ceb), as shown in translation_fallback_service.dart:11 and :67. It should
+not be assumed to provide Higaonon output.
+
+6. Existing TTS Functionality Status
+-------------------------------------
+The Gemini integration did not modify lib/screens/services/tts_service.dart,
+the TTS service provider, or any TTS endpoint configuration.
+
+The existing TTS service still uses the Hugging Face base URL
+https://jaykerd-higaonon-tts.hf.space (tts_service.dart:19-20), POSTs to
+/gradio_api/call/synthesize (line 246), reads the event stream at
+/gradio_api/call/synthesize/{event_id} (line 336), extracts an audio URL,
+downloads audio, and plays it. speak is at line 167 and invokes the
+Hugging Face path at line 175, with local TTS initialization/fallback code
+also present earlier in the file. The assistant uses a different Gradio
+function name and does not call synthesize.
+
+The TTS source currently contains the literal-looking Authorization value
+'******' at lines 267, 356, and 555, while TtsService also checks HF_TOKEN.
+If those asterisks are literally present in the running source rather than
+being a redaction, they are not a valid Hugging Face token and authenticated
+TTS requests may fail. This is a pre-existing TTS concern, not a change made
+by the Gemini integration. The repository code alone does not verify the
+remote TTS model or audio generation service is currently available.
+
+7. Flutter UI and Navigation Changes
+------------------------------------
+The assistant entry point is the sparkle icon added to the existing
+Translator header in lib/screens/translate_screen.dart around lines 826-835.
+It pushes GeminiAssistantScreen with a MaterialPageRoute. The existing
+bottom navigation and Translate screen remain in place.
+
+GeminiAssistantScreen owns its question controller, message list, loading
+state, error state, and GeminiAssistantService instance. It does not use
+Provider or alter translation history, translation counts, bookmarks, or
+TTS state. The HTTP client dependency was already in pubspec.yaml; no
+dependency or app-wide state-management change was needed.
+
+Android INTERNET permission is present in android/app/src/main/AndroidManifest.xml.
+
+8. Detected Errors and Potential Risks
+--------------------------------------
+Confirmed findings:
+
+* Dataset retrieval is not part of Gemini requests. This is confirmed by the
+  assistant service request body and the absence of a /retrieve call in the
+  assistant code. If retrieval-before-generation was expected, it is not
+  implemented.
+* The Gemini model identifier/configuration is not present in this codebase;
+  it cannot be verified from Flutter sources.
+* The TTS Authorization header contains '******' in the current checked-out
+  source. If literal, authenticated TTS requests are misconfigured. This was
+  not changed by the Gemini work.
+* The existing fallback's Google URL targets Cebuano (tl=ceb), not Higaonon.
+  This is pre-existing and outside the new assistant route.
+
+No confirmed Gemini endpoint or Gradio payload/stream-format error was found.
+The prior live Flutter service test successfully submitted a question and
+received a completed answer.
+
+Potential risks / limits:
+
+* The live assistant service and selected Gemini model are controlled by the
+  remote Hugging Face Space. A Space deployment or function-signature change
+  can invalidate the client despite correct current Gradio call formatting.
+* Response extraction deliberately accepts multiple shapes and chooses the
+  first text it finds. If the Space later returns multiple meaningful output
+  strings or a different schema, the UI may display only the first one.
+* On request failure the question bubble remains, but the input was cleared;
+  the user must re-enter the question to retry.
+* The mock service tests validate expected client protocol shapes but do not
+  prove the remote model's correctness, uptime, or configuration.
+
+9. Overall Assessment
+---------------------
+The Gemini Flutter client is functionally and structurally separate from
+translation and TTS, and its Gradio POST/event_id/SSE flow matches the
+observed endpoint behavior. The prior live Flutter request succeeded.
+
+The integration is not retrieval-augmented: cleaned_dataset.csv is available
+to a separate local /retrieve backend endpoint but is never queried or added
+to the Gemini prompt. The actual Gemini model cannot be identified from this
+repository because model configuration lives remotely. Existing translation
+and TTS code paths were not modified by the Gemini implementation, but the
+independently observed fallback-language mismatch and placeholder-looking
+TTS authorization value merit separate attention.

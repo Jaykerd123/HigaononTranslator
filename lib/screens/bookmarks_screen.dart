@@ -17,14 +17,17 @@ class _BookmarkedWordsScreenState extends State<BookmarkedWordsScreen> {
     super.initState();
     // Load bookmarks when the screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<BookmarkService>(context, listen: false).loadBookmarksFromFirestore();
+      Provider.of<BookmarkService>(
+        context,
+        listen: false,
+      ).loadBookmarksFromFirestore();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bookmarked Words'),
@@ -49,7 +52,7 @@ class _BookmarkedWordsScreenState extends State<BookmarkedWordsScreen> {
                   Icon(
                     Icons.bookmark_outline_rounded,
                     size: 80,
-                    color: theme.disabledColor.withOpacity(0.3),
+                    color: theme.disabledColor.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -77,14 +80,17 @@ class _BookmarkedWordsScreenState extends State<BookmarkedWordsScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 5,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   title: Text(
                     word.higaonon,
                     style: const TextStyle(fontWeight: FontWeight.bold),
@@ -94,16 +100,28 @@ class _BookmarkedWordsScreenState extends State<BookmarkedWordsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.bookmark_rounded, color: Colors.redAccent),
+                        icon: const Icon(
+                          Icons.bookmark_rounded,
+                          color: Colors.redAccent,
+                        ),
                         onPressed: () => bookmarkService.toggleBookmark(word),
                       ),
                       CircleAvatar(
-                        backgroundColor: Colors.redAccent.withOpacity(0.1),
+                        backgroundColor: Colors.redAccent.withValues(
+                          alpha: 0.1,
+                        ),
                         radius: 18,
                         child: IconButton(
-                          icon: const Icon(Icons.volume_up_rounded, size: 18, color: Colors.redAccent),
+                          icon: const Icon(
+                            Icons.volume_up_rounded,
+                            size: 18,
+                            color: Colors.redAccent,
+                          ),
                           onPressed: () {
-                            Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
+                            Provider.of<TtsService>(
+                              context,
+                              listen: false,
+                            ).speak(word.higaonon);
                           },
                         ),
                       ),
@@ -118,4 +136,3 @@ class _BookmarkedWordsScreenState extends State<BookmarkedWordsScreen> {
     );
   }
 }
-

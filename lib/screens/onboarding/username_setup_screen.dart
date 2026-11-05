@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 class UsernameSetupScreen extends StatefulWidget {
   final VoidCallback onNext;
 
-  const UsernameSetupScreen({Key? key, required this.onNext}) : super(key: key);
+  const UsernameSetupScreen({super.key, required this.onNext});
 
   @override
   _UsernameSetupScreenState createState() => _UsernameSetupScreenState();
@@ -28,7 +28,6 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
     setState(() {
       _username = value;
       _checkUsernameValidity();
-    
     });
   }
 
@@ -67,16 +66,12 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
               const SizedBox(height: 40),
               const Text(
                 'Choose your username',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               TextFormField(
                 decoration: textInputDecoration.copyWith(labelText: 'Username'),
-                validator: (val) =>
-                    val!.isEmpty ? 'Enter a username' : null,
+                validator: (val) => val!.isEmpty ? 'Enter a username' : null,
                 onChanged: _onUsernameChanged,
               ),
               const Spacer(),
@@ -114,7 +109,7 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
                 boxShadow: index <= 1
                     ? [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.5),
+                          color: Colors.red.withValues(alpha: 0.5),
                           blurRadius: 8.0,
                           spreadRadius: 3.0,
                         ),
@@ -134,4 +129,3 @@ class _UsernameSetupScreenState extends State<UsernameSetupScreen> {
     );
   }
 }
-

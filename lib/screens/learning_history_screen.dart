@@ -19,7 +19,10 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
     super.initState();
     // Load history when the screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HistoryService>(context, listen: false).loadHistoryFromFirestore();
+      Provider.of<HistoryService>(
+        context,
+        listen: false,
+      ).loadHistoryFromFirestore();
     });
   }
 
@@ -53,7 +56,10 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.redAccent, Colors.orangeAccent.withOpacity(0.8)],
+                    colors: [
+                      Colors.redAccent,
+                      Colors.orangeAccent.withValues(alpha: 0.8),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -67,7 +73,10 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
                 if (historyService.history.isEmpty) {
                   return _buildEmptyHistoryState(theme);
                 } else {
-                  return _buildHistoryHeader(historyService.history.length, theme);
+                  return _buildHistoryHeader(
+                    historyService.history.length,
+                    theme,
+                  );
                 }
               },
             ),
@@ -78,20 +87,15 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
                 return const SliverToBoxAdapter(child: SizedBox.shrink());
               } else {
                 return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final word = historyService.history[index];
-                      return _buildHistoryCard(word, theme, index);
-                    },
-                    childCount: historyService.history.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final word = historyService.history[index];
+                    return _buildHistoryCard(word, theme, index);
+                  }, childCount: historyService.history.length),
                 );
               }
             },
           ),
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 20),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
         ],
       ),
     );
@@ -106,7 +110,7 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
           Icon(
             Icons.history_edu_rounded,
             size: 64,
-            color: theme.disabledColor.withOpacity(0.3),
+            color: theme.disabledColor.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -120,16 +124,13 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
           const SizedBox(height: 8),
           Text(
             'Start translating words to build your history',
-            style: TextStyle(
-              fontSize: 14,
-              color: theme.disabledColor,
-            ),
+            style: TextStyle(fontSize: 14, color: theme.disabledColor),
           ),
           const SizedBox(height: 24),
           Icon(
             Icons.arrow_downward_rounded,
             size: 32,
-            color: Colors.redAccent.withOpacity(0.5),
+            color: Colors.redAccent.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 8),
           Text(
@@ -151,16 +152,12 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.1),
+        color: Colors.redAccent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.history_rounded,
-            color: Colors.redAccent,
-            size: 24,
-          ),
+          Icon(Icons.history_rounded, color: Colors.redAccent, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -170,7 +167,7 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
                   'Total Words Learned',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.redAccent.withOpacity(0.8),
+                    color: Colors.redAccent.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -213,7 +210,7 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -226,7 +223,9 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => WordDetailScreen(word: word)),
+              MaterialPageRoute(
+                builder: (context) => WordDetailScreen(word: word),
+              ),
             );
           },
           child: Padding(
@@ -237,7 +236,7 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.redAccent.withOpacity(0.1),
+                    color: Colors.redAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -275,7 +274,10 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: theme.scaffoldBackgroundColor,
                           borderRadius: BorderRadius.circular(8),
@@ -284,7 +286,7 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
                           word.partOfSpeech,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.redAccent.withOpacity(0.8),
+                            color: Colors.redAccent.withValues(alpha: 0.8),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -300,13 +302,17 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
                         return IconButton(
                           onPressed: () => bookmarkService.toggleBookmark(word),
                           icon: Icon(
-                            isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                            color: isBookmarked ? Colors.redAccent : Colors.grey,
+                            isBookmarked
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_outline_rounded,
+                            color: isBookmarked
+                                ? Colors.redAccent
+                                : Colors.grey,
                             size: 20,
                           ),
                           style: IconButton.styleFrom(
-                            backgroundColor: isBookmarked 
-                                ? Colors.redAccent.withOpacity(0.1) 
+                            backgroundColor: isBookmarked
+                                ? Colors.redAccent.withValues(alpha: 0.1)
                                 : Colors.transparent,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -319,7 +325,9 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
                       onPressed: () => _speak(word),
                       icon: const Icon(Icons.volume_up_rounded, size: 20),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.redAccent.withOpacity(0.1),
+                        backgroundColor: Colors.redAccent.withValues(
+                          alpha: 0.1,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -335,4 +343,3 @@ class _LearningHistoryScreenState extends State<LearningHistoryScreen> {
     );
   }
 }
-

@@ -61,9 +61,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         elevation: 0,
         iconTheme: IconThemeData(color: colorScheme.primary),
         titleTextStyle: TextStyle(
-            color: colorScheme.primary,
-            fontSize: 20,
-            fontWeight: FontWeight.bold),
+          color: colorScheme.primary,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -80,7 +81,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const AvatarSelectionScreen()),
+                        builder: (context) => const AvatarSelectionScreen(),
+                      ),
                     );
                   },
                   child: Container(
@@ -126,7 +128,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       autofocus: true,
                                       style: theme.textTheme.headlineSmall
                                           ?.copyWith(
-                                              fontWeight: FontWeight.bold),
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                       decoration: const InputDecoration(
                                         isDense: true,
                                         contentPadding: EdgeInsets.zero,
@@ -137,29 +140,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       _nameController.text,
                                       style: theme.textTheme.headlineSmall
                                           ?.copyWith(
-                                              fontWeight: FontWeight.bold),
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                             ),
                             IconButton(
-                              icon: Icon(_isEditingName
-                                  ? Icons.check
-                                  : Icons.edit_outlined),
+                              icon: Icon(
+                                _isEditingName
+                                    ? Icons.check
+                                    : Icons.edit_outlined,
+                              ),
                               iconSize: 20,
                               color: colorScheme.secondary,
                               onPressed: () async {
                                 final messenger = ScaffoldMessenger.of(context);
                                 if (_isEditingName) {
                                   if (_nameController.text.isNotEmpty) {
-                                    await DatabaseService(uid: user?.uid)
-                                        .updateUserData(
+                                    await DatabaseService(
+                                      uid: user?.uid,
+                                    ).updateUserData(
                                       name: _nameController.text,
                                     );
                                     if (!mounted) return;
                                     messenger.showSnackBar(
                                       const SnackBar(
-                                          content: Text(
-                                              'Name updated successfully')),
+                                        content: Text(
+                                          'Name updated successfully',
+                                        ),
+                                      ),
                                     );
                                     setState(() {
                                       _isEditingName = false;
@@ -177,8 +186,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 4),
                         Text(
                           firebaseUser?.email ?? 'No email',
-                          style: theme.textTheme.bodyLarge
-                              ?.copyWith(color: colorScheme.onSurface.withOpacity(0.6)),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
                         ),
                       ],
                     ),
@@ -210,16 +220,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Text(
                             "Bookmarks",
-                            style: theme.textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             "View your saved words",
-                            style: theme.textTheme.bodyMedium
-                                ?.copyWith(color: colorScheme.onSurface.withOpacity(0.6)),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -227,7 +239,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

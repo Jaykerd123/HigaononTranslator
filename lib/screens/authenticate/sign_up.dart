@@ -47,7 +47,11 @@ class _SignUpState extends State<SignUp> {
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.redAccent, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.redAccent,
+                    size: 20,
+                  ),
                   onPressed: () => widget.onBackPressed(),
                 ),
               ),
@@ -72,18 +76,26 @@ class _SignUpState extends State<SignUp> {
                         const SizedBox(height: 8),
                         Text(
                           'Join us to start learning Higaonon',
-                          style: TextStyle(fontSize: 16, color: theme.hintColor),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: theme.hintColor,
+                          ),
                         ),
                         const SizedBox(height: 40),
                         TextFormField(
                           textCapitalization: TextCapitalization.words,
                           decoration: textInputDecoration.copyWith(
                             labelText: 'Full Name',
-                            prefixIcon: const Icon(Icons.person_outline_rounded, color: Colors.grey),
+                            prefixIcon: const Icon(
+                              Icons.person_outline_rounded,
+                              color: Colors.grey,
+                            ),
                           ),
                           validator: (val) {
-                            if (val == null || val.isEmpty) return 'Enter your full name';
-                            if (RegExp(r'[0-9]').hasMatch(val)) return 'Name should not contain numbers';
+                            if (val == null || val.isEmpty)
+                              return 'Enter your full name';
+                            if (RegExp(r'[0-9]').hasMatch(val))
+                              return 'Name should not contain numbers';
                             return null;
                           },
                           onChanged: (val) {
@@ -95,12 +107,20 @@ class _SignUpState extends State<SignUp> {
                           keyboardType: TextInputType.emailAddress,
                           decoration: textInputDecoration.copyWith(
                             labelText: 'Email',
-                            prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
+                            prefixIcon: const Icon(
+                              Icons.email_outlined,
+                              color: Colors.grey,
+                            ),
                           ),
                           validator: (val) {
-                            if (val == null || val.isEmpty) return 'Enter an email';
-                            bool emailValid = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(val);
-                            return emailValid ? null : 'Enter a valid email address';
+                            if (val == null || val.isEmpty)
+                              return 'Enter an email';
+                            bool emailValid = RegExp(
+                              r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                            ).hasMatch(val);
+                            return emailValid
+                                ? null
+                                : 'Enter a valid email address';
                           },
                           onChanged: (val) {
                             setState(() => email = val);
@@ -110,10 +130,15 @@ class _SignUpState extends State<SignUp> {
                         TextFormField(
                           decoration: textInputDecoration.copyWith(
                             labelText: 'Password',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.grey),
+                            prefixIcon: const Icon(
+                              Icons.lock_outline_rounded,
+                              color: Colors.grey,
+                            ),
                           ),
                           obscureText: true,
-                          validator: (val) => val!.length < 6 ? 'Enter a password 6+ chars long' : null,
+                          validator: (val) => val!.length < 6
+                              ? 'Enter a password 6+ chars long'
+                              : null,
                           onChanged: (val) {
                             setState(() => password = val);
                           },
@@ -122,10 +147,14 @@ class _SignUpState extends State<SignUp> {
                         TextFormField(
                           decoration: textInputDecoration.copyWith(
                             labelText: 'Confirm Password',
-                            prefixIcon: const Icon(Icons.lock_reset_rounded, color: Colors.grey),
+                            prefixIcon: const Icon(
+                              Icons.lock_reset_rounded,
+                              color: Colors.grey,
+                            ),
                           ),
                           obscureText: true,
-                          validator: (val) => val != password ? 'Passwords do not match' : null,
+                          validator: (val) =>
+                              val != password ? 'Passwords do not match' : null,
                           onChanged: (val) {
                             setState(() => confirmPassword = val);
                           },
@@ -135,13 +164,19 @@ class _SignUpState extends State<SignUp> {
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {
                               setState(() => loading = true);
-                              dynamic result = await _authService.registerWithEmailAndPassword(email, password);
+                              dynamic result = await _authService
+                                  .registerWithEmailAndPassword(
+                                    email,
+                                    password,
+                                  );
                               if (result == "success") {
                                 widget.onLogInPressed(); // Navigate to login
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text("Account created! Please check your email inbox to verify your account before logging in."),
+                                      content: Text(
+                                        "Account created! Please check your email inbox to verify your account before logging in.",
+                                      ),
                                       duration: Duration(seconds: 5),
                                     ),
                                   );
@@ -164,21 +199,29 @@ class _SignUpState extends State<SignUp> {
                             foregroundColor: Colors.white,
                             minimumSize: const Size(double.infinity, 56),
                             elevation: 2,
-                            shadowColor: Colors.redAccent.withOpacity(0.5),
+                            shadowColor: Colors.redAccent.withValues(
+                              alpha: 0.5,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           child: const Text(
                             'Sign Up',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 30),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text("Already have an account? ", style: TextStyle(color: theme.hintColor)),
+                            Text(
+                              "Already have an account? ",
+                              style: TextStyle(color: theme.hintColor),
+                            ),
                             GestureDetector(
                               onTap: () => widget.onLogInPressed(),
                               child: const Text(
@@ -197,7 +240,10 @@ class _SignUpState extends State<SignUp> {
                             child: Text(
                               error,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.red, fontSize: 14),
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         const SizedBox(height: 40),
@@ -210,4 +256,3 @@ class _SignUpState extends State<SignUp> {
           );
   }
 }
-

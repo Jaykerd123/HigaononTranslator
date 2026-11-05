@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingFlow extends StatefulWidget {
-  const OnboardingFlow({Key? key}) : super(key: key);
+  const OnboardingFlow({super.key});
 
   static const String onboardingCompleteKey = 'onboarding_complete';
 
@@ -54,11 +54,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     final user = Provider.of<CustomUser?>(context);
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -75,4 +71,3 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     );
   }
 }
-

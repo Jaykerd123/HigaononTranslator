@@ -19,7 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoplayEnabled = true;
   bool _dailyReminderEnabled = false;
   bool _offlineModeEnabled = false;
-  
+
   // Enhanced notification settings
   bool _dailyWordNotification = true;
   bool _streakReminderNotification = true;
@@ -55,11 +55,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _dailyWordNotification = prefs.getBool('daily_word_notification') ?? true;
-      _streakReminderNotification = prefs.getBool('streak_reminder_notification') ?? true;
-      _achievementNotification = prefs.getBool('achievement_notification') ?? true;
-      _bookmarkReminderNotification = prefs.getBool('bookmark_reminder_notification') ?? false;
+      _streakReminderNotification =
+          prefs.getBool('streak_reminder_notification') ?? true;
+      _achievementNotification =
+          prefs.getBool('achievement_notification') ?? true;
+      _bookmarkReminderNotification =
+          prefs.getBool('bookmark_reminder_notification') ?? false;
       _dailyReminderEnabled = prefs.getBool('daily_reminder_enabled') ?? false;
-      
+
       final hour = prefs.getInt('daily_reminder_hour') ?? 9;
       final minute = prefs.getInt('daily_reminder_minute') ?? 0;
       _dailyReminderTime = TimeOfDay(hour: hour, minute: minute);
@@ -69,9 +72,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveNotificationSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('daily_word_notification', _dailyWordNotification);
-    await prefs.setBool('streak_reminder_notification', _streakReminderNotification);
+    await prefs.setBool(
+      'streak_reminder_notification',
+      _streakReminderNotification,
+    );
     await prefs.setBool('achievement_notification', _achievementNotification);
-    await prefs.setBool('bookmark_reminder_notification', _bookmarkReminderNotification);
+    await prefs.setBool(
+      'bookmark_reminder_notification',
+      _bookmarkReminderNotification,
+    );
     await prefs.setBool('daily_reminder_enabled', _dailyReminderEnabled);
     await prefs.setInt('daily_reminder_hour', _dailyReminderTime.hour);
     await prefs.setInt('daily_reminder_minute', _dailyReminderTime.minute);
@@ -104,11 +113,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      const Icon(Icons.notifications_active_rounded, color: Colors.redAccent),
+                      const Icon(
+                        Icons.notifications_active_rounded,
+                        color: Colors.redAccent,
+                      ),
                       const SizedBox(width: 12),
                       const Text(
                         'Notification Settings',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Spacer(),
                       IconButton(
@@ -123,96 +138,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     controller: scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     children: [
-                      _buildNotificationSection(
-                        'Daily Learning',
-                        [
-                          SwitchListTile(
-                            title: const Text('Word of the Day'),
-                            subtitle: const Text('Get daily Higaonon words'),
-                            value: _dailyWordNotification,
-                            onChanged: (value) {
-                              setState(() => _dailyWordNotification = value);
+                      _buildNotificationSection('Daily Learning', [
+                        SwitchListTile(
+                          title: const Text('Word of the Day'),
+                          subtitle: const Text('Get daily Higaonon words'),
+                          value: _dailyWordNotification,
+                          onChanged: (value) {
+                            setState(() => _dailyWordNotification = value);
+                            setModalState(() {});
+                            _saveNotificationSettings();
+                          },
+                          secondary: const Icon(Icons.today_rounded),
+                        ),
+                        SwitchListTile(
+                          title: const Text('Practice Reminder'),
+                          subtitle: const Text('Daily practice notifications'),
+                          value: _dailyReminderEnabled,
+                          onChanged: (value) {
+                            setState(() => _dailyReminderEnabled = value);
+                            setModalState(() {});
+                            _saveNotificationSettings();
+                          },
+                          secondary: const Icon(Icons.schedule_rounded),
+                        ),
+                        ListTile(
+                          enabled: _dailyReminderEnabled,
+                          leading: const Icon(Icons.access_time_rounded),
+                          title: const Text('Reminder Time'),
+                          subtitle: Text(_dailyReminderTime.format(context)),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                          ),
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: _dailyReminderTime,
+                            );
+                            if (time != null) {
+                              setState(() => _dailyReminderTime = time);
                               setModalState(() {});
                               _saveNotificationSettings();
-                            },
-                            secondary: const Icon(Icons.today_rounded),
-                          ),
-                          SwitchListTile(
-                            title: const Text('Practice Reminder'),
-                            subtitle: const Text('Daily practice notifications'),
-                            value: _dailyReminderEnabled,
-                            onChanged: (value) {
-                              setState(() => _dailyReminderEnabled = value);
-                              setModalState(() {});
-                              _saveNotificationSettings();
-                            },
-                            secondary: const Icon(Icons.schedule_rounded),
-                          ),
-                          ListTile(
-                            enabled: _dailyReminderEnabled,
-                            leading: const Icon(Icons.access_time_rounded),
-                            title: const Text('Reminder Time'),
-                            subtitle: Text(_dailyReminderTime.format(context)),
-                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                            onTap: () async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: _dailyReminderTime,
-                              );
-                              if (time != null) {
-                                setState(() => _dailyReminderTime = time);
-                                setModalState(() {});
-                                _saveNotificationSettings();
-                              }
-                            },
-                          ),
-                        ],
-                      ),
+                            }
+                          },
+                        ),
+                      ]),
                       const SizedBox(height: 10),
-                      _buildNotificationSection(
-                        'Achievements',
-                        [
-                          SwitchListTile(
-                            title: const Text('Learning Streaks'),
-                            subtitle: const Text('Notify about streak milestones'),
-                            value: _streakReminderNotification,
-                            onChanged: (value) {
-                              setState(() => _streakReminderNotification = value);
-                              setModalState(() {});
-                              _saveNotificationSettings();
-                            },
-                            secondary: const Icon(Icons.local_fire_department_rounded),
+                      _buildNotificationSection('Achievements', [
+                        SwitchListTile(
+                          title: const Text('Learning Streaks'),
+                          subtitle: const Text(
+                            'Notify about streak milestones',
                           ),
-                          SwitchListTile(
-                            title: const Text('Achievements'),
-                            subtitle: const Text('Celebrate your progress'),
-                            value: _achievementNotification,
-                            onChanged: (value) {
-                              setState(() => _achievementNotification = value);
-                              setModalState(() {});
-                              _saveNotificationSettings();
-                            },
-                            secondary: const Icon(Icons.emoji_events_rounded),
+                          value: _streakReminderNotification,
+                          onChanged: (value) {
+                            setState(() => _streakReminderNotification = value);
+                            setModalState(() {});
+                            _saveNotificationSettings();
+                          },
+                          secondary: const Icon(
+                            Icons.local_fire_department_rounded,
                           ),
-                        ],
-                      ),
+                        ),
+                        SwitchListTile(
+                          title: const Text('Achievements'),
+                          subtitle: const Text('Celebrate your progress'),
+                          value: _achievementNotification,
+                          onChanged: (value) {
+                            setState(() => _achievementNotification = value);
+                            setModalState(() {});
+                            _saveNotificationSettings();
+                          },
+                          secondary: const Icon(Icons.emoji_events_rounded),
+                        ),
+                      ]),
                       const SizedBox(height: 10),
-                      _buildNotificationSection(
-                        'Reminders',
-                        [
-                          SwitchListTile(
-                            title: const Text('Bookmark Review'),
-                            subtitle: const Text('Remind to review saved words'),
-                            value: _bookmarkReminderNotification,
-                            onChanged: (value) {
-                              setState(() => _bookmarkReminderNotification = value);
-                              setModalState(() {});
-                              _saveNotificationSettings();
-                            },
-                            secondary: const Icon(Icons.bookmark_rounded),
-                          ),
-                        ],
-                      ),
+                      _buildNotificationSection('Reminders', [
+                        SwitchListTile(
+                          title: const Text('Bookmark Review'),
+                          subtitle: const Text('Remind to review saved words'),
+                          value: _bookmarkReminderNotification,
+                          onChanged: (value) {
+                            setState(
+                              () => _bookmarkReminderNotification = value,
+                            );
+                            setModalState(() {});
+                            _saveNotificationSettings();
+                          },
+                          secondary: const Icon(Icons.bookmark_rounded),
+                        ),
+                      ]),
                     ],
                   ),
                 ),
@@ -296,18 +311,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Center(
                 child: Text(
                   userData?.name ?? 'User',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 30),
               const Text(
                 'General',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
               const Divider(),
               ListTile(
                 title: const Text('Notifications'),
-                subtitle: Text(_notificationsEnabled ? 'Customize notifications' : 'All notifications disabled'),
+                subtitle: Text(
+                  _notificationsEnabled
+                      ? 'Customize notifications'
+                      : 'All notifications disabled',
+                ),
                 leading: const Icon(Icons.notifications_outlined),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -333,7 +359,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               ListTile(
                 title: const Text('Sound Effect'),
-                subtitle: Text(_soundEffectsEnabled ? 'Audio feedback enabled' : 'Audio feedback disabled'),
+                subtitle: Text(
+                  _soundEffectsEnabled
+                      ? 'Audio feedback enabled'
+                      : 'Audio feedback disabled',
+                ),
                 leading: const Icon(Icons.volume_up_outlined),
                 trailing: Switch(
                   value: _soundEffectsEnabled,
@@ -361,7 +391,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 30),
               const Text(
                 'Learning',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
               const Divider(),
               SwitchListTile(
@@ -400,7 +434,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 30),
               const Text(
                 'Other',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
               const Divider(),
               ListTile(
@@ -444,16 +482,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () {
                     // TODO: Implement reset to default settings
                   },
-                  child: const Text(
-                    'Reset to Default Settings',
-                    style: TextStyle(color: Colors.red),
-                  ),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
                     shape: RoundedRectangleBorder(
                       side: const BorderSide(color: Colors.red),
                       borderRadius: BorderRadius.circular(8),
                     ),
+                  ),
+                  child: const Text(
+                    'Reset to Default Settings',
+                    style: TextStyle(color: Colors.red),
                   ),
                 ),
               ),
@@ -465,4 +506,3 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
-

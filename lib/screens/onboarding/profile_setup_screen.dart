@@ -10,7 +10,7 @@ import 'package:firebase_storage/firebase_storage.dart'; // Import Firebase Stor
 class ProfileSetupScreen extends StatefulWidget {
   final VoidCallback onNext;
 
-  const ProfileSetupScreen({Key? key, required this.onNext}) : super(key: key);
+  const ProfileSetupScreen({super.key, required this.onNext});
 
   @override
   _ProfileSetupScreenState createState() => _ProfileSetupScreenState();
@@ -40,7 +40,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     setState(() {
       if (pickedFile != null) {
         _image = File(pickedFile.path);
-        _profileImageUrl = null; // Clear default avatar selection if custom image is uploaded
+        _profileImageUrl =
+            null; // Clear default avatar selection if custom image is uploaded
       }
     });
   }
@@ -64,8 +65,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       _profileImageUrl = await storageRef.getDownloadURL();
 
       // Update the user's profile with the new image URL
-      await DatabaseService(uid: user.uid)
-          .updateUserData(profileImageUrl: _profileImageUrl);
+      await DatabaseService(
+        uid: user.uid,
+      ).updateUserData(profileImageUrl: _profileImageUrl);
 
       widget.onNext();
     } catch (e) {
@@ -88,8 +90,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (user == null) return;
 
     // Update the user's profile with the default avatar path
-    await DatabaseService(uid: user.uid)
-        .updateUserData(profileImageUrl: _profileImageUrl);
+    await DatabaseService(
+      uid: user.uid,
+    ).updateUserData(profileImageUrl: _profileImageUrl);
 
     widget.onNext();
   }
@@ -120,9 +123,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       backgroundImage: _image != null
                           ? FileImage(_image!) as ImageProvider<Object>?
                           : (_profileImageUrl != null &&
-                                  _profileImageUrl!.startsWith('assets'))
-                              ? AssetImage(_profileImageUrl!)
-                              : null,
+                                _profileImageUrl!.startsWith('assets'))
+                          ? AssetImage(_profileImageUrl!)
+                          : null,
                       child: _image == null && _profileImageUrl == null
                           ? Icon(
                               Icons.camera_alt,
@@ -159,12 +162,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         return GestureDetector(
                           onTap: () => _selectDefaultAvatar(avatarPath),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
                             child: CircleAvatar(
                               radius: 30,
                               backgroundImage: AssetImage(avatarPath),
                               backgroundColor: _profileImageUrl == avatarPath
-                                  ? Colors.red.withOpacity(0.5)
+                                  ? Colors.red.withValues(alpha: 0.5)
                                   : Colors.transparent,
                             ),
                           ),
@@ -208,7 +213,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 boxShadow: index <= 0
                     ? [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.5),
+                          color: Colors.red.withValues(alpha: 0.5),
                           blurRadius: 8.0,
                           spreadRadius: 3.0,
                         ),
@@ -228,4 +233,3 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 }
-

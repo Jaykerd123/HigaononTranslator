@@ -29,7 +29,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   }
 
   Future<void> _loadDictionary() async {
-    final String response = await rootBundle.loadString('assets/dictionary.json');
+    final String response = await rootBundle.loadString(
+      'assets/dictionary.json',
+    );
     final data = await json.decode(response) as List;
     setState(() {
       _words = data.map((word) => Word.fromJson(word)).toList();
@@ -49,8 +51,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
       _isSearching = query.isNotEmpty;
       _filteredWords = _words.where((word) {
         return word.higaonon.toLowerCase().contains(query) ||
-               word.tagalog.toLowerCase().contains(query) ||
-               word.english.toLowerCase().contains(query);
+            word.tagalog.toLowerCase().contains(query) ||
+            word.english.toLowerCase().contains(query);
       }).toList();
     });
   }
@@ -64,7 +66,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
@@ -86,7 +88,10 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.redAccent, Colors.orangeAccent.withOpacity(0.8)],
+                    colors: [
+                      Colors.redAccent,
+                      Colors.orangeAccent.withValues(alpha: 0.8),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -101,18 +106,13 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
             ),
           ),
           if (_isSearching && _filteredWords.isEmpty)
-            SliverToBoxAdapter(
-              child: _buildEmptySearchState(theme),
-            )
+            SliverToBoxAdapter(child: _buildEmptySearchState(theme))
           else
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final word = _filteredWords[index];
-                  return _buildWordCard(word, theme);
-                },
-                childCount: _filteredWords.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final word = _filteredWords[index];
+                return _buildWordCard(word, theme);
+              }, childCount: _filteredWords.length),
             ),
         ],
       ),
@@ -126,7 +126,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -149,7 +149,10 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -164,7 +167,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
           Icon(
             Icons.search_off_rounded,
             size: 64,
-            color: theme.disabledColor.withOpacity(0.3),
+            color: theme.disabledColor.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -178,10 +181,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
           const SizedBox(height: 8),
           Text(
             'Try searching with different keywords',
-            style: TextStyle(
-              fontSize: 14,
-              color: theme.disabledColor,
-            ),
+            style: TextStyle(fontSize: 14, color: theme.disabledColor),
           ),
         ],
       ),
@@ -196,7 +196,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -209,7 +209,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => WordDetailScreen(word: word)),
+              MaterialPageRoute(
+                builder: (context) => WordDetailScreen(word: word),
+              ),
             );
           },
           child: Padding(
@@ -244,9 +246,12 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.redAccent.withOpacity(0.1),
+                        color: Colors.redAccent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -262,7 +267,10 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(12),
@@ -299,13 +307,17 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                         return IconButton(
                           onPressed: () => bookmarkService.toggleBookmark(word),
                           icon: Icon(
-                            isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                            color: isBookmarked ? Colors.redAccent : Colors.grey,
+                            isBookmarked
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_outline_rounded,
+                            color: isBookmarked
+                                ? Colors.redAccent
+                                : Colors.grey,
                             size: 24,
                           ),
                           style: IconButton.styleFrom(
-                            backgroundColor: isBookmarked 
-                                ? Colors.redAccent.withOpacity(0.1) 
+                            backgroundColor: isBookmarked
+                                ? Colors.redAccent.withValues(alpha: 0.1)
                                 : Colors.transparent,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -324,4 +336,3 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
     );
   }
 }
-

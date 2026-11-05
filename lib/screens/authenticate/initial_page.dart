@@ -27,7 +27,7 @@ class _InitialPageState extends State<InitialPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     switch (_view) {
       case 'initial':
         return Scaffold(
@@ -46,24 +46,35 @@ class _InitialPageState extends State<InitialPage> {
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
                         ],
                       ),
-                      child: Image.asset('assets/app_logo/logo_black.png', height: 120),
+                      child: Image.asset(
+                        'assets/app_logo/logo_black.png',
+                        height: 120,
+                      ),
                     ),
                     const SizedBox(height: 40),
                     const Text(
                       'Higa',
-                      style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'A Higaonon Language Translator',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: theme.hintColor, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: theme.hintColor,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 60),
                     ElevatedButton(
@@ -73,14 +84,17 @@ class _InitialPageState extends State<InitialPage> {
                         foregroundColor: Colors.white,
                         minimumSize: const Size(double.infinity, 56),
                         elevation: 2,
-                        shadowColor: Colors.redAccent.withOpacity(0.5),
+                        shadowColor: Colors.redAccent.withValues(alpha: 0.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       child: const Text(
                         'Login',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -96,7 +110,10 @@ class _InitialPageState extends State<InitialPage> {
                       ),
                       child: const Text(
                         'Sign Up',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -111,13 +128,9 @@ class _InitialPageState extends State<InitialPage> {
           onSignUpPressed: _showRegister,
         );
       case 'register':
-        return SignUp(
-          onBackPressed: _showInitial,
-          onLogInPressed: _showSignIn,
-        );
+        return SignUp(onBackPressed: _showInitial, onLogInPressed: _showSignIn);
       default:
         return Container();
     }
   }
 }
-

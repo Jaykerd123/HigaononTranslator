@@ -13,7 +13,7 @@ class WordDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
@@ -30,7 +30,9 @@ class WordDetailScreen extends StatelessWidget {
                   final isBookmarked = bookmarkService.isBookmarked(word);
                   return IconButton(
                     icon: Icon(
-                      isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                      isBookmarked
+                          ? Icons.bookmark_rounded
+                          : Icons.bookmark_outline_rounded,
                       color: Colors.white,
                       size: 28,
                     ),
@@ -45,7 +47,7 @@ class WordDetailScreen extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [
                       Colors.redAccent,
-                      Colors.orangeAccent.withOpacity(0.8),
+                      Colors.orangeAccent.withValues(alpha: 0.8),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -92,9 +94,12 @@ class WordDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -114,7 +119,10 @@ class WordDetailScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 20.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -169,7 +177,7 @@ class WordDetailScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -185,11 +193,7 @@ class WordDetailScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      icon,
-                      color: Colors.redAccent,
-                      size: 24,
-                    ),
+                    Icon(icon, color: Colors.redAccent, size: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -206,9 +210,12 @@ class WordDetailScreen extends StatelessWidget {
                 if (isExample && exampleLanguage != null) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.1),
+                      color: Colors.redAccent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -248,8 +255,14 @@ class WordDetailScreen extends StatelessWidget {
           height: 56,
           child: ElevatedButton.icon(
             onPressed: () {
-              Provider.of<HistoryService>(context, listen: false).addWordToHistory(word);
-              Provider.of<TtsService>(context, listen: false).speak(word.higaonon);
+              Provider.of<HistoryService>(
+                context,
+                listen: false,
+              ).addWordToHistory(word);
+              Provider.of<TtsService>(
+                context,
+                listen: false,
+              ).speak(word.higaonon);
             },
             icon: const Icon(Icons.volume_up_rounded, size: 24),
             label: const Text(

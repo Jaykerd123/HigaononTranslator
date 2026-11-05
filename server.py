@@ -10,6 +10,7 @@ from transformers import MarianMTModel, MarianTokenizer
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from gradio_client import Client
+from translation_retrieval import ReferenceRetrievalIndex
 
 # ============================================================
 # LOGGING CONFIGURATION
@@ -85,6 +86,16 @@ except Exception as e:
 class TextRequest(BaseModel):
     text: str
 
+reference_index = ReferenceRetrievalIndex.from_files(
+    os.path.join(os.path.dirname(__file__), "assets", "dictionary.json"),
+    os.path.join(os.path.dirname(__file__), "assets", "dictionary-second.json"),
+    os.path.join(os.path.dirname(__file__), "assets", "cleaned_dataset.csv"),
+)
+logger.info(
+    "Loaded %s English-Higaonon reference entries.",
+    reference_index.reference_count,
+)
+
 # ============================================================
 # TTS CACHE
 # ============================================================
@@ -152,6 +163,14 @@ def generate_tts(req: TextRequest):
 # ============================================================
 # TRANSLATION ENDPOINT
 # ============================================================
+@app.post("/retrieve")
+def retrieve_references(req: TextRequest):
+    try:
+        return reference_index.retrieve(req.text)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @app.post("/translate")
 def translate_text(req: TextRequest):
     logger.info(f"[Translation] Translating: {req.text[:50]}...")

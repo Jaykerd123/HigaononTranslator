@@ -25,7 +25,8 @@ class MenuScreen extends StatefulWidget {
   State<MenuScreen> createState() => _MenuScreenState();
 }
 
-class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMixin {
+class _MenuScreenState extends State<MenuScreen>
+    with AutomaticKeepAliveClientMixin {
   XFile? _selectedImage;
   List<Word> _frequentTranslations = [];
 
@@ -40,19 +41,21 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
 
   Future<void> _loadFrequentTranslations() async {
     try {
-      final String response = await DefaultAssetBundle.of(context).loadString('assets/dictionary.json');
+      final String response = await DefaultAssetBundle.of(
+        context,
+      ).loadString('assets/dictionary.json');
       final List<dynamic> data = List.from(jsonDecode(response));
       if (data.isNotEmpty) {
         // Use a daily seed to keep words consistent for the day
         final now = DateTime.now();
         final int seed = now.year * 10000 + now.month * 100 + now.day;
         final random = Random(seed);
-        
+
         // Pick 3 unique random words
         final List<Word> selected = [];
         final List<int> indices = List.generate(data.length, (i) => i);
         indices.shuffle(random);
-        
+
         for (int i = 0; i < min(3, data.length); i++) {
           selected.add(Word.fromJson(data[indices[i]]));
         }
@@ -91,30 +94,43 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
   void _showAvatarSelection(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
       builder: (BuildContext modalContext) {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: Wrap(
             children: <Widget>[
               const Center(
-                child: Text('Update Profile Picture', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Update Profile Picture',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 20),
               ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.photo_library, color: Colors.white)),
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.blueAccent,
+                  child: Icon(Icons.photo_library, color: Colors.white),
+                ),
                 title: const Text('Select from Gallery'),
                 onTap: () async {
                   Navigator.pop(modalContext);
                   final picker = ImagePicker();
-                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                  final XFile? image = await picker.pickImage(
+                    source: ImageSource.gallery,
+                  );
                   if (image != null) {
                     setState(() => _selectedImage = image);
                   }
                 },
               ),
               ListTile(
-                leading: const CircleAvatar(backgroundColor: Colors.orangeAccent, child: Icon(Icons.face, color: Colors.white)),
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.orangeAccent,
+                  child: Icon(Icons.face, color: Colors.white),
+                ),
                 title: const Text('Choose Character Avatar'),
                 onTap: () {
                   Navigator.pop(modalContext);
@@ -136,7 +152,9 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
       try {
         await dbService.updateUserData(profileImageUrl: _selectedImage!.path);
         setState(() => _selectedImage = null);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile picture updated!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated!')),
+        );
       } catch (e) {}
     }
   }
@@ -178,7 +196,9 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
                             backgroundColor: Colors.white,
                             child: CircleAvatar(
                               radius: 46,
-                              backgroundImage: _getAvatarImage(userData?.avatarUrl),
+                              backgroundImage: _getAvatarImage(
+                                userData?.avatarUrl,
+                              ),
                             ),
                           ),
                           Positioned(
@@ -187,7 +207,11 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
                             child: CircleAvatar(
                               radius: 15,
                               backgroundColor: Colors.white,
-                              child: Icon(Icons.camera_alt, size: 16, color: Colors.redAccent),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 16,
+                                color: Colors.redAccent,
+                              ),
                             ),
                           ),
                         ],
@@ -196,7 +220,11 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
                     const SizedBox(height: 12),
                     Text(
                       userData?.name ?? 'User',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -204,7 +232,10 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
             ),
             actions: [
               if (_selectedImage != null)
-                IconButton(icon: const Icon(Icons.check, color: Colors.white), onPressed: _saveProfilePicture),
+                IconButton(
+                  icon: const Icon(Icons.check, color: Colors.white),
+                  onPressed: _saveProfilePicture,
+                ),
             ],
           ),
           SliverToBoxAdapter(
@@ -213,26 +244,72 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
               child: Column(
                 children: [
                   _buildMenuSection(theme, 'Learning', [
-                    _MenuData(Icons.show_chart_rounded, 'Your Progress', 'Track your growth', () => _navigateToScreen(const YourProgressScreen()), Colors.blue),
-                    _MenuData(Icons.book_rounded, 'Dictionary', 'All Higaonon words', () => _navigateToScreen(const DictionaryScreen()), Colors.green),
-                    _MenuData(Icons.history_rounded, 'Learning History', 'Recently studied', () => _navigateToScreen(const LearningHistoryScreen()), Colors.orange),
+                    _MenuData(
+                      Icons.show_chart_rounded,
+                      'Your Progress',
+                      'Track your growth',
+                      () => _navigateToScreen(const YourProgressScreen()),
+                      Colors.blue,
+                    ),
+                    _MenuData(
+                      Icons.book_rounded,
+                      'Dictionary',
+                      'All Higaonon words',
+                      () => _navigateToScreen(const DictionaryScreen()),
+                      Colors.green,
+                    ),
+                    _MenuData(
+                      Icons.history_rounded,
+                      'Learning History',
+                      'Recently studied',
+                      () => _navigateToScreen(const LearningHistoryScreen()),
+                      Colors.orange,
+                    ),
                   ]),
                   const SizedBox(height: 24),
-                  _buildMenuSection(theme, 'Frequently Requested Translations', 
-                    _frequentTranslations.isEmpty 
-                      ? [_MenuData(Icons.star_rounded, 'Loading...', 'Fetching popular translations', () {}, Colors.amber)]
-                      : _frequentTranslations.map((word) => _MenuData(
-                          Icons.translate_rounded, 
-                          word.english, 
-                          word.higaonon, 
-                          () => _navigateToScreen(WordDetailScreen(word: word)), 
-                          Colors.purple
-                        )).toList()
+                  _buildMenuSection(
+                    theme,
+                    'Frequently Requested Translations',
+                    _frequentTranslations.isEmpty
+                        ? [
+                            _MenuData(
+                              Icons.star_rounded,
+                              'Loading...',
+                              'Fetching popular translations',
+                              () {},
+                              Colors.amber,
+                            ),
+                          ]
+                        : _frequentTranslations
+                              .map(
+                                (word) => _MenuData(
+                                  Icons.translate_rounded,
+                                  word.english,
+                                  word.higaonon,
+                                  () => _navigateToScreen(
+                                    WordDetailScreen(word: word),
+                                  ),
+                                  Colors.purple,
+                                ),
+                              )
+                              .toList(),
                   ),
                   const SizedBox(height: 24),
                   _buildMenuSection(theme, 'Settings', [
-                    _MenuData(Icons.settings_rounded, 'App Settings', 'Theme and notifications', () => _navigateToScreen(const SettingsScreen()), Colors.blueGrey),
-                    _MenuData(Icons.info_rounded, 'About Higa', 'App and developer info', () => _navigateToScreen(const AboutScreen()), Colors.teal),
+                    _MenuData(
+                      Icons.settings_rounded,
+                      'App Settings',
+                      'Theme and notifications',
+                      () => _navigateToScreen(const SettingsScreen()),
+                      Colors.blueGrey,
+                    ),
+                    _MenuData(
+                      Icons.info_rounded,
+                      'About Higa',
+                      'App and developer info',
+                      () => _navigateToScreen(const AboutScreen()),
+                      Colors.teal,
+                    ),
                   ]),
                   const SizedBox(height: 40),
                   ElevatedButton.icon(
@@ -243,8 +320,17 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
                           title: const Text('Logout'),
                           content: const Text('Are you sure you want to exit?'),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Logout', style: TextStyle(color: Colors.red))),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                'Logout',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -253,11 +339,13 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
                     icon: const Icon(Icons.logout_rounded),
                     label: const Text('Logout'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.withOpacity(0.1),
+                      backgroundColor: Colors.red.withValues(alpha: 0.1),
                       foregroundColor: Colors.red,
                       elevation: 0,
                       minimumSize: const Size(double.infinity, 56),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -270,13 +358,24 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
     );
   }
 
-  Widget _buildMenuSection(ThemeData theme, String title, List<_MenuData> items) {
+  Widget _buildMenuSection(
+    ThemeData theme,
+    String title,
+    List<_MenuData> items,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 8, bottom: 12),
-          child: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: theme.disabledColor)),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: theme.disabledColor,
+            ),
+          ),
         ),
         Container(
           decoration: BoxDecoration(
@@ -284,7 +383,9 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
-            children: items.map((item) => _buildMenuItem(item, theme, items.last == item)).toList(),
+            children: items
+                .map((item) => _buildMenuItem(item, theme, items.last == item))
+                .toList(),
           ),
         ),
       ],
@@ -297,13 +398,28 @@ class _MenuScreenState extends State<MenuScreen> with AutomaticKeepAliveClientMi
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: item.color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(
+          color: item.color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Icon(item.icon, color: item.color),
       ),
-      title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(item.subtitle, style: TextStyle(fontSize: 12, color: theme.disabledColor)),
+      title: Text(
+        item.title,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        item.subtitle,
+        style: TextStyle(fontSize: 12, color: theme.disabledColor),
+      ),
       trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-      shape: isLast ? null : Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.05))),
+      shape: isLast
+          ? null
+          : Border(
+              bottom: BorderSide(
+                color: theme.dividerColor.withValues(alpha: 0.05),
+              ),
+            ),
     );
   }
 }
@@ -316,4 +432,3 @@ class _MenuData {
   final Color color;
   _MenuData(this.icon, this.title, this.subtitle, this.onTap, this.color);
 }
-

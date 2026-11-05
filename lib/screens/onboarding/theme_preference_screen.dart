@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemePreferenceScreen extends StatefulWidget {
   final VoidCallback onNext;
 
-  const ThemePreferenceScreen({Key? key, required this.onNext}) : super(key: key);
+  const ThemePreferenceScreen({super.key, required this.onNext});
 
   @override
   _ThemePreferenceScreenState createState() => _ThemePreferenceScreenState();
@@ -40,8 +40,9 @@ class _ThemePreferenceScreenState extends State<ThemePreferenceScreen> {
     final user = Provider.of<CustomUser?>(context, listen: false);
     if (user == null) return;
 
-    await DatabaseService(uid: user.uid)
-        .updateUserData(isDarkMode: value, onboardingCompleted: true);
+    await DatabaseService(
+      uid: user.uid,
+    ).updateUserData(isDarkMode: value, onboardingCompleted: true);
 
     // Immediately proceed to next step/complete onboarding after selection
     widget.onNext();
@@ -64,17 +65,14 @@ class _ThemePreferenceScreenState extends State<ThemePreferenceScreen> {
             const SizedBox(height: 40),
             const Text(
               'Choose your theme preference',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             SwitchListTile(
               title: const Text('Enable Dark Mode'),
               value: _isDarkModeEnabled,
               onChanged: _saveThemePreference,
-              activeColor: Colors.red,
+              activeThumbColor: Colors.red,
             ),
             const Spacer(),
           ],
@@ -98,7 +96,7 @@ class _ThemePreferenceScreenState extends State<ThemePreferenceScreen> {
                 boxShadow: index <= 2
                     ? [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.5),
+                          color: Colors.red.withValues(alpha: 0.5),
                           blurRadius: 8.0,
                           spreadRadius: 3.0,
                         ),
@@ -118,4 +116,3 @@ class _ThemePreferenceScreenState extends State<ThemePreferenceScreen> {
     );
   }
 }
-

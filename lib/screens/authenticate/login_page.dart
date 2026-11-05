@@ -31,7 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return loading
         ? const SimpleLoading()
         : Scaffold(
@@ -46,7 +46,11 @@ class _LoginPageState extends State<LoginPage> {
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.redAccent, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.redAccent,
+                    size: 20,
+                  ),
                   onPressed: () => widget.onBackPressed(),
                 ),
               ),
@@ -71,19 +75,30 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 8),
                         Text(
                           'Log in to continue learning Higaonon',
-                          style: TextStyle(fontSize: 16, color: theme.hintColor),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: theme.hintColor,
+                          ),
                         ),
                         const SizedBox(height: 40),
                         TextFormField(
                           keyboardType: TextInputType.emailAddress,
                           decoration: textInputDecoration.copyWith(
                             labelText: 'Email',
-                            prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
+                            prefixIcon: const Icon(
+                              Icons.email_outlined,
+                              color: Colors.grey,
+                            ),
                           ),
                           validator: (val) {
-                            if (val == null || val.isEmpty) return 'Enter an email';
-                            bool emailValid = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(val);
-                            return emailValid ? null : 'Enter a valid email address';
+                            if (val == null || val.isEmpty)
+                              return 'Enter an email';
+                            bool emailValid = RegExp(
+                              r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+                            ).hasMatch(val);
+                            return emailValid
+                                ? null
+                                : 'Enter a valid email address';
                           },
                           onChanged: (val) {
                             setState(() => email = val);
@@ -93,10 +108,15 @@ class _LoginPageState extends State<LoginPage> {
                         TextFormField(
                           decoration: textInputDecoration.copyWith(
                             labelText: 'Password',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Colors.grey),
+                            prefixIcon: const Icon(
+                              Icons.lock_outline_rounded,
+                              color: Colors.grey,
+                            ),
                           ),
                           obscureText: true,
-                          validator: (val) => val!.length < 6 ? 'Enter a password 6+ chars long' : null,
+                          validator: (val) => val!.length < 6
+                              ? 'Enter a password 6+ chars long'
+                              : null,
                           onChanged: (val) {
                             setState(() => password = val);
                           },
@@ -117,7 +137,10 @@ class _LoginPageState extends State<LoginPage> {
                             },
                             child: const Text(
                               'Forgot Password?',
-                              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -126,7 +149,8 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {
                               setState(() => loading = true);
-                              dynamic result = await _auth.signInWithEmailAndPassword(email, password);
+                              dynamic result = await _auth
+                                  .signInWithEmailAndPassword(email, password);
                               if (result is String) {
                                 setState(() {
                                   error = result;
@@ -134,7 +158,8 @@ class _LoginPageState extends State<LoginPage> {
                                 });
                               } else if (result == null) {
                                 setState(() {
-                                  error = 'Could not sign in with those credentials';
+                                  error =
+                                      'Could not sign in with those credentials';
                                   loading = false;
                                 });
                               }
@@ -145,14 +170,19 @@ class _LoginPageState extends State<LoginPage> {
                             foregroundColor: Colors.white,
                             minimumSize: const Size(double.infinity, 56),
                             elevation: 2,
-                            shadowColor: Colors.redAccent.withOpacity(0.5),
+                            shadowColor: Colors.redAccent.withValues(
+                              alpha: 0.5,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           child: const Text(
                             'Login',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -160,8 +190,17 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             Expanded(child: Divider(color: theme.dividerColor)),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text('OR', style: TextStyle(color: theme.hintColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Text(
+                                'OR',
+                                style: TextStyle(
+                                  color: theme.hintColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
                             Expanded(child: Divider(color: theme.dividerColor)),
                           ],
@@ -178,7 +217,10 @@ class _LoginPageState extends State<LoginPage> {
                               });
                             }
                           },
-                          icon: Image.asset('assets/social_icons/google.png', height: 24),
+                          icon: Image.asset(
+                            'assets/social_icons/google.png',
+                            height: 24,
+                          ),
                           label: const Text(
                             'Continue with Google',
                             style: TextStyle(fontWeight: FontWeight.w600),
@@ -196,7 +238,10 @@ class _LoginPageState extends State<LoginPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text("Don't have an account? ", style: TextStyle(color: theme.hintColor)),
+                            Text(
+                              "Don't have an account? ",
+                              style: TextStyle(color: theme.hintColor),
+                            ),
                             GestureDetector(
                               onTap: () => widget.onSignUpPressed(),
                               child: const Text(
@@ -215,7 +260,10 @@ class _LoginPageState extends State<LoginPage> {
                             child: Text(
                               error,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.red, fontSize: 14),
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         const SizedBox(height: 40),
@@ -228,4 +276,3 @@ class _LoginPageState extends State<LoginPage> {
           );
   }
 }
-

@@ -74,7 +74,7 @@ class _HomeState extends State<Home> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -121,7 +121,8 @@ class _HomeScreen extends StatefulWidget {
   State<_HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientMixin {
+class _HomeScreenState extends State<_HomeScreen>
+    with AutomaticKeepAliveClientMixin {
   Word? _wordOfTheDay;
   late bool _showAllHistory;
   final int _historyDisplayLimit = 4;
@@ -136,13 +137,18 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
     _loadWordOfTheDay();
     // Load bookmarks when home screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<BookmarkService>(context, listen: false).loadBookmarksFromFirestore();
+      Provider.of<BookmarkService>(
+        context,
+        listen: false,
+      ).loadBookmarksFromFirestore();
     });
   }
 
   Future<void> _loadWordOfTheDay() async {
     try {
-      final String response = await DefaultAssetBundle.of(context).loadString('assets/dictionary.json');
+      final String response = await DefaultAssetBundle.of(
+        context,
+      ).loadString('assets/dictionary.json');
       final List<dynamic> data = List.from(jsonDecode(response));
       if (data.isNotEmpty) {
         // Create a seed based on the current date (YYYYMMDD) to ensure the word stays the same for the day
@@ -237,116 +243,141 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
   Widget _buildWordOfTheDayCard(ThemeData theme) {
     return InkWell(
       borderRadius: BorderRadius.circular(24),
-      onTap: _wordOfTheDay != null ? () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => WordDetailScreen(word: _wordOfTheDay!),
-          ),
-        );
-      } : null,
+      onTap: _wordOfTheDay != null
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WordDetailScreen(word: _wordOfTheDay!),
+                ),
+              );
+            }
+          : null,
       child: Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.redAccent, Colors.orangeAccent.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.redAccent.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.redAccent,
+              Colors.orangeAccent.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: _wordOfTheDay == null
-            ? const Center(child: CircularProgressIndicator(color: Colors.white))
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'WORD OF THE DAY',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontSize: 12,
-                        ),
-                      ),
-                      Consumer<BookmarkService>(
-                        builder: (context, bookmarkService, child) {
-                          final isBookmarked = bookmarkService.isBookmarked(_wordOfTheDay!);
-                          return GestureDetector(
-                            onTap: () => bookmarkService.toggleBookmark(_wordOfTheDay!),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                                color: isBookmarked ? Colors.yellowAccent : Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _wordOfTheDay!.higaonon,
-                          style: const TextStyle(
-                            fontSize: 36,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.redAccent.withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: _wordOfTheDay == null
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'WORD OF THE DAY',
+                          style: TextStyle(
+                            color: Colors.white70,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            letterSpacing: 1.2,
+                            fontSize: 12,
                           ),
                         ),
+                        Consumer<BookmarkService>(
+                          builder: (context, bookmarkService, child) {
+                            final isBookmarked = bookmarkService.isBookmarked(
+                              _wordOfTheDay!,
+                            );
+                            return GestureDetector(
+                              onTap: () => bookmarkService.toggleBookmark(
+                                _wordOfTheDay!,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  isBookmarked
+                                      ? Icons.bookmark_rounded
+                                      : Icons.bookmark_outline_rounded,
+                                  color: isBookmarked
+                                      ? Colors.yellowAccent
+                                      : Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _wordOfTheDay!.higaonon,
+                            style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.volume_up_rounded,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                          onPressed: () => _speak(_wordOfTheDay!),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _wordOfTheDay!.english,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontStyle: FontStyle.italic,
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.volume_up_rounded, color: Colors.white, size: 32),
-                        onPressed: () => _speak(_wordOfTheDay!),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _wordOfTheDay!.english,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: Colors.white,
-                      fontStyle: FontStyle.italic,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _wordOfTheDay!.partOfSpeech,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _wordOfTheDay!.partOfSpeech,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ],
-              ),
-      ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -361,7 +392,9 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
               FocusScope.of(context).unfocus();
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const BookmarkedWordsScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const BookmarkedWordsScreen(),
+                ),
               );
             },
             child: Row(
@@ -378,9 +411,12 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.redAccent.withOpacity(0.1),
+                    color: Colors.redAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -455,11 +491,18 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
       ),
       child: Column(
         children: [
-          Icon(Icons.history_rounded, size: 48, color: theme.disabledColor.withOpacity(0.3)),
+          Icon(
+            Icons.history_rounded,
+            size: 48,
+            color: theme.disabledColor.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 16),
           Text(
             'No history yet',
-            style: TextStyle(color: theme.disabledColor, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: theme.disabledColor,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -485,7 +528,7 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 5,
                 offset: const Offset(0, 2),
               ),
@@ -502,17 +545,24 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
               );
             },
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
               title: Text(
                 word.higaonon,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(word.english),
               trailing: CircleAvatar(
-                backgroundColor: Colors.redAccent.withOpacity(0.1),
+                backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
                 radius: 18,
                 child: IconButton(
-                  icon: const Icon(Icons.volume_up_rounded, size: 18, color: Colors.redAccent),
+                  icon: const Icon(
+                    Icons.volume_up_rounded,
+                    size: 18,
+                    color: Colors.redAccent,
+                  ),
                   onPressed: () => _speak(word),
                 ),
               ),
@@ -523,4 +573,3 @@ class _HomeScreenState extends State<_HomeScreen> with AutomaticKeepAliveClientM
     );
   }
 }
-

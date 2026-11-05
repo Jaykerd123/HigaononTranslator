@@ -1,12 +1,11 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'discovery_service.dart';
 
 class TranslationFallbackService {
   /// The current primary public API endpoint (Cloudflare Tunnel)
-  static const String publicApiBaseUrl = 'https://pale-astronomy-tongue-ones.trycloudflare.com';
+  static const String publicApiBaseUrl =
+      'https://pale-astronomy-tongue-ones.trycloudflare.com';
 
   /// Translates text from English to Cebuano (Bisaya) using the local NLP server.
   static Future<String?> translateEnglishToBisaya(String text) async {
@@ -15,20 +14,27 @@ class TranslationFallbackService {
       'http://127.0.0.1:8000',
       'http://127.0.0.1:8080',
     ];
-    
+
     if (DiscoveryService.discoveredBaseUrl != null) {
-      possibleBaseUrls.insert(1, DiscoveryService.discoveredBaseUrl!); // Insert after public URL
+      possibleBaseUrls.insert(
+        1,
+        DiscoveryService.discoveredBaseUrl!,
+      ); // Insert after public URL
     }
 
     for (int i = 0; i < possibleBaseUrls.length; i++) {
       String baseUrl = possibleBaseUrls[i];
       try {
         final url = Uri.parse('$baseUrl/translate');
-        final response = await http.post(
-          url,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'text': text}),
-        ).timeout(const Duration(seconds: 6)); // Increased timeout for tunnel latency
+        final response = await http
+            .post(
+              url,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'text': text}),
+            )
+            .timeout(
+              const Duration(seconds: 6),
+            ); // Increased timeout for tunnel latency
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> data = jsonDecode(response.body);
@@ -37,17 +43,20 @@ class TranslationFallbackService {
           }
         }
       } catch (e) {
-        print('TranslationFallbackService Error calling server at $baseUrl: $e');
+        print(
+          'TranslationFallbackService Error calling server at $baseUrl: $e',
+        );
       }
 
-      if (i == possibleBaseUrls.length - 1 && DiscoveryService.discoveredBaseUrl == null) {
+      if (i == possibleBaseUrls.length - 1 &&
+          DiscoveryService.discoveredBaseUrl == null) {
         final discovered = await DiscoveryService.discoverServer();
         if (discovered != null) {
           possibleBaseUrls.add(discovered);
         }
       }
     }
-    
+
     // Fallback to Google Translate if local server is down or unreachable
     return await _fallbackToGoogleTranslate(text);
   }
@@ -64,7 +73,7 @@ class TranslationFallbackService {
         // The response is a nested JSON array:
         // [[["translation", "source", null, null, 1]], null, "en", null, null, null, 1, null, [["en"], null, [1], ["en"]]]
         final List<dynamic> data = jsonDecode(response.body);
-        
+
         if (data.isNotEmpty && data[0] is List && data[0].isNotEmpty) {
           final translatedText = StringBuffer();
           for (var item in data[0]) {
@@ -82,4 +91,3 @@ class TranslationFallbackService {
     }
   }
 }
-

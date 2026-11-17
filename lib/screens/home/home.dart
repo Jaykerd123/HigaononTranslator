@@ -39,8 +39,7 @@ class _HomeState extends State<Home> {
   }
 
   void _onItemTapped(int index) {
-    // Dismiss keyboard when switching tabs
-    FocusScope.of(context).unfocus();
+    _dismissKeyboard();
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
@@ -48,7 +47,14 @@ class _HomeState extends State<Home> {
     );
   }
 
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus(
+      disposition: UnfocusDisposition.scope,
+    );
+  }
+
   void _onPageChanged(int index) {
+    _dismissKeyboard();
     setState(() {
       _selectedIndex = index;
     });

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:Higa/screens/services/app_logger.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:http/http.dart' as http;
@@ -16,48 +17,40 @@ class TtsService {
   // HUGGING FACE TTS CONFIGURATION
   // ============================================================
 
-  static const String hfSpaceBase =
-      'https://jaykerd-higaonon-tts.hf.space';
+  static const String hfSpaceBase = 'https://jaykerd-higaonon-tts.hf.space';
 
   // Hugging Face token supplied when building/running Flutter:
   //
   // flutter run --dart-define=HF_TOKEN=hf_xxxxxxxxx
   //
-  static const String hfToken =
-  String.fromEnvironment('HF_TOKEN');
+  static const String hfToken = String.fromEnvironment('HF_TOKEN');
 
-  static const Duration queueTimeout =
-  Duration(seconds: 30);
+  static const Duration queueTimeout = Duration(seconds: 30);
 
-  static const Duration streamTimeout =
-  Duration(seconds: 120);
+  static const Duration streamTimeout = Duration(seconds: 120);
 
-  static const Duration downloadTimeout =
-  Duration(seconds: 60);
+  static const Duration downloadTimeout = Duration(seconds: 60);
 
   // ============================================================
   // INITIALIZATION
   // ============================================================
 
   TtsService() {
-    print('[TtsService] Initialized.');
+    AppLogger.debug('TTS', 'Service initialized.');
 
     if (hfToken.isEmpty) {
-      print(
-        '[TtsService] WARNING: HF_TOKEN is not configured.',
-      );
+      AppLogger.debug('TTS', 'Hugging Face authentication is not configured.');
     } else {
-      print(
-        '[TtsService] Hugging Face authentication configured.',
-      );
+      AppLogger.debug('TTS', 'Hugging Face authentication is configured.');
     }
 
     _initLocalTts();
   }
 
   Future<void> refreshServerConnection() async {
-    print(
-      '[TtsService] Cloud-hosted TTS does not require local discovery.',
+    AppLogger.debug(
+      'TTS',
+      'Cloud-hosted TTS does not require local discovery.',
     );
   }
 
@@ -79,15 +72,11 @@ class TtsService {
 
         final filipinoVoices = voices.where((v) {
           if (v is Map) {
-            final locale =
-            (v['locale'] ?? v['language'] ?? '')
+            final locale = (v['locale'] ?? v['language'] ?? '')
                 .toString()
                 .toLowerCase();
 
-            final name =
-            (v['name'] ?? '')
-                .toString()
-                .toLowerCase();
+            final name = (v['name'] ?? '').toString().toLowerCase();
 
             return locale.contains('ph') ||
                 locale.contains('fil') ||
@@ -113,49 +102,38 @@ class TtsService {
 
         for (final v in filipinoVoices) {
           if (v is Map) {
-            final name =
-            (v['name'] ?? '')
-                .toString()
-                .toLowerCase();
+            final name = (v['name'] ?? '').toString().toLowerCase();
 
-            if (maleKeywords.any(
-                  (keyword) => name.contains(keyword),
-            )) {
+            if (maleKeywords.any((keyword) => name.contains(keyword))) {
               maleVoiceMap = v;
               break;
             }
           }
         }
 
-        final chosen = maleVoiceMap ??
-            (filipinoVoices.isNotEmpty
-                ? filipinoVoices.first as Map?
-                : null);
+        final chosen =
+            maleVoiceMap ??
+            (filipinoVoices.isNotEmpty ? filipinoVoices.first as Map? : null);
 
         if (chosen != null) {
           selectedVoice = {
             'name': chosen['name']?.toString() ?? '',
-            'locale':
-            (chosen['locale'] ??
-                chosen['language'] ??
-                'fil-PH')
+            'locale': (chosen['locale'] ?? chosen['language'] ?? 'fil-PH')
                 .toString(),
           };
         }
 
-        if (selectedVoice != null &&
-            selectedVoice['name']!.isNotEmpty) {
-          print(
-            '[TtsService] Local fallback voice: '
-                '${selectedVoice['name']}',
-          );
+        if (selectedVoice != null && selectedVoice['name']!.isNotEmpty) {
+          AppLogger.debug('TTS', 'Local fallback voice selected.');
 
           await _flutterTts.setVoice(selectedVoice);
         }
       }
-    } catch (e) {
-      print(
-        '[TtsService] Local TTS init error: $e',
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'TTS',
+        'Local TTS initialization failed (${e.runtimeType}).',
+        stackTrace: stackTrace,
       );
     }
   }
@@ -167,24 +145,25 @@ class TtsService {
   Future<void> speak(String text) async {
     if (text.trim().isEmpty) return;
 
-    print(
-      '[TtsService] Requesting Cloud TTS: $text',
-    );
+    AppLogger.debug('TTS', 'Request received.');
+    AppLogger.debug('TTS', 'Input text: $text');
 
-    final bool success =
-    await _speakFromHuggingFace(text);
+    final bool success = await _speakFromHuggingFace(text);
 
     if (!success) {
-      print(
-        '[TtsService] Cloud TTS failed. '
-            'Falling back to local TTS.',
+      AppLogger.error(
+        'TTS',
+        'Hugging Face generation failed; using local TTS fallback.',
       );
 
       try {
         await _flutterTts.speak(text);
-      } catch (e) {
-        print(
-          '[TtsService] Critical TTS failure: $e',
+        AppLogger.debug('TTS', 'Local audio playback started.');
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'TTS',
+          'Local audio playback failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
         );
       }
     }
@@ -194,9 +173,7 @@ class TtsService {
   // HUGGING FACE GRADIO API
   // ============================================================
 
-  Future<bool> _speakFromHuggingFace(
-      String text,
-      ) async {
+  Future<bool> _speakFromHuggingFace(String text) async {
     final client = http.Client();
 
     try {
@@ -205,16 +182,9 @@ class TtsService {
       // ----------------------------------------------------------
 
       if (hfToken.isEmpty) {
-        print(
-          '[TtsService] ERROR: HF_TOKEN is empty.',
-        );
-
-        print(
-          '[TtsService] Run Flutter with:',
-        );
-
-        print(
-          'flutter run --dart-define=HF_TOKEN=hf_your_token_here',
+        AppLogger.error(
+          'API',
+          'Hugging Face authentication token is not configured.',
         );
 
         return false;
@@ -224,75 +194,70 @@ class TtsService {
       // 1. CLEAN TEXT
       // ----------------------------------------------------------
 
-      String cleanText =
-      text.toLowerCase().trim();
+      String cleanText = text.toLowerCase().trim();
 
-      cleanText = cleanText
-          .replaceAll('aw ', 'au ')
-          .replaceAll('aw', 'au');
+      cleanText = cleanText.replaceAll('aw ', 'au ').replaceAll('aw', 'au');
 
-      cleanText =
-          cleanText.split(RegExp(r'\s+')).join(' ');
+      cleanText = cleanText.split(RegExp(r'\s+')).join(' ');
 
-      print(
-        '[TtsService] Clean text: $cleanText',
-      );
+      AppLogger.debug('TTS', 'Text prepared for the Hugging Face request.');
 
       // ----------------------------------------------------------
       // 2. START GRADIO PREDICTION
       // ----------------------------------------------------------
 
-      final queueUrl = Uri.parse(
-        '$hfSpaceBase/gradio_api/call/synthesize',
-      );
+      final queueUrl = Uri.parse('$hfSpaceBase/gradio_api/call/synthesize');
 
-      print(
-        '[TtsService] Sending authenticated request to HF:',
-      );
-
-      print(queueUrl);
-
-      http.Response queueResponse;
+      final queueStopwatch = Stopwatch()..start();
+      AppLogger.apiRequest('POST', queueUrl);
+      AppLogger.debug('TTS', 'Sending request to Hugging Face.');
+      late final http.Response queueResponse;
 
       try {
         queueResponse = await client
             .post(
-          queueUrl,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
+              queueUrl,
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
 
-            // IMPORTANT:
-            // Hugging Face authentication
-            'Authorization': 'Bearer $hfToken',
-          },
-          body: jsonEncode({
-            'data': [cleanText],
-          }),
-        )
+                // IMPORTANT:
+                // Hugging Face authentication
+                'Authorization': 'Bearer $hfToken',
+              },
+              body: jsonEncode({
+                'data': [cleanText],
+              }),
+            )
             .timeout(queueTimeout);
-      } catch (e) {
-        print(
-          '[TtsService] Queue request exception: $e',
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'API',
+          'TTS POST failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
+        );
+        AppLogger.error(
+          'TTS',
+          'Hugging Face request failed (${error.runtimeType}).',
         );
 
         return false;
+      } finally {
+        AppLogger.debug(
+          'API',
+          'Request duration: ${queueStopwatch.elapsedMilliseconds} ms',
+        );
       }
 
-      print(
-        '[TtsService] Queue status: '
-            '${queueResponse.statusCode}',
-      );
-
-      print(
-        '[TtsService] Queue response: '
-            '${queueResponse.body}',
-      );
+      AppLogger.apiResponse(queueResponse.statusCode);
+      AppLogger.debug('TTS', 'HTTP status: ${queueResponse.statusCode}');
 
       if (queueResponse.statusCode != 200) {
-        print(
-          '[TtsService] Queue failed.',
+        AppLogger.error(
+          'API',
+          'TTS POST returned HTTP ${queueResponse.statusCode}.',
         );
+        AppLogger.error('TTS', 'Gradio request returned an HTTP failure.');
 
         return false;
       }
@@ -301,32 +266,29 @@ class TtsService {
       // 3. GET EVENT ID
       // ----------------------------------------------------------
 
-      final decodedQueue =
-      jsonDecode(queueResponse.body);
+      final decodedQueue = jsonDecode(queueResponse.body);
 
       if (decodedQueue is! Map) {
-        print(
-          '[TtsService] Unexpected queue response.',
-        );
+        AppLogger.error('API', 'TTS POST returned an unexpected response.');
+        AppLogger.error('TTS', 'Invalid Gradio queue response.');
 
         return false;
       }
 
-      final eventId =
-      decodedQueue['event_id']?.toString();
+      final eventId = decodedQueue['event_id']?.toString();
 
-      if (eventId == null ||
-          eventId.isEmpty) {
-        print(
-          '[TtsService] No event_id received.',
+      if (eventId == null || eventId.isEmpty) {
+        AppLogger.error(
+          'API',
+          'TTS POST response did not contain an event ID.',
         );
+        AppLogger.error('TTS', 'Gradio response did not contain an event ID.');
 
         return false;
       }
 
-      print(
-        '[TtsService] Gradio Event ID: $eventId',
-      );
+      AppLogger.debug('TTS', 'Gradio event ID: $eventId');
+      AppLogger.debug('TTS', 'Audio generation started.');
 
       // ----------------------------------------------------------
       // 4. CONNECT TO SSE STREAM
@@ -336,49 +298,52 @@ class TtsService {
         '$hfSpaceBase/gradio_api/call/synthesize/$eventId',
       );
 
-      print(
-        '[TtsService] Connecting to authenticated SSE:',
-      );
+      AppLogger.debug('TTS', 'Connecting to SSE.');
 
-      print(streamUrl);
+      final request = http.Request('GET', streamUrl);
 
-      final request =
-      http.Request('GET', streamUrl);
+      request.headers['Accept'] = 'text/event-stream';
 
-      request.headers['Accept'] =
-      'text/event-stream';
-
-      request.headers['Cache-Control'] =
-      'no-cache';
+      request.headers['Cache-Control'] = 'no-cache';
 
       // IMPORTANT:
       // Authentication must also be sent to SSE endpoint.
-      request.headers['Authorization'] =
-      'Bearer $hfToken';
+      request.headers['Authorization'] = 'Bearer $hfToken';
 
-      http.StreamedResponse streamedResponse;
+      final streamStopwatch = Stopwatch()..start();
+      AppLogger.apiRequest('GET', streamUrl);
+      late final http.StreamedResponse streamedResponse;
 
       try {
-        streamedResponse = await client
-            .send(request)
-            .timeout(streamTimeout);
-      } catch (e) {
-        print(
-          '[TtsService] SSE connection error: $e',
+        streamedResponse = await client.send(request).timeout(streamTimeout);
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'API',
+          'TTS SSE connection failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
         );
+        AppLogger.error('TTS', 'SSE connection failed (${error.runtimeType}).');
 
         return false;
+      } finally {
+        AppLogger.debug(
+          'API',
+          'Request duration: ${streamStopwatch.elapsedMilliseconds} ms',
+        );
       }
 
-      print(
-        '[TtsService] SSE status: '
-            '${streamedResponse.statusCode}',
+      AppLogger.apiResponse(streamedResponse.statusCode);
+      AppLogger.debug(
+        'TTS',
+        'SSE connection status: ${streamedResponse.statusCode}',
       );
 
       if (streamedResponse.statusCode != 200) {
-        print(
-          '[TtsService] SSE stream failed.',
+        AppLogger.error(
+          'API',
+          'TTS SSE returned HTTP ${streamedResponse.statusCode}.',
         );
+        AppLogger.error('TTS', 'SSE stream returned an HTTP failure.');
 
         return false;
       }
@@ -391,42 +356,27 @@ class TtsService {
 
       String? currentEvent;
 
-      await for (
-      final line
-      in streamedResponse.stream
-          .transform(utf8.decoder)
-          .transform(
-        const LineSplitter(),
-      )
-      ) {
+      await for (final line
+          in streamedResponse.stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())) {
         final trimmed = line.trim();
 
         if (trimmed.isEmpty) {
           continue;
         }
 
-        print(
-          '[TtsService] SSE: $trimmed',
-        );
-
         // --------------------------------------------------------
         // EVENT TYPE
         // --------------------------------------------------------
 
         if (trimmed.startsWith('event:')) {
-          currentEvent =
-              trimmed.substring(6).trim();
-
-          print(
-            '[TtsService] SSE event: '
-                '$currentEvent',
-          );
+          currentEvent = trimmed.substring(6).trim();
 
           // Explicitly detect HF errors.
           if (currentEvent == 'error') {
-            print(
-              '[TtsService] Hugging Face returned an error event.',
-            );
+            AppLogger.error('API', 'TTS SSE returned an error event.');
+            AppLogger.error('TTS', 'Gradio SSE returned an error event.');
           }
 
           continue;
@@ -440,26 +390,26 @@ class TtsService {
           continue;
         }
 
-        final dataString =
-        trimmed.substring(5).trim();
+        final dataString = trimmed.substring(5).trim();
 
-        if (dataString.isEmpty ||
-            dataString == 'null') {
+        if (dataString.isEmpty || dataString == 'null') {
           continue;
         }
-
-        print(
-          '[TtsService] SSE data: '
-              '$dataString',
-        );
 
         dynamic data;
 
         try {
           data = jsonDecode(dataString);
-        } catch (e) {
-          print(
-            '[TtsService] SSE data is not JSON.',
+        } catch (error, stackTrace) {
+          AppLogger.error(
+            'API',
+            'TTS SSE data was invalid (${error.runtimeType}).',
+            stackTrace: stackTrace,
+          );
+          AppLogger.error(
+            'TTS',
+            'SSE event contained invalid JSON (${error.runtimeType}).',
+            stackTrace: stackTrace,
           );
 
           continue;
@@ -469,15 +419,9 @@ class TtsService {
         // HANDLE HUGGING FACE ERROR
         // --------------------------------------------------------
 
-        if (data is Map &&
-            data.containsKey('error')) {
-          print(
-            '[TtsService] ❌ Hugging Face TTS error:',
-          );
-
-          print(
-            data['error'],
-          );
+        if (data is Map && data.containsKey('error')) {
+          AppLogger.error('API', 'TTS Gradio response reported an error.');
+          AppLogger.error('TTS', 'Gradio reported an audio generation error.');
 
           return false;
         }
@@ -486,20 +430,12 @@ class TtsService {
         // TRY TO EXTRACT AUDIO FILE
         // --------------------------------------------------------
 
-        final extractedUrl =
-        _extractAudioUrl(data);
+        final extractedUrl = _extractAudioUrl(data);
 
         if (extractedUrl != null) {
-          downloadUrl =
-              _normalizeDownloadUrl(
-                extractedUrl,
-              );
+          downloadUrl = _normalizeDownloadUrl(extractedUrl);
 
-          print(
-            '[TtsService] ✓ Audio URL found:',
-          );
-
-          print(downloadUrl);
+          AppLogger.debug('TTS', 'Audio URL received.');
 
           break;
         }
@@ -509,25 +445,20 @@ class TtsService {
         // --------------------------------------------------------
 
         if (currentEvent == 'complete') {
-          print(
-            '[TtsService] Complete event received '
-                'but no audio file was detected.',
-          );
+          AppLogger.error('TTS', 'Complete SSE event contained no audio file.');
         }
       }
+      AppLogger.debug(
+        'API',
+        'SSE request duration: ${streamStopwatch.elapsedMilliseconds} ms',
+      );
 
       // ----------------------------------------------------------
       // 6. CHECK AUDIO URL
       // ----------------------------------------------------------
 
       if (downloadUrl == null) {
-        print(
-          '[TtsService] No audio URL found in stream.',
-        );
-
-        print(
-          '[TtsService] Full cloud TTS attempt failed.',
-        );
+        AppLogger.error('TTS', 'No audio URL was returned by the SSE stream.');
 
         return false;
       }
@@ -536,48 +467,52 @@ class TtsService {
       // 7. DOWNLOAD AUDIO
       // ----------------------------------------------------------
 
-      print(
-        '[TtsService] Downloading audio:',
-      );
-
-      print(downloadUrl);
-
-      http.Response audioResponse;
+      AppLogger.debug('TTS', 'Downloading audio.');
+      final downloadUri = Uri.parse(downloadUrl);
+      final downloadStopwatch = Stopwatch()..start();
+      AppLogger.apiRequest('GET', downloadUri);
+      late final http.Response audioResponse;
 
       try {
         audioResponse = await client
             .get(
-          Uri.parse(downloadUrl),
-          headers: {
-            'Accept': 'audio/wav,audio/*,*/*',
+              downloadUri,
+              headers: {
+                'Accept': 'audio/wav,audio/*,*/*',
 
-            // Keep authentication here as well.
-            'Authorization': 'Bearer $hfToken',
-          },
-        )
+                // Keep authentication here as well.
+                'Authorization': 'Bearer $hfToken',
+              },
+            )
             .timeout(downloadTimeout);
-      } catch (e) {
-        print(
-          '[TtsService] Audio download exception: $e',
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'API',
+          'TTS audio download failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
         );
+        AppLogger.error('TTS', 'Audio download failed (${error.runtimeType}).');
 
         return false;
+      } finally {
+        AppLogger.debug(
+          'API',
+          'Request duration: ${downloadStopwatch.elapsedMilliseconds} ms',
+        );
       }
 
-      print(
-        '[TtsService] Audio response status: '
-            '${audioResponse.statusCode}',
+      AppLogger.apiResponse(audioResponse.statusCode);
+      AppLogger.debug(
+        'TTS',
+        'Audio download HTTP status: ${audioResponse.statusCode}',
       );
 
       if (audioResponse.statusCode != 200) {
-        print(
-          '[TtsService] Audio download failed.',
+        AppLogger.error(
+          'API',
+          'TTS audio download returned HTTP ${audioResponse.statusCode}.',
         );
-
-        print(
-          '[TtsService] Response body: '
-              '${audioResponse.body}',
-        );
+        AppLogger.error('TTS', 'Audio download returned an HTTP failure.');
 
         return false;
       }
@@ -586,18 +521,15 @@ class TtsService {
       // 8. CHECK AUDIO DATA
       // ----------------------------------------------------------
 
-      final Uint8List audioBytes =
-          audioResponse.bodyBytes;
+      final Uint8List audioBytes = audioResponse.bodyBytes;
 
-      print(
-        '[TtsService] Downloaded audio bytes: '
-            '${audioBytes.length}',
+      AppLogger.debug(
+        'TTS',
+        'Audio download completed (${audioBytes.length} bytes).',
       );
 
       if (audioBytes.isEmpty) {
-        print(
-          '[TtsService] Audio file is empty.',
-        );
+        AppLogger.error('TTS', 'Downloaded audio file is empty.');
 
         return false;
       }
@@ -606,23 +538,11 @@ class TtsService {
       // 9. SAVE AUDIO
       // ----------------------------------------------------------
 
-      final tempDir =
-      await getTemporaryDirectory();
+      final tempDir = await getTemporaryDirectory();
 
-      final file = File(
-        '${tempDir.path}/higaonon_tts.wav',
-      );
+      final file = File('${tempDir.path}/higaonon_tts.wav');
 
-      await file.writeAsBytes(
-        audioBytes,
-        flush: true,
-      );
-
-      print(
-        '[TtsService] Audio saved to:',
-      );
-
-      print(file.path);
+      await file.writeAsBytes(audioBytes, flush: true);
 
       // ----------------------------------------------------------
       // 10. PLAY AUDIO
@@ -632,21 +552,23 @@ class TtsService {
 
       await _audioPlayer.stop();
 
-      await _audioPlayer.play(
-        DeviceFileSource(file.path),
-      );
+      await _audioPlayer.play(DeviceFileSource(file.path));
 
-      print(
-        '[TtsService] ✓ Higaonon cloud audio playback started.',
-      );
+      AppLogger.debug('TTS', 'Audio playback started.');
+      AppLogger.debug('TTS', 'TTS completed successfully.');
 
       return true;
     } catch (e, stackTrace) {
-      print(
-        '[TtsService] HF TTS Exception: $e',
+      AppLogger.error(
+        'API',
+        'TTS request failed (${e.runtimeType}).',
+        stackTrace: stackTrace,
       );
-
-      print(stackTrace);
+      AppLogger.error(
+        'TTS',
+        'Hugging Face TTS generation failed (${e.runtimeType}).',
+        stackTrace: stackTrace,
+      );
 
       return false;
     } finally {
@@ -679,8 +601,7 @@ class TtsService {
 
     if (data is List) {
       for (final item in data) {
-        final result =
-        _extractAudioUrl(item);
+        final result = _extractAudioUrl(item);
 
         if (result != null) {
           return result;
@@ -697,30 +618,26 @@ class TtsService {
     if (data is Map) {
       final url = data['url'];
 
-      if (url != null &&
-          url.toString().isNotEmpty) {
+      if (url != null && url.toString().isNotEmpty) {
         return url.toString();
       }
 
       final path = data['path'];
 
-      if (path != null &&
-          path.toString().isNotEmpty) {
+      if (path != null && path.toString().isNotEmpty) {
         return path.toString();
       }
 
       final name = data['name'];
 
-      if (name != null &&
-          name.toString().isNotEmpty) {
+      if (name != null && name.toString().isNotEmpty) {
         return name.toString();
       }
 
       final file = data['file'];
 
       if (file != null) {
-        final result =
-        _extractAudioUrl(file);
+        final result = _extractAudioUrl(file);
 
         if (result != null) {
           return result;
@@ -730,8 +647,7 @@ class TtsService {
       final audio = data['audio'];
 
       if (audio != null) {
-        final result =
-        _extractAudioUrl(audio);
+        final result = _extractAudioUrl(audio);
 
         if (result != null) {
           return result;
@@ -743,8 +659,7 @@ class TtsService {
       // ----------------------------------------------------------
 
       for (final value in data.values) {
-        final result =
-        _extractAudioUrl(value);
+        final result = _extractAudioUrl(value);
 
         if (result != null) {
           return result;
@@ -759,14 +674,11 @@ class TtsService {
   // NORMALIZE GRADIO FILE URL
   // ============================================================
 
-  String _normalizeDownloadUrl(
-      String rawUrl,
-      ) {
+  String _normalizeDownloadUrl(String rawUrl) {
     String url = rawUrl.trim();
 
     // Already absolute
-    if (url.startsWith('http://') ||
-        url.startsWith('https://')) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
 

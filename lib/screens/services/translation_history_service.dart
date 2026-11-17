@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:Higa/screens/services/translation_history_store.dart';
+import 'package:Higa/screens/services/app_logger.dart';
 
 class TranslationHistoryService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -15,7 +16,9 @@ class TranslationHistoryService with ChangeNotifier {
   Future<void> loadTranslationHistoryFromFirestore() async {
     final user = _auth.currentUser;
     if (user == null) {
-      debugPrint('TranslationHistoryService: Cannot load translation history, user is not logged in.');
+      debugPrint(
+        'TranslationHistoryService: Cannot load translation history, user is not logged in.',
+      );
       return;
     }
 
@@ -35,14 +38,15 @@ class TranslationHistoryService with ChangeNotifier {
             source: data['source']?.toString() ?? '',
             result: data['result']?.toString() ?? '',
             type: data['type']?.toString() ?? 'Text',
-            timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+            timestamp:
+                (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
           ),
         );
       }
 
       notifyListeners();
-    } catch (e) {
-      debugPrint('TranslationHistoryService: Error loading translation history from Firestore: $e');
+    } catch (error, stackTrace) {
+      _logFirestoreError('load translation history', error, stackTrace);
     }
   }
 
@@ -53,7 +57,9 @@ class TranslationHistoryService with ChangeNotifier {
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
-      debugPrint('TranslationHistoryService: Cannot save translation history, user is not logged in.');
+      debugPrint(
+        'TranslationHistoryService: Cannot save translation history, user is not logged in.',
+      );
       return;
     }
 
@@ -69,6 +75,7 @@ class TranslationHistoryService with ChangeNotifier {
     notifyListeners();
 
     try {
+      AppLogger.debug('FIRESTORE', 'Saving translation history.');
       await _firestore
           .collection('users')
           .doc(user.uid)
@@ -80,8 +87,21 @@ class TranslationHistoryService with ChangeNotifier {
             'type': entry.type,
             'timestamp': FieldValue.serverTimestamp(),
           });
-    } catch (e) {
-      debugPrint('TranslationHistoryService: Error saving translation history to Firestore: $e');
+      AppLogger.debug('FIRESTORE', 'History saved successfully.');
+    } catch (error, stackTrace) {
+      _logFirestoreError('save translation history', error, stackTrace);
     }
+  }
+
+  void _logFirestoreError(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    final message =
+        error is FirebaseException && error.code == 'permission-denied'
+        ? 'Permission denied. Operation: $operation.'
+        : 'Operation $operation failed (${error.runtimeType}).';
+    AppLogger.error('FIRESTORE', message, stackTrace: stackTrace);
   }
 }

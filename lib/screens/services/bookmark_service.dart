@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:Higa/models/word.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:Higa/screens/services/app_logger.dart';
 
 class BookmarkService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -15,11 +16,14 @@ class BookmarkService with ChangeNotifier {
   Future<void> loadBookmarksFromFirestore() async {
     final user = _auth.currentUser;
     if (user == null) {
-      print('BookmarkService: Cannot load bookmarks, user is not logged in.');
+      AppLogger.debug(
+        'FIRESTORE',
+        'Bookmark load skipped because no user is authenticated.',
+      );
       return;
     }
 
-    print('BookmarkService: Loading bookmarks for user ${user.uid}...');
+    AppLogger.debug('FIRESTORE', 'Loading bookmarks.');
     try {
       final bookmarkSnapshot = await _firestore
           .collection('users')
@@ -32,17 +36,23 @@ class BookmarkService with ChangeNotifier {
       for (var doc in bookmarkSnapshot.docs) {
         _bookmarks.add(Word.fromJson(doc.data()));
       }
-      print('BookmarkService: Loaded ${_bookmarks.length} items from Firestore.');
+      AppLogger.debug(
+        'FIRESTORE',
+        'Bookmarks loaded (${_bookmarks.length} entries).',
+      );
       notifyListeners();
-    } catch (e) {
-      print('BookmarkService: Error loading bookmarks from Firestore: $e');
+    } catch (error, stackTrace) {
+      _logFirestoreError('load bookmarks', error, stackTrace);
     }
   }
 
   void toggleBookmark(Word word) async {
     final user = _auth.currentUser;
     if (user == null) {
-      print('BookmarkService: Cannot toggle bookmark, user is not logged in.');
+      AppLogger.debug(
+        'FIRESTORE',
+        'Bookmark update skipped because no user is authenticated.',
+      );
       return;
     }
 
@@ -50,10 +60,10 @@ class BookmarkService with ChangeNotifier {
 
     if (isBookmarked) {
       _bookmarks.removeWhere((w) => w.higaonon == word.higaonon);
-      print('BookmarkService: Removing word ${word.higaonon} from bookmarks.');
+      AppLogger.debug('FIRESTORE', 'Removing bookmark.');
     } else {
       _bookmarks.insert(0, word);
-      print('BookmarkService: Adding word ${word.higaonon} to bookmarks.');
+      AppLogger.debug('FIRESTORE', 'Saving bookmark.');
     }
 
     notifyListeners();
@@ -76,14 +86,32 @@ class BookmarkService with ChangeNotifier {
             .doc(word.higaonon)
             .set(wordData);
       }
-      print('BookmarkService: Successfully updated bookmarks in Firestore.');
-    } catch (e) {
-      print('BookmarkService: Error updating bookmarks: $e');
+      AppLogger.debug(
+        'FIRESTORE',
+        'Bookmark operation completed successfully.',
+      );
+    } catch (error, stackTrace) {
+      _logFirestoreError(
+        isBookmarked ? 'delete bookmark' : 'save bookmark',
+        error,
+        stackTrace,
+      );
     }
+  }
+
+  void _logFirestoreError(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    final message =
+        error is FirebaseException && error.code == 'permission-denied'
+        ? 'Permission denied. Operation: $operation.'
+        : 'Operation $operation failed (${error.runtimeType}).';
+    AppLogger.error('FIRESTORE', message, stackTrace: stackTrace);
   }
 
   bool isBookmarked(Word word) {
     return _bookmarks.any((w) => w.higaonon == word.higaonon);
   }
 }
-

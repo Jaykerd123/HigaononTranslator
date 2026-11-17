@@ -50,3 +50,14 @@ examples, and pass them to Gemini with Higaonon-only language instructions.
 Copy these updated Python files to the Space repository and redeploy the Space
 for the prompt and retrieval changes to affect the hosted endpoint. The Gradio
 function name and Flutter API contract remain unchanged.
+
+## Debug logging
+
+Flutter processing details are emitted in debug builds with timestamps and
+`[TRANSLATION]`, `[API]`, `[Gemini]`, `[TTS]`, and `[FIRESTORE]` prefixes.
+Sensitive request headers, API query strings, and Firebase user identifiers are
+not logged. Python
+retrieval queries, retrieved pairs, and stack traces are debug-level details;
+set `LOG_LEVEL=DEBUG` in the local backend or Hugging Face Space environment
+to enable them. Do not set this level in production if translation text should
+not appear in logs.

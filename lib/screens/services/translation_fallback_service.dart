@@ -1,4 +1,6 @@
 import 'dart:convert';
+
+import 'package:Higa/screens/services/app_logger.dart';
 import 'package:http/http.dart' as http;
 import 'discovery_service.dart';
 
@@ -26,25 +28,51 @@ class TranslationFallbackService {
       String baseUrl = possibleBaseUrls[i];
       try {
         final url = Uri.parse('$baseUrl/translate');
-        final response = await http
-            .post(
-              url,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({'text': text}),
-            )
-            .timeout(
-              const Duration(seconds: 6),
-            ); // Increased timeout for tunnel latency
+        final stopwatch = Stopwatch()..start();
+        AppLogger.apiRequest('POST', url);
+        late final http.Response response;
+        try {
+          response = await http
+              .post(
+                url,
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({'text': text}),
+              )
+              .timeout(
+                const Duration(seconds: 6),
+              ); // Increased timeout for tunnel latency
+        } finally {
+          AppLogger.debug(
+            'API',
+            'Request duration: ${stopwatch.elapsedMilliseconds} ms',
+          );
+        }
+        AppLogger.apiResponse(response.statusCode);
 
         if (response.statusCode == 200) {
-          final Map<String, dynamic> data = jsonDecode(response.body);
-          if (data.containsKey('translation')) {
-            return data['translation'];
+          final dynamic decoded = jsonDecode(response.body);
+          if (decoded is! Map<String, dynamic>) {
+            AppLogger.error('API', 'Fallback response had an invalid shape.');
+          } else if (decoded.containsKey('translation')) {
+            AppLogger.debug('TRANSLATION', 'Fallback response received.');
+            return decoded['translation'];
+          } else {
+            AppLogger.error(
+              'API',
+              'Fallback response did not contain a translation.',
+            );
           }
+        } else {
+          AppLogger.error(
+            'API',
+            'Fallback request returned HTTP ${response.statusCode}.',
+          );
         }
-      } catch (e) {
-        print(
-          'TranslationFallbackService Error calling server at $baseUrl: $e',
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'API',
+          'Fallback request failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
         );
       }
 
@@ -67,7 +95,18 @@ class TranslationFallbackService {
         'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ceb&dt=t&q=${Uri.encodeComponent(text)}',
       );
 
-      final response = await http.get(url);
+      final stopwatch = Stopwatch()..start();
+      AppLogger.apiRequest('GET', url);
+      late final http.Response response;
+      try {
+        response = await http.get(url);
+      } finally {
+        AppLogger.debug(
+          'API',
+          'Request duration: ${stopwatch.elapsedMilliseconds} ms',
+        );
+      }
+      AppLogger.apiResponse(response.statusCode);
 
       if (response.statusCode == 200) {
         // The response is a nested JSON array:
@@ -81,12 +120,22 @@ class TranslationFallbackService {
               translatedText.write(item[0]);
             }
           }
+          AppLogger.debug('TRANSLATION', 'Fallback response received.');
           return translatedText.toString();
         }
       }
+      AppLogger.error(
+        'API',
+        'Google Translate fallback returned HTTP ${response.statusCode} '
+            'or an invalid response.',
+      );
       return null;
-    } catch (e) {
-      print('TranslationFallbackService Error: $e');
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'API',
+        'Google Translate fallback failed (${error.runtimeType}).',
+        stackTrace: stackTrace,
+      );
       return null;
     }
   }

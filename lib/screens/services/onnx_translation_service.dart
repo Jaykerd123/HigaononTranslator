@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
 
+import 'package:Higa/screens/services/app_logger.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:onnxruntime/onnxruntime.dart';
@@ -51,20 +52,6 @@ class OnnxTranslationService {
         '${modelDir.path}/decoder_with_past_model.onnx',
       );
 
-      print('ONNX Encoder inputs: ${_encoderSession!.inputNames}');
-
-      print('ONNX Decoder inputs: ${_decoderSession!.inputNames}');
-
-      print(
-        'ONNX Decoder-with-past inputs: '
-        '${_decoderWithPastSession!.inputNames}',
-      );
-
-      print(
-        'ONNX Decoder-with-past outputs: '
-        '${_decoderWithPastSession!.outputNames}',
-      );
-
       // Load source SentencePiece tokenizer.
       final spmData = await rootBundle.load(
         'assets/higaonon_mobile/source.spm',
@@ -85,9 +72,13 @@ class OnnxTranslationService {
 
       _isInitialized = true;
 
-      print('ONNX Translation initialization successful.');
-    } catch (e) {
-      print('ONNX Translation initialization failed: $e');
+      AppLogger.debug('ONNX', 'Translation model initialized successfully.');
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'ONNX',
+        'Translation model initialization failed (${error.runtimeType}).',
+        stackTrace: stackTrace,
+      );
 
       rethrow;
     }
@@ -146,22 +137,15 @@ class OnnxTranslationService {
     }
 
     try {
+      AppLogger.debug('TRANSLATION', 'ONNX inference started.');
       // ============================================================
       // 1. TOKENIZATION
       // ============================================================
 
       final encoded = _tokenizer!.encode(text);
 
-      // Diagnostic output.
-      print('');
-      print('========== ONNX TRANSLATION ==========');
-      print('Input: $text');
-
-      print('RAW TOKENIZER RESULT: $encoded');
-
       final pieces = encoded.tokens;
-
-      print('Tokenizer pieces: $pieces');
+      AppLogger.debug('ONNX', 'Tokenized source into ${pieces.length} pieces.');
 
       final List<int> inputIds = [];
 
@@ -178,7 +162,7 @@ class OnnxTranslationService {
       // Marian encoder input ends with EOS.
       inputIds.add(_eosTokenId);
 
-      print('Input IDs: $inputIds');
+      AppLogger.debug('ONNX', 'Encoder input length: ${inputIds.length}.');
 
       // ============================================================
       // 2. ENCODER
@@ -197,11 +181,6 @@ class OnnxTranslationService {
         [batchSize, sequenceLength],
       );
 
-      print(
-        'Attention mask: '
-        '${List<int>.filled(sequenceLength, 1)}',
-      );
-
       final encoderInputs = <String, OrtValue>{
         'input_ids': inputIdsTensor,
         'attention_mask': attentionMask,
@@ -218,19 +197,9 @@ class OnnxTranslationService {
 
       final encoderHiddenStates = encoderOutputs[0] as OrtValueTensor;
 
-      print(
-        'Encoder output type: '
-        '${encoderHiddenStates.runtimeType}',
-      );
-
       // ============================================================
       // 3. INITIAL DECODER
       // ============================================================
-
-      print(
-        'Decoder start token: '
-        '$_decoderStartTokenId',
-      );
 
       final decoderInputIds = OrtValueTensor.createTensorWithDataList(
         Int64List.fromList([_decoderStartTokenId]),
@@ -253,11 +222,6 @@ class OnnxTranslationService {
       }
 
       final logits = decoderOutputs[0] as OrtValueTensor;
-
-      print(
-        'Initial decoder logits type: '
-        '${logits.runtimeType}',
-      );
 
       // ============================================================
       // 4. INITIAL KV CACHE
@@ -289,14 +253,10 @@ class OnnxTranslationService {
         }
       }
 
-      print(
-        'Initial decoder cache count: '
-        '${decoderCache.length}',
-      );
-
-      print(
-        'Initial encoder cache count: '
-        '${encoderCache.length}',
+      AppLogger.debug(
+        'ONNX',
+        'Decoder caches initialized (${decoderCache.length} decoder, '
+            '${encoderCache.length} encoder).',
       );
 
       if (decoderCache.length != 12) {
@@ -319,11 +279,6 @@ class OnnxTranslationService {
 
       int nextToken = _getArgmax(logits);
 
-      print(
-        'First generated token ID: '
-        '$nextToken',
-      );
-
       final List<int> generatedTokens = [];
 
       const int maxTokens = 100;
@@ -336,11 +291,6 @@ class OnnxTranslationService {
 
       while (nextToken != _eosTokenId && step < maxTokens) {
         generatedTokens.add(nextToken);
-
-        print(
-          'Step $step: input token = '
-          '$nextToken',
-        );
 
         final loopInputIds = OrtValueTensor.createTensorWithDataList(
           Int64List.fromList([nextToken]),
@@ -375,11 +325,6 @@ class OnnxTranslationService {
         if (step == 0) {
           final requiredInputs = _decoderWithPastSession!.inputNames;
 
-          print(
-            'Decoder-with-past input count: '
-            '${requiredInputs.length}',
-          );
-
           for (final required in requiredInputs) {
             if (!loopInputs.containsKey(required)) {
               throw Exception(
@@ -389,7 +334,7 @@ class OnnxTranslationService {
             }
           }
 
-          print('All decoder-with-past inputs supplied.');
+          AppLogger.debug('ONNX', 'Decoder-with-past inputs validated.');
         }
 
         // ------------------------------------------------------------
@@ -412,11 +357,6 @@ class OnnxTranslationService {
         // ------------------------------------------------------------
 
         nextToken = _getArgmax(loopLogits);
-
-        print(
-          'Step $step: generated token = '
-          '$nextToken',
-        );
 
         // ------------------------------------------------------------
         // Replace ONLY decoder cache.
@@ -465,14 +405,10 @@ class OnnxTranslationService {
       // 7. FINAL TOKEN IDs
       // ============================================================
 
-      print(
-        'Generated token IDs: '
-        '$generatedTokens',
-      );
-
-      print(
-        'Generation stopped because: '
-        '${nextToken == _eosTokenId ? "EOS" : "max tokens"}',
+      AppLogger.debug(
+        'ONNX',
+        'Generated ${generatedTokens.length} output tokens; stopped at '
+            '${nextToken == _eosTokenId ? "EOS" : "the token limit"}.',
       );
 
       // ============================================================
@@ -494,46 +430,34 @@ class OnnxTranslationService {
           .replaceAll('\u2581', ' ')
           .trim();
 
-      print('Translation: $result');
-
-      print('======================================');
-
-      print('DEBUG: BEFORE CLEANUP');
-
       try {
         inputIdsTensor.release();
-        print('DEBUG: released inputIdsTensor');
-
         attentionMask.release();
-        print('DEBUG: released attentionMask');
-
         encoderHiddenStates.release();
-        print('DEBUG: released encoderHiddenStates');
-
         decoderInputIds.release();
-        print('DEBUG: released decoderInputIds');
-
         logits.release();
-        print('DEBUG: released logits');
 
         for (int i = 0; i < tensorsToRelease.length; i++) {
           tensorsToRelease[i].release();
-          print('DEBUG: released cache tensor $i');
         }
-
-        print('DEBUG: CLEANUP COMPLETE');
-      } catch (e, stackTrace) {
-        print('DEBUG: CLEANUP ERROR: $e');
-        print(stackTrace);
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'ONNX',
+          'Tensor cleanup failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
+        );
       }
 
-      print('DEBUG: RETURNING RESULT = $result');
+      AppLogger.debug('TRANSLATION', 'ONNX inference completed.');
+      AppLogger.debug('TRANSLATION', 'ONNX result: $result');
 
       return result;
-    } catch (e, stackTrace) {
-      print('ONNX Translation failed: $e');
-
-      print(stackTrace);
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'ONNX',
+        'Translation inference failed (${error.runtimeType}).',
+        stackTrace: stackTrace,
+      );
 
       return null;
     }

@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Higa/models/user.dart';
 import 'package:Higa/screens/services/database.dart';
+import 'package:Higa/screens/services/app_logger.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
@@ -31,41 +31,59 @@ class AuthService {
   }
 
   // sign in with email and password
-  Future<dynamic> signInWithEmailAndPassword(String email, String password) async {
-    try{
-      UserCredential result = await _auth.signInWithEmailAndPassword(email: email, password: password);
+  Future<dynamic> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
+    try {
+      UserCredential result = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       User? user = result.user;
-      
+
       if (user != null && !user.emailVerified) {
         await _auth.signOut();
         return "Please verify your email address. Check your inbox to continue.";
       }
-      
+
       return _userFromFirebaseUser(user);
-    } on FirebaseAuthException catch(e){
+    } on FirebaseAuthException catch (e) {
       return e.message;
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   }
 
-  Future<dynamic> registerWithEmailAndPassword(String email, String password) async {
-    try{
-      UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  Future<dynamic> registerWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
+    try {
+      UserCredential result = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       User? user = result.user;
 
       // Create a new document for the user with the uid
       if (user != null) {
         await user.sendEmailVerification();
-        await DatabaseService(uid: user.uid).updateUserData(name: 'new member', sugar: '0', strength: 100, onboardingCompleted: false, isDarkMode: false, );
+        await DatabaseService(uid: user.uid).updateUserData(
+          name: 'new member',
+          sugar: '0',
+          strength: 100,
+          onboardingCompleted: false,
+          isDarkMode: false,
+        );
         await _auth.signOut();
         return "success";
       }
 
       return _userFromFirebaseUser(user);
-    } on FirebaseAuthException catch(e){
+    } on FirebaseAuthException catch (e) {
       return e.message;
-    } catch(e){
+    } catch (e) {
       return null;
     }
   }
@@ -77,7 +95,8 @@ class AuthService {
       if (googleUser == null) {
         return null; // The user canceled the sign-in
       }
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -87,10 +106,33 @@ class AuthService {
 
       if (user != null) {
         // Check if the user document already exists
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        AppLogger.debug('FIRESTORE', 'Loading user profile after sign-in.');
+        late final DocumentSnapshot<Map<String, dynamic>> doc;
+        try {
+          doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+          AppLogger.debug('FIRESTORE', 'User profile loaded successfully.');
+        } catch (error, stackTrace) {
+          final message =
+              error is FirebaseException && error.code == 'permission-denied'
+              ? 'Permission denied. Operation: load user profile.'
+              : 'Operation load user profile failed '
+                    '(${error.runtimeType}).';
+          AppLogger.error('FIRESTORE', message, stackTrace: stackTrace);
+          rethrow;
+        }
         if (!doc.exists) {
           // If it doesn't exist, create it (new user)
-          await DatabaseService(uid: user.uid).updateUserData(name: googleUser.displayName ?? 'new member', sugar: '0', strength: 100, onboardingCompleted: false, isDarkMode: false, profileImageUrl: googleUser.photoUrl);
+          await DatabaseService(uid: user.uid).updateUserData(
+            name: googleUser.displayName ?? 'new member',
+            sugar: '0',
+            strength: 100,
+            onboardingCompleted: false,
+            isDarkMode: false,
+            profileImageUrl: googleUser.photoUrl,
+          );
         }
       }
 
@@ -114,6 +156,4 @@ class AuthService {
       // It's generally safe to ignore errors on sign out
     }
   }
-
 }
-

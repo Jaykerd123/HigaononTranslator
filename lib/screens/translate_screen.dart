@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:Higa/models/word.dart';
@@ -8,6 +9,7 @@ import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/screens/services/translation_stats_service.dart';
 import 'package:Higa/screens/services/translation_fallback_service.dart';
 import 'package:Higa/screens/services/onnx_translation_service.dart';
+import 'package:Higa/screens/services/app_logger.dart';
 import 'package:Higa/screens/gemini_assistant_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -62,8 +64,10 @@ class _TranslateScreenState extends State<TranslateScreen>
     if (mounted) {
       if (status.isGranted) {
         _speechEnabled = await _speechToText.initialize(
-          onStatus: (status) => print('[SpeechToText] Status: $status'),
-          onError: (error) => print('[SpeechToText] Error: $error'),
+          onStatus: (status) =>
+              AppLogger.debug('SpeechToText', 'Status: $status'),
+          onError: (_) =>
+              AppLogger.error('SpeechToText', 'Recognition error occurred.'),
         );
       } else {
         _speechEnabled = false;
@@ -146,6 +150,7 @@ class _TranslateScreenState extends State<TranslateScreen>
   Future<void> _translateVoiceInput() async {
     if (_lastWords.isNotEmpty) {
       final normalizedInput = _normalizeString(_lastWords);
+      AppLogger.translationStarted(_lastWords);
 
       setState(() {
         _voiceTranslationResult = 'Translating...';
@@ -155,6 +160,10 @@ class _TranslateScreenState extends State<TranslateScreen>
       // 1. Check dictionary.json (Words)
       for (var word in _words) {
         if (_normalizeString(word.english) == normalizedInput) {
+          AppLogger.dictionaryMatch(
+            word.higaonon,
+            source: 'local dictionary (word)',
+          );
           await Future.delayed(const Duration(seconds: 2));
           setState(() {
             _voiceTranslationResult = word.higaonon;
@@ -168,6 +177,10 @@ class _TranslateScreenState extends State<TranslateScreen>
       // 2. Check dictionary.json (Sentences)
       for (var word in _words) {
         if (_normalizeString(word.exampleEnglish) == normalizedInput) {
+          AppLogger.dictionaryMatch(
+            word.exampleHigaonon,
+            source: 'local dictionary (example sentence)',
+          );
           await Future.delayed(const Duration(seconds: 2));
           setState(() {
             _voiceTranslationResult = word.exampleHigaonon;
@@ -181,6 +194,10 @@ class _TranslateScreenState extends State<TranslateScreen>
       // 3. Check dictionary-second.json
       for (var match in _sentenceMatches) {
         if (_normalizeString(match.english) == normalizedInput) {
+          AppLogger.dictionaryMatch(
+            match.higaonon,
+            source: 'local dictionary (phrase list)',
+          );
           await Future.delayed(const Duration(seconds: 2));
           setState(() {
             _voiceTranslationResult = match.higaonon;
@@ -200,14 +217,14 @@ class _TranslateScreenState extends State<TranslateScreen>
       }
 
       // 4. Offline ONNX Model
+      AppLogger.debug('TRANSLATION', 'No dictionary match.');
+      AppLogger.debug('TRANSLATION', 'Running ONNX model...');
       try {
-        print("DEBUG: VOICE: CALLING ONNX...");
         final onnxTranslation = await OnnxTranslationService().translate(
           _lastWords,
         );
-        print("DEBUG: VOICE: ONNX RESULT = '$onnxTranslation'");
         if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
-          print("DEBUG: VOICE: RESULT AFTER ONNX = '$onnxTranslation'");
+          AppLogger.translationCompleted(onnxTranslation, 'ONNX model');
           setState(() {
             _voiceTranslationResult = onnxTranslation;
             _voiceTranslationFound = true;
@@ -221,19 +238,25 @@ class _TranslateScreenState extends State<TranslateScreen>
             exampleEnglish: '',
           );
           _handleTranslationSuccess(wordObj, _lastWords, onnxTranslation);
-          print("DEBUG: VOICE: FINAL RESULT BEFORE UI = '$onnxTranslation'");
           return;
         }
-      } catch (e) {
-        print('ONNX Voice Translation error: $e');
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'TRANSLATION',
+          'ONNX inference failed (${error.runtimeType}); continuing to fallback.',
+          stackTrace: stackTrace,
+        );
       }
 
       // 5. Fallback to AI Model
-      print("DEBUG: VOICE: CALLING FALLBACK SERVICE...");
+      AppLogger.debug('TRANSLATION', 'Using fallback service...');
       final fallbackTranslation =
           await TranslationFallbackService.translateEnglishToBisaya(_lastWords);
-      print("DEBUG: VOICE: FALLBACK RESULT = '$fallbackTranslation'");
-      print("DEBUG: VOICE: RESULT AFTER FALLBACK = '$fallbackTranslation'");
+      if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
+        AppLogger.translationCompleted(fallbackTranslation, 'fallback service');
+      } else {
+        AppLogger.error('TRANSLATION', 'Fallback service returned no result.');
+      }
 
       if (mounted) {
         setState(() {
@@ -244,19 +267,18 @@ class _TranslateScreenState extends State<TranslateScreen>
               context,
               listen: false,
             ).speak(fallbackTranslation);
-            Provider.of<TranslationStatsService>(
-              context,
-              listen: false,
-            ).incrementTranslationCount();
+            unawaited(
+              Provider.of<TranslationStatsService>(
+                context,
+                listen: false,
+              ).recordTranslation(),
+            );
             _addTranslationToHistory(_lastWords, fallbackTranslation);
           } else {
             _voiceTranslationResult = 'No translation found';
             _voiceTranslationFound = false;
           }
         });
-        print(
-          "DEBUG: VOICE: FINAL RESULT BEFORE UI = '$_voiceTranslationResult'",
-        );
       }
     }
   }
@@ -269,10 +291,12 @@ class _TranslateScreenState extends State<TranslateScreen>
         listen: false,
       ).addWordToHistory(word);
       Provider.of<TtsService>(context, listen: false).speak(result);
-      Provider.of<TranslationStatsService>(
-        context,
-        listen: false,
-      ).incrementTranslationCount();
+      unawaited(
+        Provider.of<TranslationStatsService>(
+          context,
+          listen: false,
+        ).recordTranslation(),
+      );
     }
   }
 
@@ -289,8 +313,12 @@ class _TranslateScreenState extends State<TranslateScreen>
           _words.sort((a, b) => a.higaonon.compareTo(b.higaonon));
         });
       }
-    } catch (e) {
-      print('Error loading assets/dictionary.json: $e');
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'TRANSLATION',
+        'Could not load dictionary.json (${error.runtimeType}).',
+        stackTrace: stackTrace,
+      );
     }
 
     // Load dictionary-second.json
@@ -306,8 +334,12 @@ class _TranslateScreenState extends State<TranslateScreen>
               .toList();
         });
       }
-    } catch (e) {
-      print('Error loading assets/dictionary-second.json: $e');
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'TRANSLATION',
+        'Could not load dictionary-second.json (${error.runtimeType}).',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -369,22 +401,20 @@ class _TranslateScreenState extends State<TranslateScreen>
     });
 
     final normalizedInput = _normalizeString(inputText);
-    print("DEBUG: TEXT: USER INPUT = '$inputText'");
-    print("DEBUG: TEXT: NORMALIZED INPUT = '$normalizedInput'");
+    AppLogger.translationStarted(inputText);
 
     // 1. Check dictionary.json (Words)
     for (var word in _words) {
       if (_normalizeString(word.english) == normalizedInput) {
-        print(
-          "DEBUG: TEXT: MATCH FOUND IN dictionary.json (Words): ${word.higaonon}",
+        AppLogger.dictionaryMatch(
+          word.higaonon,
+          source: 'local dictionary (word)',
         );
-        print("DEBUG: TEXT: RESULT AFTER DICTIONARY = '${word.higaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = word.higaonon;
         });
         _handleTranslationSuccess(word, inputText, word.higaonon);
-        print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '${word.higaonon}'");
         return;
       }
     }
@@ -392,20 +422,15 @@ class _TranslateScreenState extends State<TranslateScreen>
     // 2. Check dictionary.json (Sentences)
     for (var word in _words) {
       if (_normalizeString(word.exampleEnglish) == normalizedInput) {
-        print(
-          "DEBUG: TEXT: MATCH FOUND IN dictionary.json (Sentences): ${word.exampleHigaonon}",
-        );
-        print(
-          "DEBUG: TEXT: RESULT AFTER DICTIONARY = '${word.exampleHigaonon}'",
+        AppLogger.dictionaryMatch(
+          word.exampleHigaonon,
+          source: 'local dictionary (example sentence)',
         );
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = word.exampleHigaonon;
         });
         _handleTranslationSuccess(word, inputText, word.exampleHigaonon);
-        print(
-          "DEBUG: TEXT: FINAL RESULT BEFORE UI = '${word.exampleHigaonon}'",
-        );
         return;
       }
     }
@@ -413,10 +438,10 @@ class _TranslateScreenState extends State<TranslateScreen>
     // 3. Check dictionary-second.json
     for (var match in _sentenceMatches) {
       if (_normalizeString(match.english) == normalizedInput) {
-        print(
-          "DEBUG: TEXT: MATCH FOUND IN dictionary-second.json: ${match.higaonon}",
+        AppLogger.dictionaryMatch(
+          match.higaonon,
+          source: 'local dictionary (phrase list)',
         );
-        print("DEBUG: TEXT: RESULT AFTER DICTIONARY = '${match.higaonon}'");
         await Future.delayed(const Duration(seconds: 2));
         setState(() {
           _textTranslationResult = match.higaonon;
@@ -430,20 +455,19 @@ class _TranslateScreenState extends State<TranslateScreen>
           exampleEnglish: '',
         );
         _handleTranslationSuccess(wordObj, inputText, match.higaonon);
-        print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '${match.higaonon}'");
         return;
       }
     }
 
     // 4. Offline ONNX Model
+    AppLogger.debug('TRANSLATION', 'No dictionary match.');
+    AppLogger.debug('TRANSLATION', 'Running ONNX model...');
     try {
-      print("DEBUG: TEXT: CALLING ONNX...");
       final onnxTranslation = await OnnxTranslationService().translate(
         inputText,
       );
-      print("DEBUG: TEXT: ONNX RESULT = '$onnxTranslation'");
       if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
-        print("DEBUG: TEXT: RESULT AFTER ONNX = '$onnxTranslation'");
+        AppLogger.translationCompleted(onnxTranslation, 'ONNX model');
         setState(() {
           _textTranslationResult = onnxTranslation;
         });
@@ -456,19 +480,25 @@ class _TranslateScreenState extends State<TranslateScreen>
           exampleEnglish: '',
         );
         _handleTranslationSuccess(wordObj, inputText, onnxTranslation);
-        print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '$onnxTranslation'");
         return;
       }
-    } catch (e) {
-      print('ONNX Text Translation error: $e');
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'TRANSLATION',
+        'ONNX inference failed (${error.runtimeType}); continuing to fallback.',
+        stackTrace: stackTrace,
+      );
     }
 
     // 5. Fallback to AI Model
-    print("DEBUG: TEXT: CALLING FALLBACK SERVICE...");
+    AppLogger.debug('TRANSLATION', 'Using fallback service...');
     final fallbackTranslation =
         await TranslationFallbackService.translateEnglishToBisaya(inputText);
-    print("DEBUG: TEXT: FALLBACK RESULT = '$fallbackTranslation'");
-    print("DEBUG: TEXT: RESULT AFTER FALLBACK = '$fallbackTranslation'");
+    if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
+      AppLogger.translationCompleted(fallbackTranslation, 'fallback service');
+    } else {
+      AppLogger.error('TRANSLATION', 'Fallback service returned no result.');
+    }
 
     if (mounted) {
       setState(() {
@@ -478,16 +508,17 @@ class _TranslateScreenState extends State<TranslateScreen>
             context,
             listen: false,
           ).speak(fallbackTranslation);
-          Provider.of<TranslationStatsService>(
-            context,
-            listen: false,
-          ).incrementTranslationCount();
+          unawaited(
+            Provider.of<TranslationStatsService>(
+              context,
+              listen: false,
+            ).recordTranslation(),
+          );
           _addTranslationToHistory(inputText, fallbackTranslation);
         } else {
           _textTranslationResult = 'No translation found for: "$inputText"';
         }
       });
-      print("DEBUG: TEXT: FINAL RESULT BEFORE UI = '$_textTranslationResult'");
     }
   }
 

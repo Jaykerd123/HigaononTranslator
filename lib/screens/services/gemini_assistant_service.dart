@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:Higa/screens/services/app_logger.dart';
 import 'package:http/http.dart' as http;
 
 class GeminiAssistantException implements Exception {
@@ -33,21 +34,45 @@ class GeminiAssistantService {
       throw const GeminiAssistantException('Enter a question first.');
     }
 
+    AppLogger.debug('Gemini', 'Request received.');
+    AppLogger.debug('Gemini', 'Question: $trimmedQuestion');
     try {
-      final queueResponse = await _client
-          .post(
-            _endpoint,
-            headers: const {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'data': [trimmedQuestion],
-            }),
-          )
-          .timeout(timeout);
+      final queueStopwatch = Stopwatch()..start();
+      AppLogger.apiRequest('POST', _endpoint);
+      late final http.Response queueResponse;
+      try {
+        queueResponse = await _client
+            .post(
+              _endpoint,
+              headers: const {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+              body: jsonEncode({
+                'data': [trimmedQuestion],
+              }),
+            )
+            .timeout(timeout);
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'API',
+          'Gemini POST failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
+        );
+        rethrow;
+      } finally {
+        AppLogger.debug(
+          'API',
+          'Request duration: ${queueStopwatch.elapsedMilliseconds} ms',
+        );
+      }
+      AppLogger.apiResponse(queueResponse.statusCode);
 
       if (queueResponse.statusCode != 200) {
+        AppLogger.error(
+          'API',
+          'Gemini POST returned HTTP ${queueResponse.statusCode}.',
+        );
         throw GeminiAssistantException(
           'The assistant request failed (HTTP ${queueResponse.statusCode}).',
         );
@@ -57,17 +82,20 @@ class GeminiAssistantService {
       try {
         queueData = jsonDecode(queueResponse.body);
       } on FormatException {
+        AppLogger.error('API', 'Gemini POST returned invalid JSON.');
         throw const GeminiAssistantException(
           'The assistant returned an invalid Gradio response.',
         );
       }
 
       if (queueData is! Map) {
+        AppLogger.error('API', 'Gemini POST returned an unexpected response.');
         throw const GeminiAssistantException(
           'The assistant returned an unexpected Gradio response.',
         );
       }
       if (queueData['error'] != null) {
+        AppLogger.error('API', 'Gradio rejected the Gemini request.');
         throw GeminiAssistantException(
           'The assistant rejected the request: ${queueData['error']}',
         );
@@ -75,6 +103,7 @@ class GeminiAssistantService {
 
       final eventId = queueData['event_id']?.toString();
       if (eventId == null || eventId.isEmpty) {
+        AppLogger.error('API', 'Gradio response did not contain an event ID.');
         throw const GeminiAssistantException(
           'The assistant did not return a Gradio event ID.',
         );
@@ -90,25 +119,86 @@ class GeminiAssistantService {
               'Cache-Control': 'no-cache',
             });
 
-      final streamResponse = await _client.send(streamRequest).timeout(timeout);
+      AppLogger.debug('Gemini', 'Connecting to Hugging Face response stream.');
+      final streamStopwatch = Stopwatch()..start();
+      AppLogger.apiRequest('GET', streamRequest.url);
+      late final http.StreamedResponse streamResponse;
+      try {
+        streamResponse = await _client.send(streamRequest).timeout(timeout);
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'API',
+          'Gemini SSE connection failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
+        );
+        AppLogger.debug(
+          'API',
+          'Request duration: ${streamStopwatch.elapsedMilliseconds} ms',
+        );
+        rethrow;
+      }
+      AppLogger.apiResponse(streamResponse.statusCode);
       if (streamResponse.statusCode != 200) {
+        AppLogger.debug(
+          'API',
+          'Request duration: ${streamStopwatch.elapsedMilliseconds} ms',
+        );
+        AppLogger.error(
+          'API',
+          'Gemini SSE returned HTTP ${streamResponse.statusCode}.',
+        );
         throw GeminiAssistantException(
           'The assistant response stream failed '
           '(HTTP ${streamResponse.statusCode}).',
         );
       }
 
-      return await _readEventStream(streamResponse).timeout(timeout);
-    } on GeminiAssistantException {
+      late final String answer;
+      try {
+        answer = await _readEventStream(streamResponse).timeout(timeout);
+      } finally {
+        AppLogger.debug(
+          'API',
+          'SSE request duration: ${streamStopwatch.elapsedMilliseconds} ms',
+        );
+      }
+      AppLogger.debug('Gemini', 'Response received.');
+      AppLogger.debug('Gemini', 'Response length: ${answer.length}');
+      AppLogger.debug('Gemini', 'Request completed successfully.');
+      return answer;
+    } on GeminiAssistantException catch (error, stackTrace) {
+      AppLogger.error(
+        'Gemini',
+        'Request failed (${error.runtimeType}).',
+        stackTrace: stackTrace,
+      );
       rethrow;
-    } on TimeoutException {
+    } on TimeoutException catch (_, stackTrace) {
+      AppLogger.error('API', 'Gemini request timed out.');
+      AppLogger.error('Gemini', 'Request timed out.', stackTrace: stackTrace);
       throw const GeminiAssistantException(
         'The assistant took too long to respond. Please try again.',
       );
-    } on http.ClientException catch (error) {
+    } on http.ClientException catch (error, stackTrace) {
+      AppLogger.error(
+        'API',
+        'Gemini connection failed (${error.runtimeType}).',
+      );
+      AppLogger.error(
+        'Gemini',
+        'Connection failed (${error.runtimeType}).',
+        stackTrace: stackTrace,
+      );
       throw GeminiAssistantException(
         'Could not connect to the assistant: ${error.message}',
       );
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        'Gemini',
+        'Unexpected request failure (${error.runtimeType}).',
+        stackTrace: stackTrace,
+      );
+      rethrow;
     }
   }
 
@@ -119,6 +209,8 @@ class GeminiAssistantService {
     String? finishEvent() {
       if (eventName == 'error') {
         final details = dataLines.join('\n').trim();
+        AppLogger.error('Gemini', 'Gradio SSE returned an error event.');
+        AppLogger.error('API', 'Gradio SSE returned an error event.');
         throw GeminiAssistantException(
           details.isEmpty
               ? 'The assistant reported an error.'

@@ -17,23 +17,30 @@ class _YourProgressScreenState extends State<YourProgressScreen> {
     super.initState();
     // Use a post-frame callback to ensure that provider is available.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HistoryService>(context, listen: false).loadHistoryFromFirestore();
-      Provider.of<TranslationStatsService>(context, listen: false).loadTranslationStatsFromFirestore();
+      Provider.of<HistoryService>(
+        context,
+        listen: false,
+      ).loadHistoryFromFirestore();
     });
+  }
+
+  String _formatTimeSpent(int seconds) {
+    final duration = Duration(seconds: seconds);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    if (hours == 0) return '${duration.inMinutes}m';
+    if (minutes == 0) return '${hours}h';
+    return '${hours}h ${minutes}m';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your Progress'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Your Progress'), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Consumer<TranslationStatsService>(
           builder: (context, translationStatsService, child) {
-            print('YourProgressScreen: Translation count = ${translationStatsService.translationCount}');
             return Consumer<HistoryService>(
               builder: (context, historyService, child) {
                 return GridView.count(
@@ -46,19 +53,22 @@ class _YourProgressScreenState extends State<YourProgressScreen> {
                       value: historyService.history.length.toString(),
                       label: 'Words Learned',
                     ),
-                    const ProgressCard(
+                    ProgressCard(
                       icon: Icons.local_fire_department,
-                      value: '0',
+                      value: translationStatsService.dayStreak.toString(),
                       label: 'Day Streak',
                     ),
                     ProgressCard(
                       icon: Icons.translate,
-                      value: translationStatsService.translationCount.toString(),
+                      value: translationStatsService.translationCount
+                          .toString(),
                       label: 'Translations',
                     ),
-                    const ProgressCard(
+                    ProgressCard(
                       icon: Icons.timer,
-                      value: '0h',
+                      value: _formatTimeSpent(
+                        translationStatsService.timeSpentSeconds,
+                      ),
                       label: 'Time Spent',
                     ),
                   ],
@@ -71,4 +81,3 @@ class _YourProgressScreenState extends State<YourProgressScreen> {
     );
   }
 }
-

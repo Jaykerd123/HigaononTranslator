@@ -1,7 +1,10 @@
 import csv
 import json
+import logging
 import math
+import os
 import re
+import traceback
 import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -73,6 +76,16 @@ _STOPWORDS = {
     "you",
     "your",
 }
+
+_LOGGER = logging.getLogger("higaonon_retrieval")
+_LOGGER.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
+if not _LOGGER.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    )
+    _LOGGER.addHandler(_handler)
+    _LOGGER.propagate = False
 
 
 def _normalize(text: str) -> str:
@@ -223,14 +236,52 @@ class ReferenceRetrievalIndex:
         phrase_path: str | Path,
         csv_path: str | Path | None = None,
     ) -> "ReferenceRetrievalIndex":
-        dictionary_entries = cls._read_entries(dictionary_path)
-        phrase_entries = cls._read_entries(phrase_path)
-        csv_entries = cls._read_csv_entries(csv_path) if csv_path is not None else []
-        return cls(dictionary_entries, phrase_entries, csv_entries)
+        _LOGGER.info("[RETRIEVAL] Dataset loading started.")
+        try:
+            dictionary_entries = cls._read_entries(dictionary_path)
+            phrase_entries = cls._read_entries(phrase_path)
+            csv_entries = (
+                cls._read_csv_entries(csv_path) if csv_path is not None else []
+            )
+            index = cls(dictionary_entries, phrase_entries, csv_entries)
+        except Exception as error:
+            _LOGGER.error(
+                "[RETRIEVAL] ERROR: Dataset loading failed (%s).",
+                type(error).__name__,
+            )
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                _LOGGER.debug(
+                    "[RETRIEVAL] Stack trace:\n%s",
+                    "".join(traceback.format_tb(error.__traceback__)),
+                )
+            raise
+        _LOGGER.info("[RETRIEVAL] Dataset loaded successfully.")
+        _LOGGER.info(
+            "[RETRIEVAL] Total dataset entries: %s", index.reference_count
+        )
+        return index
 
     @classmethod
     def from_csv_file(cls, csv_path: str | Path) -> "ReferenceRetrievalIndex":
-        return cls([], [], cls._read_csv_entries(csv_path))
+        _LOGGER.info("[RETRIEVAL] Dataset loading started.")
+        try:
+            index = cls([], [], cls._read_csv_entries(csv_path))
+        except Exception as error:
+            _LOGGER.error(
+                "[RETRIEVAL] ERROR: Dataset loading failed (%s).",
+                type(error).__name__,
+            )
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                _LOGGER.debug(
+                    "[RETRIEVAL] Stack trace:\n%s",
+                    "".join(traceback.format_tb(error.__traceback__)),
+                )
+            raise
+        _LOGGER.info("[RETRIEVAL] Dataset loaded successfully.")
+        _LOGGER.info(
+            "[RETRIEVAL] Total dataset entries: %s", index.reference_count
+        )
+        return index
 
     @staticmethod
     def _read_entries(path: str | Path) -> list[Mapping[str, object]]:
@@ -294,15 +345,18 @@ class ReferenceRetrievalIndex:
         self._exact_matches[normalized_english].append(reference_index)
 
     def retrieve(self, text: str, limit: int = 8) -> dict[str, object]:
+        _LOGGER.debug("[RETRIEVAL] Query: %s", text)
         if not text.strip():
+            _LOGGER.error("[RETRIEVAL] ERROR: Query cannot be empty.")
             raise ValueError("Text cannot be empty.")
         if limit < 1:
+            _LOGGER.error("[RETRIEVAL] ERROR: Result limit must be positive.")
             raise ValueError("Limit must be greater than zero.")
 
         normalized_query = _normalize(text)
         exact_indices = self._exact_matches.get(normalized_query, [])
         if exact_indices:
-            return {
+            result = {
                 "query": text,
                 "match_type": "exact",
                 "candidate_count": len(exact_indices),
@@ -311,17 +365,21 @@ class ReferenceRetrievalIndex:
                     for index in exact_indices
                 ],
             }
+            self._log_retrieval_result(result)
+            return result
 
         query_tokens = tuple(
             token for token in _tokens(text) if token not in _STOPWORDS
         )
         if not query_tokens:
-            return {
+            result = {
                 "query": text,
                 "match_type": "none",
                 "candidate_count": 0,
                 "references": [],
             }
+            self._log_retrieval_result(result)
+            return result
 
         scores: dict[int, float] = defaultdict(float)
         total_documents = len(self._references)
@@ -349,18 +407,20 @@ class ReferenceRetrievalIndex:
                 )
 
         if not scores:
-            return {
+            result = {
                 "query": text,
                 "match_type": "none",
                 "candidate_count": 0,
                 "references": [],
             }
+            self._log_retrieval_result(result)
+            return result
 
         ranked_indices = sorted(
             scores,
             key=lambda index: (-scores[index], self._references[index].reference_id),
         )
-        return {
+        result = {
             "query": text,
             "match_type": "related",
             "candidate_count": len(ranked_indices),
@@ -369,3 +429,38 @@ class ReferenceRetrievalIndex:
                 for index in ranked_indices[:limit]
             ],
         }
+        self._log_retrieval_result(result)
+        return result
+
+    @staticmethod
+    def _log_retrieval_result(result: dict[str, object]) -> None:
+        references = result["references"]
+        match_type = result["match_type"]
+        _LOGGER.debug(
+            "[RETRIEVAL] Exact match found: %s",
+            "YES" if match_type == "exact" else "NO",
+        )
+        _LOGGER.debug(
+            "[RETRIEVAL] Related examples retrieved: %s",
+            len(references)
+            if match_type == "related" and isinstance(references, list)
+            else 0,
+        )
+        method = (
+            "exact"
+            if match_type == "exact"
+            else "BM25"
+            if match_type == "related"
+            else "lexical"
+        )
+        _LOGGER.debug("[RETRIEVAL] Retrieval method: %s", method)
+        if isinstance(references, list):
+            for index, reference in enumerate(references, start=1):
+                if isinstance(reference, dict):
+                    _LOGGER.debug(
+                        "[RETRIEVAL] Example %s - English: %s | Higaonon: %s",
+                        index,
+                        reference.get("english", ""),
+                        reference.get("higaonon", ""),
+                    )
+        _LOGGER.debug("[RETRIEVAL] Retrieval completed.")

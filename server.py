@@ -16,7 +16,7 @@ from translation_retrieval import ReferenceRetrievalIndex
 # LOGGING CONFIGURATION
 # ============================================================
 logging.basicConfig(
-    level=logging.INFO,
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler()
@@ -91,11 +91,6 @@ reference_index = ReferenceRetrievalIndex.from_files(
     os.path.join(os.path.dirname(__file__), "assets", "dictionary-second.json"),
     os.path.join(os.path.dirname(__file__), "assets", "cleaned_dataset.csv"),
 )
-logger.info(
-    "Loaded %s English-Higaonon reference entries.",
-    reference_index.reference_count,
-)
-
 # ============================================================
 # TTS CACHE
 # ============================================================
@@ -165,9 +160,14 @@ def generate_tts(req: TextRequest):
 # ============================================================
 @app.post("/retrieve")
 def retrieve_references(req: TextRequest):
+    logger.debug("[RETRIEVAL] FastAPI retrieval request received.")
     try:
         return reference_index.retrieve(req.text)
     except ValueError as e:
+        logger.warning(
+            "[RETRIEVAL] Request rejected (%s).",
+            type(e).__name__,
+        )
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 

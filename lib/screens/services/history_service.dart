@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:Higa/models/word.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:Higa/screens/services/app_logger.dart';
 
 class HistoryService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -15,11 +16,14 @@ class HistoryService with ChangeNotifier {
   Future<void> loadHistoryFromFirestore() async {
     final user = _auth.currentUser;
     if (user == null) {
-      print('HistoryService: Cannot load history, user is not logged in.');
+      AppLogger.debug(
+        'FIRESTORE',
+        'History load skipped because no user is authenticated.',
+      );
       return;
     }
 
-    print('HistoryService: Loading history for user ${user.uid}...');
+    AppLogger.debug('FIRESTORE', 'Loading translation history.');
     try {
       final historySnapshot = await _firestore
           .collection('users')
@@ -30,26 +34,28 @@ class HistoryService with ChangeNotifier {
 
       _history.clear();
       for (var doc in historySnapshot.docs) {
+        if (doc.id == 'progress_stats') continue;
         _history.add(Word.fromJson(doc.data()));
       }
-      print('HistoryService: Loaded ${_history.length} items from Firestore.');
+      AppLogger.debug(
+        'FIRESTORE',
+        'Translation history loaded (${_history.length} entries).',
+      );
       notifyListeners();
-    } catch (e) {
-      print('HistoryService: Error loading history from Firestore: $e');
+    } catch (error, stackTrace) {
+      _logFirestoreError('load translation history', error, stackTrace);
     }
   }
 
   void addWordToHistory(Word word) async {
     final user = _auth.currentUser;
     if (user == null) {
-      print(
-        'HistoryService: Cannot add word to history, user is not logged in.',
+      AppLogger.debug(
+        'FIRESTORE',
+        'History save skipped because no user is authenticated.',
       );
       return;
     }
-    print(
-      'HistoryService: Adding word ${word.higaonon} to history for user ${user.uid}.',
-    );
     // Remove the word if it already exists to avoid duplicates and move it to the top.
     _history.removeWhere((w) => w.higaonon == word.higaonon);
     _history.insert(0, word);
@@ -58,6 +64,7 @@ class HistoryService with ChangeNotifier {
 
     // Save to Firestore
     try {
+      AppLogger.debug('FIRESTORE', 'Saving translation history.');
       final wordData = word.toJson();
       wordData['timestamp'] = FieldValue.serverTimestamp();
       await _firestore
@@ -68,9 +75,9 @@ class HistoryService with ChangeNotifier {
             word.higaonon,
           ) // Using higaonon as document ID for easy lookup/replacement
           .set(wordData);
-      print('HistoryService: Successfully saved word to Firestore.');
-    } catch (e) {
-      print('HistoryService: Error saving word to history: $e');
+      AppLogger.debug('FIRESTORE', 'History saved successfully.');
+    } catch (error, stackTrace) {
+      _logFirestoreError('save translation history', error, stackTrace);
     }
   }
 
@@ -83,6 +90,7 @@ class HistoryService with ChangeNotifier {
     final ids = higaononWords.toSet().toList();
     if (ids.isEmpty) return;
 
+    AppLogger.debug('FIRESTORE', 'Deleting translation history entries.');
     final historyCollection = _firestore
         .collection('users')
         .doc(user.uid)
@@ -93,10 +101,28 @@ class HistoryService with ChangeNotifier {
       for (final id in ids.skip(offset).take(500)) {
         batch.delete(historyCollection.doc(id));
       }
-      await batch.commit();
+      try {
+        await batch.commit();
+      } catch (error, stackTrace) {
+        _logFirestoreError('delete translation history', error, stackTrace);
+        rethrow;
+      }
     }
 
     _history.removeWhere((word) => ids.contains(word.higaonon));
     notifyListeners();
+    AppLogger.debug('FIRESTORE', 'Translation history entries deleted.');
+  }
+
+  void _logFirestoreError(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    final message =
+        error is FirebaseException && error.code == 'permission-denied'
+        ? 'Permission denied. Operation: $operation.'
+        : 'Operation $operation failed (${error.runtimeType}).';
+    AppLogger.error('FIRESTORE', message, stackTrace: stackTrace);
   }
 }

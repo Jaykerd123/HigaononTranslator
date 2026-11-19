@@ -9,6 +9,7 @@ import 'package:Higa/screens/services/tts_service.dart';
 import 'package:Higa/screens/services/translation_stats_service.dart';
 import 'package:Higa/screens/services/translation_fallback_service.dart';
 import 'package:Higa/screens/services/onnx_translation_service.dart';
+import 'package:Higa/screens/services/hugging_face_csv_translation_service.dart';
 import 'package:Higa/screens/services/app_logger.dart';
 import 'package:Higa/screens/gemini_assistant_screen.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,18 @@ import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:Higa/screens/word_detail_screen.dart';
+
+class _LocalDictionaryMatch {
+  const _LocalDictionaryMatch({
+    required this.word,
+    required this.translation,
+    required this.lookupSource,
+  });
+
+  final Word word;
+  final String translation;
+  final String lookupSource;
+}
 
 class TranslateScreen extends StatefulWidget {
   const TranslateScreen({super.key});
@@ -39,13 +52,24 @@ class _TranslateScreenState extends State<TranslateScreen>
   String _lastWords = '';
   String _voiceTranslationResult = '';
   bool _voiceTranslationFound = false;
+  String _voiceTranslationSource = '';
+  bool? _voiceTranslationVerified;
+  String? _voiceTranslationStatus;
+  String? _voiceTranslationMessage;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final HuggingFaceCsvTranslationService _huggingFaceTranslationService =
+      HuggingFaceCsvTranslationService();
 
   // State for Text Translation Mode
   bool _isVoiceMode = true; // True for Voice, False for Text
   final TextEditingController _textInputController = TextEditingController();
   String _textTranslationResult = '';
+  String _textTranslationSource = '';
+  bool? _textTranslationVerified;
+  String? _textTranslationStatus;
+  String? _textTranslationMessage;
+  bool _isTranslationInProgress = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -95,6 +119,7 @@ class _TranslateScreenState extends State<TranslateScreen>
       _lastWords = '';
       _voiceTranslationResult = 'Listening...';
       _voiceTranslationFound = false;
+      _clearTranslationMetadata(isVoice: true);
     });
   }
 
@@ -108,6 +133,7 @@ class _TranslateScreenState extends State<TranslateScreen>
       if (_lastWords.isEmpty && _voiceTranslationResult == 'Listening...') {
         _voiceTranslationResult = '';
         _voiceTranslationFound = false;
+        _clearTranslationMetadata(isVoice: true);
       }
     });
   }
@@ -148,139 +174,8 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   Future<void> _translateVoiceInput() async {
-    if (_lastWords.isNotEmpty) {
-      final normalizedInput = _normalizeString(_lastWords);
-      AppLogger.translationStarted(_lastWords);
-
-      setState(() {
-        _voiceTranslationResult = 'Translating...';
-        _voiceTranslationFound = false;
-      });
-
-      // 1. Check dictionary.json (Words)
-      for (var word in _words) {
-        if (_normalizeString(word.english) == normalizedInput) {
-          AppLogger.dictionaryMatch(
-            word.higaonon,
-            source: 'local dictionary (word)',
-          );
-          await Future.delayed(const Duration(seconds: 2));
-          setState(() {
-            _voiceTranslationResult = word.higaonon;
-            _voiceTranslationFound = true;
-          });
-          _handleTranslationSuccess(word, _lastWords, word.higaonon);
-          return;
-        }
-      }
-
-      // 2. Check dictionary.json (Sentences)
-      for (var word in _words) {
-        if (_normalizeString(word.exampleEnglish) == normalizedInput) {
-          AppLogger.dictionaryMatch(
-            word.exampleHigaonon,
-            source: 'local dictionary (example sentence)',
-          );
-          await Future.delayed(const Duration(seconds: 2));
-          setState(() {
-            _voiceTranslationResult = word.exampleHigaonon;
-            _voiceTranslationFound = true;
-          });
-          _handleTranslationSuccess(word, _lastWords, word.exampleHigaonon);
-          return;
-        }
-      }
-
-      // 3. Check dictionary-second.json
-      for (var match in _sentenceMatches) {
-        if (_normalizeString(match.english) == normalizedInput) {
-          AppLogger.dictionaryMatch(
-            match.higaonon,
-            source: 'local dictionary (phrase list)',
-          );
-          await Future.delayed(const Duration(seconds: 2));
-          setState(() {
-            _voiceTranslationResult = match.higaonon;
-            _voiceTranslationFound = true;
-          });
-          final wordObj = Word(
-            higaonon: match.higaonon,
-            tagalog: '',
-            partOfSpeech: '',
-            english: match.english,
-            exampleHigaonon: '',
-            exampleEnglish: '',
-          );
-          _handleTranslationSuccess(wordObj, _lastWords, match.higaonon);
-          return;
-        }
-      }
-
-      // 4. Offline ONNX Model
-      AppLogger.debug('TRANSLATION', 'No dictionary match.');
-      AppLogger.debug('TRANSLATION', 'Running ONNX model...');
-      try {
-        final onnxTranslation = await OnnxTranslationService().translate(
-          _lastWords,
-        );
-        if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
-          AppLogger.translationCompleted(onnxTranslation, 'ONNX model');
-          setState(() {
-            _voiceTranslationResult = onnxTranslation;
-            _voiceTranslationFound = true;
-          });
-          final wordObj = Word(
-            higaonon: onnxTranslation,
-            tagalog: '',
-            partOfSpeech: 'AI',
-            english: _lastWords,
-            exampleHigaonon: '',
-            exampleEnglish: '',
-          );
-          _handleTranslationSuccess(wordObj, _lastWords, onnxTranslation);
-          return;
-        }
-      } catch (error, stackTrace) {
-        AppLogger.error(
-          'TRANSLATION',
-          'ONNX inference failed (${error.runtimeType}); continuing to fallback.',
-          stackTrace: stackTrace,
-        );
-      }
-
-      // 5. Fallback to AI Model
-      AppLogger.debug('TRANSLATION', 'Using fallback service...');
-      final fallbackTranslation =
-          await TranslationFallbackService.translateEnglishToBisaya(_lastWords);
-      if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
-        AppLogger.translationCompleted(fallbackTranslation, 'fallback service');
-      } else {
-        AppLogger.error('TRANSLATION', 'Fallback service returned no result.');
-      }
-
-      if (mounted) {
-        setState(() {
-          if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
-            _voiceTranslationResult = fallbackTranslation;
-            _voiceTranslationFound = true;
-            Provider.of<TtsService>(
-              context,
-              listen: false,
-            ).speak(fallbackTranslation);
-            unawaited(
-              Provider.of<TranslationStatsService>(
-                context,
-                listen: false,
-              ).recordTranslation(),
-            );
-            _addTranslationToHistory(_lastWords, fallbackTranslation);
-          } else {
-            _voiceTranslationResult = 'No translation found';
-            _voiceTranslationFound = false;
-          }
-        });
-      }
-    }
+    if (_lastWords.isEmpty) return;
+    await _translateInput(_lastWords, isVoice: true);
   }
 
   void _handleTranslationSuccess(Word word, String source, String result) {
@@ -385,140 +280,289 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   Future<void> _translateText() async {
-    // Hide the keyboard
     FocusScope.of(context).unfocus();
 
     final inputText = _textInputController.text;
     if (inputText.isEmpty) {
       setState(() {
         _textTranslationResult = 'Please enter text to translate.';
+        _clearTranslationMetadata(isVoice: false);
       });
       return;
     }
+    await _translateInput(inputText, isVoice: false);
+  }
 
-    setState(() {
-      _textTranslationResult = 'Translating...';
-    });
-
+  _LocalDictionaryMatch? _findLocalDictionaryMatch(String inputText) {
     final normalizedInput = _normalizeString(inputText);
-    AppLogger.translationStarted(inputText);
 
-    // 1. Check dictionary.json (Words)
-    for (var word in _words) {
+    for (final word in _words) {
       if (_normalizeString(word.english) == normalizedInput) {
-        AppLogger.dictionaryMatch(
-          word.higaonon,
-          source: 'local dictionary (word)',
+        return _LocalDictionaryMatch(
+          word: word,
+          translation: word.higaonon,
+          lookupSource: 'word',
         );
-        await Future.delayed(const Duration(seconds: 2));
-        setState(() {
-          _textTranslationResult = word.higaonon;
-        });
-        _handleTranslationSuccess(word, inputText, word.higaonon);
-        return;
       }
     }
 
-    // 2. Check dictionary.json (Sentences)
-    for (var word in _words) {
+    for (final word in _words) {
       if (_normalizeString(word.exampleEnglish) == normalizedInput) {
-        AppLogger.dictionaryMatch(
-          word.exampleHigaonon,
-          source: 'local dictionary (example sentence)',
+        return _LocalDictionaryMatch(
+          word: word,
+          translation: word.exampleHigaonon,
+          lookupSource: 'example sentence',
         );
-        await Future.delayed(const Duration(seconds: 2));
-        setState(() {
-          _textTranslationResult = word.exampleHigaonon;
-        });
-        _handleTranslationSuccess(word, inputText, word.exampleHigaonon);
-        return;
       }
     }
 
-    // 3. Check dictionary-second.json
-    for (var match in _sentenceMatches) {
+    for (final match in _sentenceMatches) {
       if (_normalizeString(match.english) == normalizedInput) {
-        AppLogger.dictionaryMatch(
-          match.higaonon,
-          source: 'local dictionary (phrase list)',
+        return _LocalDictionaryMatch(
+          word: Word(
+            higaonon: match.higaonon,
+            tagalog: '',
+            partOfSpeech: '',
+            english: match.english,
+            exampleHigaonon: '',
+            exampleEnglish: '',
+          ),
+          translation: match.higaonon,
+          lookupSource: 'phrase list',
         );
-        await Future.delayed(const Duration(seconds: 2));
-        setState(() {
-          _textTranslationResult = match.higaonon;
-        });
-        final wordObj = Word(
-          higaonon: match.higaonon,
-          tagalog: '',
-          partOfSpeech: '',
-          english: match.english,
-          exampleHigaonon: '',
-          exampleEnglish: '',
-        );
-        _handleTranslationSuccess(wordObj, inputText, match.higaonon);
-        return;
       }
     }
+    return null;
+  }
 
-    // 4. Offline ONNX Model
-    AppLogger.debug('TRANSLATION', 'No dictionary match.');
-    AppLogger.debug('TRANSLATION', 'Running ONNX model...');
+  Future<void> _translateInput(
+    String inputText, {
+    required bool isVoice,
+  }) async {
+    if (_isTranslationInProgress) return;
+    _isTranslationInProgress = true;
     try {
-      final onnxTranslation = await OnnxTranslationService().translate(
-        inputText,
-      );
-      if (mounted && onnxTranslation != null && onnxTranslation.isNotEmpty) {
-        AppLogger.translationCompleted(onnxTranslation, 'ONNX model');
+      AppLogger.translationStarted(inputText);
+      setState(() {
+        if (isVoice) {
+          _voiceTranslationResult = 'Translating...';
+          _voiceTranslationFound = false;
+        } else {
+          _textTranslationResult = 'Translating...';
+        }
+        _clearTranslationMetadata(isVoice: isVoice);
+      });
+
+      final localMatch = _findLocalDictionaryMatch(inputText);
+      if (localMatch != null) {
+        AppLogger.dictionaryMatch(
+          localMatch.translation,
+          source: 'local dictionary (${localMatch.lookupSource})',
+        );
+        await Future.delayed(const Duration(seconds: 2));
+        if (!mounted) return;
         setState(() {
-          _textTranslationResult = onnxTranslation;
+          _setTranslationResult(
+            isVoice: isVoice,
+            translation: localMatch.translation,
+            found: true,
+          );
+          _setTranslationMetadata(isVoice: isVoice, source: 'Local Dictionary');
         });
-        final wordObj = Word(
-          higaonon: onnxTranslation,
+        _handleTranslationSuccess(
+          localMatch.word,
+          inputText,
+          localMatch.translation,
+        );
+        return;
+      }
+
+      AppLogger.debug(
+        'TRANSLATION',
+        'No local dictionary match; requesting Hugging Face CSV translation.',
+      );
+      try {
+        final hfResult = await _huggingFaceTranslationService.translate(
+          inputText,
+        );
+        if (!mounted) return;
+        AppLogger.translationCompleted(
+          hfResult.higaonon,
+          hfResult.displaySource,
+        );
+        setState(() {
+          _setTranslationResult(
+            isVoice: isVoice,
+            translation: hfResult.higaonon,
+            found: true,
+          );
+          _setTranslationMetadata(
+            isVoice: isVoice,
+            source: hfResult.displaySource,
+            verified: hfResult.verified,
+            status: hfResult.status,
+            message: hfResult.message,
+          );
+        });
+        final word = Word(
+          higaonon: hfResult.higaonon,
           tagalog: '',
-          partOfSpeech: 'AI',
+          partOfSpeech: 'Hugging Face',
           english: inputText,
           exampleHigaonon: '',
           exampleEnglish: '',
         );
-        _handleTranslationSuccess(wordObj, inputText, onnxTranslation);
+        _handleTranslationSuccess(word, inputText, hfResult.higaonon);
         return;
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'TRANSLATION',
+          'Hugging Face translation failed (${error.runtimeType}); '
+              'continuing to remaining fallbacks.',
+          stackTrace: stackTrace,
+        );
       }
-    } catch (error, stackTrace) {
-      AppLogger.error(
-        'TRANSLATION',
-        'ONNX inference failed (${error.runtimeType}); continuing to fallback.',
-        stackTrace: stackTrace,
-      );
-    }
 
-    // 5. Fallback to AI Model
-    AppLogger.debug('TRANSLATION', 'Using fallback service...');
-    final fallbackTranslation =
-        await TranslationFallbackService.translateEnglishToBisaya(inputText);
-    if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
-      AppLogger.translationCompleted(fallbackTranslation, 'fallback service');
-    } else {
-      AppLogger.error('TRANSLATION', 'Fallback service returned no result.');
-    }
+      if (!mounted) return;
+      AppLogger.debug('TRANSLATION', 'Running ONNX fallback...');
+      try {
+        final onnxTranslation = await OnnxTranslationService().translate(
+          inputText,
+        );
+        if (!mounted) return;
+        if (onnxTranslation != null && onnxTranslation.isNotEmpty) {
+          AppLogger.translationCompleted(onnxTranslation, 'ONNX Translation');
+          setState(() {
+            _setTranslationResult(
+              isVoice: isVoice,
+              translation: onnxTranslation,
+              found: true,
+            );
+            _setTranslationMetadata(
+              isVoice: isVoice,
+              source: 'ONNX Translation',
+            );
+          });
+          final word = Word(
+            higaonon: onnxTranslation,
+            tagalog: '',
+            partOfSpeech: 'AI',
+            english: inputText,
+            exampleHigaonon: '',
+            exampleEnglish: '',
+          );
+          _handleTranslationSuccess(word, inputText, onnxTranslation);
+          return;
+        }
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'TRANSLATION',
+          'ONNX inference failed (${error.runtimeType}); continuing to fallback.',
+          stackTrace: stackTrace,
+        );
+      }
 
-    if (mounted) {
+      if (!mounted) return;
+      AppLogger.debug('TRANSLATION', 'Running remaining translation fallback.');
+      String? fallbackTranslation;
+      try {
+        fallbackTranslation =
+            await TranslationFallbackService.translateEnglishToBisaya(
+              inputText,
+            );
+      } catch (error, stackTrace) {
+        AppLogger.error(
+          'TRANSLATION',
+          'Remaining fallback failed (${error.runtimeType}).',
+          stackTrace: stackTrace,
+        );
+      }
+
+      if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
+        AppLogger.translationCompleted(
+          fallbackTranslation,
+          'Other Translation Service',
+        );
+      } else {
+        AppLogger.error('TRANSLATION', 'Fallback service returned no result.');
+      }
+
+      if (!mounted) return;
       setState(() {
         if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
-          _textTranslationResult = fallbackTranslation;
-          Provider.of<TtsService>(
-            context,
-            listen: false,
-          ).speak(fallbackTranslation);
-          unawaited(
-            Provider.of<TranslationStatsService>(
-              context,
-              listen: false,
-            ).recordTranslation(),
+          _setTranslationResult(
+            isVoice: isVoice,
+            translation: fallbackTranslation,
+            found: true,
           );
-          _addTranslationToHistory(inputText, fallbackTranslation);
+          _setTranslationMetadata(
+            isVoice: isVoice,
+            source: 'Other Translation Service',
+            message: 'Fallback output is unverified and may not be Higaonon.',
+          );
         } else {
-          _textTranslationResult = 'No translation found for: "$inputText"';
+          _setTranslationResult(
+            isVoice: isVoice,
+            translation: isVoice
+                ? 'No translation found'
+                : 'No translation found for: "$inputText"',
+            found: false,
+          );
         }
       });
+
+      if (fallbackTranslation != null && fallbackTranslation.isNotEmpty) {
+        Provider.of<TtsService>(
+          context,
+          listen: false,
+        ).speak(fallbackTranslation);
+        unawaited(
+          Provider.of<TranslationStatsService>(
+            context,
+            listen: false,
+          ).recordTranslation(),
+        );
+        _addTranslationToHistory(inputText, fallbackTranslation);
+      }
+    } finally {
+      _isTranslationInProgress = false;
+    }
+  }
+
+  void _setTranslationResult({
+    required bool isVoice,
+    required String translation,
+    required bool found,
+  }) {
+    if (isVoice) {
+      _voiceTranslationResult = translation;
+      _voiceTranslationFound = found;
+    } else {
+      _textTranslationResult = translation;
+    }
+  }
+
+  void _clearTranslationMetadata({required bool isVoice}) {
+    _setTranslationMetadata(isVoice: isVoice, source: '');
+  }
+
+  void _setTranslationMetadata({
+    required bool isVoice,
+    required String source,
+    bool? verified,
+    String? status,
+    String? message,
+  }) {
+    if (isVoice) {
+      _voiceTranslationSource = source;
+      _voiceTranslationVerified = verified;
+      _voiceTranslationStatus = status;
+      _voiceTranslationMessage = message;
+    } else {
+      _textTranslationSource = source;
+      _textTranslationVerified = verified;
+      _textTranslationStatus = status;
+      _textTranslationMessage = message;
     }
   }
 
@@ -539,6 +583,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     _searchController.dispose();
     _textInputController.dispose();
     _audioPlayer.dispose();
+    _huggingFaceTranslationService.dispose();
     super.dispose();
   }
 
@@ -1036,6 +1081,10 @@ class _TranslateScreenState extends State<TranslateScreen>
             _lastWords,
             _voiceTranslationResult,
             _voiceTranslationFound,
+            sourceLabel: _voiceTranslationSource,
+            verified: _voiceTranslationVerified,
+            status: _voiceTranslationStatus,
+            message: _voiceTranslationMessage,
           ),
         const SizedBox(height: 24),
       ],
@@ -1103,6 +1152,10 @@ class _TranslateScreenState extends State<TranslateScreen>
               _textTranslationResult,
               !_textTranslationResult.startsWith('No translation found') &&
                   !_textTranslationResult.startsWith('Please enter'),
+              sourceLabel: _textTranslationSource,
+              verified: _textTranslationVerified,
+              status: _textTranslationStatus,
+              message: _textTranslationMessage,
             ),
           const SizedBox(height: 16),
         ],
@@ -1114,8 +1167,12 @@ class _TranslateScreenState extends State<TranslateScreen>
     ThemeData theme,
     String source,
     String result,
-    bool showSpeaker,
-  ) {
+    bool showSpeaker, {
+    String? sourceLabel,
+    bool? verified,
+    String? status,
+    String? message,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -1131,6 +1188,34 @@ class _TranslateScreenState extends State<TranslateScreen>
             source,
             style: TextStyle(color: theme.disabledColor, fontSize: 16),
           ),
+          if (sourceLabel != null && sourceLabel.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Source: $sourceLabel',
+              style: TextStyle(color: theme.disabledColor, fontSize: 14),
+            ),
+            Text(
+              verified == null
+                  ? 'Verification: Unknown'
+                  : verified
+                  ? 'Verified'
+                  : 'Unverified',
+              style: TextStyle(color: theme.disabledColor, fontSize: 14),
+            ),
+          ],
+          if (status != null && status.isNotEmpty)
+            Text(
+              'Status: $status',
+              style: TextStyle(color: theme.disabledColor, fontSize: 14),
+            ),
+          if (message != null && message.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                message,
+                style: TextStyle(color: theme.disabledColor, fontSize: 14),
+              ),
+            ),
           const SizedBox(height: 8),
           Row(
             children: [

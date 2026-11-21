@@ -52,10 +52,6 @@ class _TranslateScreenState extends State<TranslateScreen>
   String _lastWords = '';
   String _voiceTranslationResult = '';
   bool _voiceTranslationFound = false;
-  String _voiceTranslationSource = '';
-  bool? _voiceTranslationVerified;
-  String? _voiceTranslationStatus;
-  String? _voiceTranslationMessage;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   final HuggingFaceCsvTranslationService _huggingFaceTranslationService =
@@ -65,10 +61,6 @@ class _TranslateScreenState extends State<TranslateScreen>
   bool _isVoiceMode = true; // True for Voice, False for Text
   final TextEditingController _textInputController = TextEditingController();
   String _textTranslationResult = '';
-  String _textTranslationSource = '';
-  bool? _textTranslationVerified;
-  String? _textTranslationStatus;
-  String? _textTranslationMessage;
   bool _isTranslationInProgress = false;
 
   @override
@@ -119,7 +111,6 @@ class _TranslateScreenState extends State<TranslateScreen>
       _lastWords = '';
       _voiceTranslationResult = 'Listening...';
       _voiceTranslationFound = false;
-      _clearTranslationMetadata(isVoice: true);
     });
   }
 
@@ -133,7 +124,6 @@ class _TranslateScreenState extends State<TranslateScreen>
       if (_lastWords.isEmpty && _voiceTranslationResult == 'Listening...') {
         _voiceTranslationResult = '';
         _voiceTranslationFound = false;
-        _clearTranslationMetadata(isVoice: true);
       }
     });
   }
@@ -286,7 +276,6 @@ class _TranslateScreenState extends State<TranslateScreen>
     if (inputText.isEmpty) {
       setState(() {
         _textTranslationResult = 'Please enter text to translate.';
-        _clearTranslationMetadata(isVoice: false);
       });
       return;
     }
@@ -350,7 +339,6 @@ class _TranslateScreenState extends State<TranslateScreen>
         } else {
           _textTranslationResult = 'Translating...';
         }
-        _clearTranslationMetadata(isVoice: isVoice);
       });
 
       final localMatch = _findLocalDictionaryMatch(inputText);
@@ -367,7 +355,6 @@ class _TranslateScreenState extends State<TranslateScreen>
             translation: localMatch.translation,
             found: true,
           );
-          _setTranslationMetadata(isVoice: isVoice, source: 'Local Dictionary');
         });
         _handleTranslationSuccess(
           localMatch.word,
@@ -386,22 +373,12 @@ class _TranslateScreenState extends State<TranslateScreen>
           inputText,
         );
         if (!mounted) return;
-        AppLogger.translationCompleted(
-          hfResult.higaonon,
-          hfResult.displaySource,
-        );
+        AppLogger.translationCompleted(hfResult.higaonon, hfResult.source);
         setState(() {
           _setTranslationResult(
             isVoice: isVoice,
             translation: hfResult.higaonon,
             found: true,
-          );
-          _setTranslationMetadata(
-            isVoice: isVoice,
-            source: hfResult.displaySource,
-            verified: hfResult.verified,
-            status: hfResult.status,
-            message: hfResult.message,
           );
         });
         final word = Word(
@@ -437,10 +414,6 @@ class _TranslateScreenState extends State<TranslateScreen>
               isVoice: isVoice,
               translation: onnxTranslation,
               found: true,
-            );
-            _setTranslationMetadata(
-              isVoice: isVoice,
-              source: 'ONNX Translation',
             );
           });
           final word = Word(
@@ -495,11 +468,6 @@ class _TranslateScreenState extends State<TranslateScreen>
             translation: fallbackTranslation,
             found: true,
           );
-          _setTranslationMetadata(
-            isVoice: isVoice,
-            source: 'Other Translation Service',
-            message: 'Fallback output is unverified and may not be Higaonon.',
-          );
         } else {
           _setTranslationResult(
             isVoice: isVoice,
@@ -534,35 +502,12 @@ class _TranslateScreenState extends State<TranslateScreen>
     required String translation,
     required bool found,
   }) {
+    final displayTranslation = found ? translation.toLowerCase() : translation;
     if (isVoice) {
-      _voiceTranslationResult = translation;
+      _voiceTranslationResult = displayTranslation;
       _voiceTranslationFound = found;
     } else {
-      _textTranslationResult = translation;
-    }
-  }
-
-  void _clearTranslationMetadata({required bool isVoice}) {
-    _setTranslationMetadata(isVoice: isVoice, source: '');
-  }
-
-  void _setTranslationMetadata({
-    required bool isVoice,
-    required String source,
-    bool? verified,
-    String? status,
-    String? message,
-  }) {
-    if (isVoice) {
-      _voiceTranslationSource = source;
-      _voiceTranslationVerified = verified;
-      _voiceTranslationStatus = status;
-      _voiceTranslationMessage = message;
-    } else {
-      _textTranslationSource = source;
-      _textTranslationVerified = verified;
-      _textTranslationStatus = status;
-      _textTranslationMessage = message;
+      _textTranslationResult = displayTranslation;
     }
   }
 
@@ -1027,66 +972,94 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   Widget _buildVoiceTranslationBody(ThemeData theme) {
+    final hasResult =
+        _lastWords.isNotEmpty || _voiceTranslationResult.isNotEmpty;
+
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Spacer(),
-        GestureDetector(
-          onTap: _speechToText.isNotListening
-              ? _startListening
-              : _stopListening,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _speechToText.isListening
-                  ? Colors.redAccent
-                  : theme.cardColor,
-              boxShadow: [
-                BoxShadow(
-                  color:
-                      (_speechToText.isListening
-                              ? Colors.redAccent
-                              : Colors.grey)
-                          .withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  spreadRadius: 10,
-                ),
-              ],
-            ),
-            child: Icon(
-              _speechToText.isNotListening
-                  ? Icons.mic_rounded
-                  : Icons.stop_rounded,
-              color: _speechToText.isListening
-                  ? Colors.white
-                  : Colors.redAccent,
-              size: 50,
+        Expanded(
+          flex: hasResult ? 2 : 1,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: _speechToText.isNotListening
+                        ? _startListening
+                        : _stopListening,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.all(30),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _speechToText.isListening
+                            ? Colors.redAccent
+                            : theme.cardColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                (_speechToText.isListening
+                                        ? Colors.redAccent
+                                        : Colors.grey)
+                                    .withValues(alpha: 0.2),
+                            blurRadius: 20,
+                            spreadRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        _speechToText.isNotListening
+                            ? Icons.mic_rounded
+                            : Icons.stop_rounded,
+                        color: _speechToText.isListening
+                            ? Colors.white
+                            : Colors.redAccent,
+                        size: 50,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    _speechToText.isListening
+                        ? 'Listening...'
+                        : 'Tap to Translate Voice',
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: theme.textTheme.bodyMedium?.color?.withValues(
+                        alpha: 0.6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 24),
-        Text(
-          _speechToText.isListening ? 'Listening...' : 'Tap to Translate Voice',
-          style: TextStyle(
-            fontSize: 20,
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+        if (hasResult) ...[
+          const SizedBox(height: 8),
+          Expanded(
+            flex: 3,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: _buildResultCard(
+                theme,
+                _lastWords,
+                _voiceTranslationResult,
+                _voiceTranslationFound,
+                onClose: () {
+                  setState(() {
+                    _lastWords = '';
+                    _voiceTranslationResult = '';
+                    _voiceTranslationFound = false;
+                  });
+                },
+              ),
+            ),
           ),
-        ),
-        const Spacer(),
-        if (_lastWords.isNotEmpty || _voiceTranslationResult.isNotEmpty)
-          _buildResultCard(
-            theme,
-            _lastWords,
-            _voiceTranslationResult,
-            _voiceTranslationFound,
-            sourceLabel: _voiceTranslationSource,
-            verified: _voiceTranslationVerified,
-            status: _voiceTranslationStatus,
-            message: _voiceTranslationMessage,
-          ),
-        const SizedBox(height: 24),
+        ] else
+          const SizedBox(height: 24),
       ],
     );
   }
@@ -1107,11 +1080,11 @@ class _TranslateScreenState extends State<TranslateScreen>
                 controller: _textInputController,
                 maxLines: null,
                 onChanged: (value) {
-                  if (_textTranslationResult.isNotEmpty) {
-                    setState(() {
+                  setState(() {
+                    if (_textTranslationResult.isNotEmpty) {
                       _textTranslationResult = '';
-                    });
-                  }
+                    }
+                  });
                 },
                 decoration: InputDecoration(
                   hintText: 'Type English sentence here...',
@@ -1121,6 +1094,18 @@ class _TranslateScreenState extends State<TranslateScreen>
                       alpha: 0.6,
                     ),
                   ),
+                  suffixIcon: _textInputController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear_rounded),
+                          tooltip: 'Clear text',
+                          onPressed: () {
+                            setState(() {
+                              _textInputController.clear();
+                              _textTranslationResult = '';
+                            });
+                          },
+                        ),
                   border: InputBorder.none,
                 ),
                 style: const TextStyle(fontSize: 18),
@@ -1146,16 +1131,21 @@ class _TranslateScreenState extends State<TranslateScreen>
           ),
           const SizedBox(height: 16),
           if (_textTranslationResult.isNotEmpty)
-            _buildResultCard(
-              theme,
-              _textInputController.text,
-              _textTranslationResult,
-              !_textTranslationResult.startsWith('No translation found') &&
-                  !_textTranslationResult.startsWith('Please enter'),
-              sourceLabel: _textTranslationSource,
-              verified: _textTranslationVerified,
-              status: _textTranslationStatus,
-              message: _textTranslationMessage,
+            Flexible(
+              child: SingleChildScrollView(
+                child: _buildResultCard(
+                  theme,
+                  _textInputController.text,
+                  _textTranslationResult,
+                  !_textTranslationResult.startsWith('No translation found') &&
+                      !_textTranslationResult.startsWith('Please enter'),
+                  onClose: () {
+                    setState(() {
+                      _textTranslationResult = '';
+                    });
+                  },
+                ),
+              ),
             ),
           const SizedBox(height: 16),
         ],
@@ -1168,10 +1158,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     String source,
     String result,
     bool showSpeaker, {
-    String? sourceLabel,
-    bool? verified,
-    String? status,
-    String? message,
+    required VoidCallback onClose,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1184,38 +1171,21 @@ class _TranslateScreenState extends State<TranslateScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            source,
-            style: TextStyle(color: theme.disabledColor, fontSize: 16),
-          ),
-          if (sourceLabel != null && sourceLabel.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Source: $sourceLabel',
-              style: TextStyle(color: theme.disabledColor, fontSize: 14),
-            ),
-            Text(
-              verified == null
-                  ? 'Verification: Unknown'
-                  : verified
-                  ? 'Verified'
-                  : 'Unverified',
-              style: TextStyle(color: theme.disabledColor, fontSize: 14),
-            ),
-          ],
-          if (status != null && status.isNotEmpty)
-            Text(
-              'Status: $status',
-              style: TextStyle(color: theme.disabledColor, fontSize: 14),
-            ),
-          if (message != null && message.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                message,
-                style: TextStyle(color: theme.disabledColor, fontSize: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  source,
+                  style: TextStyle(color: theme.disabledColor, fontSize: 16),
+                ),
               ),
-            ),
+              IconButton(
+                onPressed: onClose,
+                tooltip: 'Close translation output',
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
